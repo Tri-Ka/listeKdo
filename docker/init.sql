@@ -145,7 +145,6 @@ INSERT INTO `liste_user` (`id`, `nom`, `code`, `password`, `theme`, `pictureFile
 (118, 'BÃ©nÃ©dicte Cazals', '0a012bdff97ec76243c526ced039de37', '', 'noel', NULL, '2020-12-11 21:48:42', '107626074149832044319', 'https://lh3.googleusercontent.com/a-/AOh14Gj1PxVjfGob4gIq-vgxiQH9q3CuLD8wRz1X9XkL4g=s96-c'),
 (119, 'Sophie', '337b3ffeb2bab20c7add93838d29121b', '4902259ac6957fde008afe027e75236b', 'noel', '', '2020-12-22 00:01:26', NULL, NULL),
 (120, 'sophiefourel@hotmail.com', '4b28ebbb8fd209dd64e326fc9489d270', '', 'noel', NULL, NULL, '106858829823617449938', 'https://lh5.googleusercontent.com/-tLjp4y6Y1LA/AAAAAAAAAAI/AAAAAAAAAAA/2GycNvuQqYs/s96-c/photo.jpg'),
-(121, 'sophiefourel@hotmail.com', '4b28ebbb8fd209dd64e326fc9489d270', '', 'noel', NULL, NULL, '106858829823617449938', 'https://lh5.googleusercontent.com/-tLjp4y6Y1LA/AAAAAAAAAAI/AAAAAAAAAAA/2GycNvuQqYs/s96-c/photo.jpg'),
 (122, 'Francis DATCHARRY', '3e0fda90670a0391b88e0a52796fc36f', '', 'birthday', NULL, NULL, '108916564016331377561', 'https://lh3.googleusercontent.com/a/AATXAJxUjv2xkIa7RmU2qatEz3tiLbD9llKDgzZdHZ5B=s96-c'),
 (124, 'Nat', 'a2c0cb8bbd4baf74c2fdeefd790c3a02', '562efd59421f686fe7408d344fedde6c', 'noel', 'FEBEC1F3-091F-44A9-9269-91EC449B6DA8.jpeg', '2024-03-25 13:48:30', NULL, NULL),
 (123, 'Olivia', '53c94be2c58e984fca5cfb6045ed7596', '1a1dc91c907325c69271ddf0c944bc72', 'noel', 'd41d8cd98f00b204e9800998ecf8427e.JPG', '2026-01-14 20:55:54', NULL, NULL),

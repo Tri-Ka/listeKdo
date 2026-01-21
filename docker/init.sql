@@ -3,6 +3,13 @@
 
 CREATE DATABASE IF NOT EXISTS listekdo CHARACTER SET utf8 COLLATE utf8_general_ci;
 
+-- Ensure the application user can connect from any container/IP on the Docker network
+DROP USER IF EXISTS 'listekdo_user'@'localhost';
+CREATE USER IF NOT EXISTS 'listekdo_user'@'%' IDENTIFIED BY 'listekdo_pass';
+ALTER USER 'listekdo_user'@'%' IDENTIFIED BY 'listekdo_pass';
+GRANT ALL PRIVILEGES ON listekdo.* TO 'listekdo_user'@'%';
+FLUSH PRIVILEGES;
+
 USE listekdo;
 
 -- Table des utilisateurs (correspond à liste_user)

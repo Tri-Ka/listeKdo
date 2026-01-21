@@ -2,75 +2,75 @@
 
 class User
 {
-    var $id;
-    var $nom;
-    var $code;
-    var $password;
-    var $theme;
-    var $pictureFile;
-    var $pictureFileUrl;
-    var $googleId;
-    var $last_seen_notif;
-    var $created_at;
-    var $updated_at;
+    public ?int $id = null;
+    public ?string $nom = null;
+    public ?string $code = null;
+    public ?string $password = null;
+    public ?string $theme = null;
+    public ?string $pictureFile = null;
+    public ?string $pictureFileUrl = null;
+    public ?string $googleId = null;
+    public ?string $last_seen_notif = null;
+    public ?string $created_at = null;
+    public ?string $updated_at = null;
 
-    function User($data)
+    public function __construct($data = null)
     {
         $this->hydrate($data);
     }
 
-    function hydrate($data)
+    public function hydrate($data): void
     {
-        if (!$data) {
+        if (!is_array($data)) {
             return;
         }
 
-        if (isset($data['id'])) {
-            $this->id = $data['id'];
+        if (array_key_exists('id', $data)) {
+            $this->id = null === $data['id'] ? null : (int) $data['id'];
         }
 
-        if (isset($data['nom'])) {
-            $this->nom = $data['nom'];
+        if (array_key_exists('nom', $data)) {
+            $this->nom = null === $data['nom'] ? null : (string) $data['nom'];
         }
 
-        if (isset($data['code'])) {
-            $this->code = $data['code'];
+        if (array_key_exists('code', $data)) {
+            $this->code = null === $data['code'] ? null : (string) $data['code'];
         }
 
-        if (isset($data['password'])) {
-            $this->password = $data['password'];
+        if (array_key_exists('password', $data)) {
+            $this->password = null === $data['password'] ? null : (string) $data['password'];
         }
 
-        if (isset($data['theme'])) {
-            $this->theme = $data['theme'];
+        if (array_key_exists('theme', $data)) {
+            $this->theme = null === $data['theme'] ? null : (string) $data['theme'];
         }
 
-        if (isset($data['pictureFile'])) {
-            $this->pictureFile = $data['pictureFile'];
+        if (array_key_exists('pictureFile', $data)) {
+            $this->pictureFile = null === $data['pictureFile'] ? null : (string) $data['pictureFile'];
         }
 
-        if (isset($data['pictureFileUrl'])) {
-            $this->pictureFileUrl = $data['pictureFileUrl'];
+        if (array_key_exists('pictureFileUrl', $data)) {
+            $this->pictureFileUrl = null === $data['pictureFileUrl'] ? null : (string) $data['pictureFileUrl'];
         }
 
-        if (isset($data['googleId'])) {
-            $this->googleId = $data['googleId'];
+        if (array_key_exists('googleId', $data)) {
+            $this->googleId = null === $data['googleId'] ? null : (string) $data['googleId'];
         }
 
-        if (isset($data['last_seen_notif'])) {
-            $this->last_seen_notif = $data['last_seen_notif'];
+        if (array_key_exists('last_seen_notif', $data)) {
+            $this->last_seen_notif = null === $data['last_seen_notif'] ? null : (string) $data['last_seen_notif'];
         }
 
-        if (isset($data['created_at'])) {
-            $this->created_at = $data['created_at'];
+        if (array_key_exists('created_at', $data)) {
+            $this->created_at = null === $data['created_at'] ? null : (string) $data['created_at'];
         }
 
-        if (isset($data['updated_at'])) {
-            $this->updated_at = $data['updated_at'];
+        if (array_key_exists('updated_at', $data)) {
+            $this->updated_at = null === $data['updated_at'] ? null : (string) $data['updated_at'];
         }
     }
 
-    function toArray()
+    public function toArray(): array
     {
         return array(
             'id' => $this->id,

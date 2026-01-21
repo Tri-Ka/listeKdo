@@ -2,13 +2,17 @@
 
 class Database
 {
-    var $host;
-    var $user;
-    var $password;
-    var $dbName;
-    var $link;
+    private $host;
+    private $user;
+    private $password;
+    private $dbName;
 
-    function Database($host, $user, $password, $dbName)
+    /**
+     * @var \mysqli|null
+     */
+    private $link;
+
+    public function __construct($host, $user, $password, $dbName)
     {
         $this->host = $host;
         $this->user = $user;
@@ -17,39 +21,46 @@ class Database
         $this->link = null;
     }
 
-    function connect()
+    public function connect()
     {
-        if (null === $this->link) {
-            $this->link = mysql_connect($this->host, $this->user, $this->password);
-            if (!$this->link) {
-                return false;
-            }
+        if ($this->link instanceof \mysqli) {
+            return $this->link;
         }
 
-        if (!mysql_select_db($this->dbName, $this->link)) {
+        $link = @mysqli_connect($this->host, $this->user, $this->password, $this->dbName);
+
+        if (!$link) {
             return false;
         }
+
+        mysqli_set_charset($link, 'utf8mb4');
+
+        $this->link = $link;
 
         return $this->link;
     }
 
-    function ensureConnection()
+    public function ensureConnection()
     {
-        if (null === $this->link) {
+        if (!$this->link) {
             $this->connect();
         }
 
         return $this->link;
     }
 
-    function escapeString($value)
+    public function escapeString($value)
     {
-        $this->ensureConnection();
+        $link = $this->ensureConnection();
 
-        return mysql_real_escape_string($value, $this->link);
+        if (!$link) {
+            return '';
+        }
+
+        return mysqli_real_escape_string($link, (string) $value);
     }
 
-    function escapeValue($value)
+    public function escapeValue($value)
     {
         if (null === $value) {
             return 'NULL';
@@ -66,19 +77,27 @@ class Database
         return "'" . $this->escapeString($value) . "'";
     }
 
-    function query($sql)
+    public function query($sql)
     {
-        $this->ensureConnection();
+        $link = $this->ensureConnection();
 
-        return mysql_query($sql, $this->link);
+        if (!$link) {
+            return false;
+        }
+
+        return mysqli_query($link, $sql);
     }
 
-    function fetchAssoc($result)
+    public function fetchAssoc($result)
     {
-        return mysql_fetch_assoc($result);
+        if (!$result) {
+            return false;
+        }
+
+        return mysqli_fetch_assoc($result);
     }
 
-    function insert($table, $data)
+    public function insert($table, $data)
     {
         $keys = array_keys($data);
         $escapedValues = array();
@@ -91,14 +110,18 @@ class Database
         return $this->query($sql);
     }
 
-    function getInsertId()
+    public function getInsertId()
     {
-        $this->ensureConnection();
+        $link = $this->ensureConnection();
 
-        return mysql_insert_id($this->link);
+        if (!$link) {
+            return 0;
+        }
+
+        return mysqli_insert_id($link);
     }
 
-    function update($table, $data, $criteria)
+    public function update($table, $data, $criteria)
     {
         $sets = array();
         foreach ($data as $key => $value) {
@@ -115,7 +138,7 @@ class Database
         return $this->query($sql);
     }
 
-    function delete($table, $criteria)
+    public function delete($table, $criteria)
     {
         $whereParts = array();
         foreach ($criteria as $key => $value) {

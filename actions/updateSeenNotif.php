@@ -1,6 +1,10 @@
 <?php
 include '../config.php';
 
+if (!isset($_SESSION['user']['id'])) {
+	return false;
+}
+
 $date = date('Y-m-d H:i:s');
 $userRepository = getUserRepository();
 

@@ -4,16 +4,22 @@ include '../config.php';
 $giftRepository = getGiftRepository();
 $notificationRepository = getNotificationRepository();
 
-$nom = $_POST['nom'];
-$description = $_POST['description'];
-$imageUrl = $_POST['image'];
-$file = $_FILES['file'];
-$link = $_POST['link'];
-$userId = $_POST['user_id'];
+$nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
+$description = isset($_POST['description']) ? trim((string) $_POST['description']) : '';
+$imageUrl = isset($_POST['image']) ? trim((string) $_POST['image']) : '';
+$link = isset($_POST['link']) ? trim((string) $_POST['link']) : '';
+$userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : (isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0);
+$file = isset($_FILES['file']) && is_array($_FILES['file']) ? $_FILES['file'] : array();
 $fileName = null;
 
-if (null != $file['name']) {
-    $fileSize = $_FILES['file']['size'];
+if (0 === $userId) {
+    $_SESSION['error'] = 'Utilisateur invalide';
+    header('Location: ../index.php');
+    exit;
+}
+
+if (!empty($file) && isset($file['name']) && '' !== $file['name']) {
+    $fileSize = isset($file['size']) ? (int) $file['size'] : 0;
     $fileSize = round($fileSize / 1024 / 1024, 1);
 
     if (3 < $fileSize) {
@@ -23,7 +29,13 @@ if (null != $file['name']) {
     }
 
     // Check if image file is a actual image or fake image
-    $check = getimagesize($_FILES['file']['tmp_name']);
+    if (!isset($file['tmp_name']) || '' === $file['tmp_name']) {
+        $_SESSION['error'] = 'Le fichier uploadé est invalide';
+        header('Location: ../index.php');
+        exit;
+    }
+
+    $check = getimagesize($file['tmp_name']);
 
     if ($check !== false) {
         $uploadOk = 1;
@@ -33,7 +45,7 @@ if (null != $file['name']) {
         exit;
     }
 
-    $fileName = $_FILES['file']['name'];
+    $fileName = $file['name'];
 
     $target_dir = '../uploads/img/';
     $uploads_root = dirname(rtrim($target_dir, '/'));
@@ -50,13 +62,13 @@ if (null != $file['name']) {
         exit;
     }
 
-    $target_file = $target_dir.basename($_FILES['file']['name']);
+    $target_file = $target_dir.basename($file['name']);
     $uploadOk = 1;
     $imageFileType = pathinfo($target_file, PATHINFO_EXTENSION);
 
     if ($uploadOk) {
-        if (move_uploaded_file($_FILES['file']['tmp_name'], $target_file)) {
-            $pictureFile = $_FILES['file']['name'];
+        if (move_uploaded_file($file['tmp_name'], $target_file)) {
+            $pictureFile = $file['name'];
         } else {
             $_SESSION['error'] = 'erreur lors de l\'upload';
             header('Location: ../index.php');
@@ -84,6 +96,11 @@ if ('' !== $nom) {
             'created_at' => date('Y-m-d H:i:s')
         ));
     }
+}
+
+if (!isset($_SESSION['user']['code'])) {
+    header('Location: ../index.php');
+    exit;
 }
 
 header('Location: ../index.php?user='.$_SESSION['user']['code']);

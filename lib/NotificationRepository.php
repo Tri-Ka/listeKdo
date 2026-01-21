@@ -5,10 +5,6 @@ require_once dirname(__FILE__) . '/Entity/Notification.php';
 
 class NotificationRepository extends Repository
 {
-    function NotificationRepository(&$database)
-    {
-        $this->Repository($database);
-    }
 
     function hydrate($row)
     {

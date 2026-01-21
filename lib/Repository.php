@@ -1,20 +1,22 @@
 <?php
 
+require_once __DIR__ . '/Database.php';
+
 class Repository
 {
-    var $database;
+    protected Database $database;
 
-    function Repository(&$database)
+    public function __construct(Database $database)
     {
-        $this->database =& $database;
+        $this->database = $database;
     }
 
-    function getDatabase()
+    public function getDatabase(): Database
     {
         return $this->database;
     }
 
-    function fetchOne($sql)
+    public function fetchOne($sql)
     {
         $result = $this->database->query($sql);
 
@@ -25,7 +27,7 @@ class Repository
         return $this->database->fetchAssoc($result);
     }
 
-    function fetchAll($sql)
+    public function fetchAll($sql)
     {
         $result = $this->database->query($sql);
 
@@ -42,7 +44,7 @@ class Repository
         return $rows;
     }
 
-    function buildInClause($values)
+    public function buildInClause($values)
     {
         $escaped = array();
 

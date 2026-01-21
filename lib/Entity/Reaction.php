@@ -2,45 +2,45 @@
 
 class Reaction
 {
-    var $id;
-    var $product_id;
-    var $user_id;
-    var $type;
-    var $created_at;
+    public ?int $id = null;
+    public ?string $product_id = null;
+    public ?string $user_id = null;
+    public ?string $type = null;
+    public ?string $created_at = null;
 
-    function Reaction($data)
+    public function __construct($data = null)
     {
         $this->hydrate($data);
     }
 
-    function hydrate($data)
+    public function hydrate($data): void
     {
-        if (!$data) {
+        if (!is_array($data)) {
             return;
         }
 
-        if (isset($data['id'])) {
-            $this->id = $data['id'];
+        if (array_key_exists('id', $data)) {
+            $this->id = null === $data['id'] ? null : (int) $data['id'];
         }
 
-        if (isset($data['product_id'])) {
-            $this->product_id = $data['product_id'];
+        if (array_key_exists('product_id', $data)) {
+            $this->product_id = null === $data['product_id'] ? null : (string) $data['product_id'];
         }
 
-        if (isset($data['user_id'])) {
-            $this->user_id = $data['user_id'];
+        if (array_key_exists('user_id', $data)) {
+            $this->user_id = null === $data['user_id'] ? null : (string) $data['user_id'];
         }
 
-        if (isset($data['type'])) {
-            $this->type = $data['type'];
+        if (array_key_exists('type', $data)) {
+            $this->type = null === $data['type'] ? null : (string) $data['type'];
         }
 
-        if (isset($data['created_at'])) {
-            $this->created_at = $data['created_at'];
+        if (array_key_exists('created_at', $data)) {
+            $this->created_at = null === $data['created_at'] ? null : (string) $data['created_at'];
         }
     }
 
-    function toArray()
+    public function toArray(): array
     {
         return array(
             'id' => $this->id,

@@ -5,9 +5,14 @@ $reactionRepository = getReactionRepository();
 $notificationRepository = getNotificationRepository();
 $userRepository = getUserRepository();
 
-$object = $_GET['object'];
-$value = $_GET['value'];
-$userId = $_SESSION['user']['id'];
+$object = isset($_GET['object']) ? (int) $_GET['object'] : 0;
+$value = isset($_GET['value']) ? (int) $_GET['value'] : 0;
+$userId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+
+if (0 === $object || 0 === $value || 0 === $userId) {
+    http_response_code(400);
+    exit;
+}
 
 $reactionRepository->deleteByProductAndUser($object, $userId);
 $notificationRepository->deleteByProductAuthorAndType($object, $userId, 3);

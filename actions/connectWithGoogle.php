@@ -2,14 +2,14 @@
 
 include '../config.php';
 
-$id = $_POST['id'];
-$name = $_POST['name'];
-$imageUrl = $_POST['imageUrl'];
-$email = $_POST['email'];            
+$id = isset($_POST['id']) ? trim((string) $_POST['id']) : '';
+$name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
+$imageUrl = isset($_POST['imageUrl']) ? trim((string) $_POST['imageUrl']) : '';
+$email = isset($_POST['email']) ? trim((string) $_POST['email']) : '';           
 
 $userRepository = getUserRepository();
 
-if (null != $id) {
+if ('' !== $id) {
     $user = $userRepository->findByGoogleId($id);
 
     if (!$user) {

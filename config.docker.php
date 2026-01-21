@@ -18,14 +18,13 @@
     // $_username = 'datcharrye';
     // $_pass = 'spx728';
 
-    $link = mysql_connect($_host, $_username, $_pass);
-    $db_selected = mysql_select_db($_db);
+    $link = mysqli_connect($_host, $_username, $_pass, $_db);
 
     if (!$link) {
-        die('Erreur de connexion MySQL : ' . mysql_error());
+        die('Erreur de connexion MySQL : ' . mysqli_connect_error());
     }
 
-    if (!$db_selected) {
-        die('Erreur de sélection de la base de données : ' . mysql_error());
+    if (!mysqli_set_charset($link, 'utf8mb4')) {
+        die('Erreur de configuration du jeu de caractères : ' . mysqli_error($link));
     }
 ?>

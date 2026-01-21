@@ -1,6 +1,17 @@
 <?php
     include '../config.php';
 
-    $commentRepository = getCommentRepository();
+    if (!isset($_SESSION['user']['id'])) {
+        header('Location: ../index.php');
+        exit;
+    }
 
-    $commentRepository->deleteByIdAndUser($_GET['id'], $_SESSION['user']['id']);
+    $commentRepository = getCommentRepository();
+    $commentId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+    if (0 === $commentId) {
+        header('Location: ../index.php');
+        exit;
+    }
+
+    $commentRepository->deleteByIdAndUser($commentId, $_SESSION['user']['id']);

@@ -18,7 +18,7 @@
    
 */
 
-class OpenGraph
+class OpenGraph implements Iterator
 {
   /**
    * There are base schema's based on type, this is just
@@ -50,67 +50,39 @@ class OpenGraph
    * @return OpenGraph
    */
 	static public function fetch($URI) {
-
-        $URI = "http://google.com";
-        try {
-            $ch = curl_init();
-           
-        
-            // Check if initialization had gone wrong*    
-            if ($ch === false) {
-                throw new Exception('failed to initialize');
-            }
-        
-            curl_setopt($ch, CURLOPT_URL, $URI);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-
-        
-            $content = curl_exec($ch);
-        
-            // Check the return value of curl_exec(), too
-            if ($content === false) {
-                throw new Exception(curl_error($ch), curl_errno($ch));
-            }
-        
-            /* Process $content here */
-        
-            // Close curl handle
-            curl_close($ch);
-        } catch(Exception $e) {
-        
-            trigger_error(sprintf(
-                'Curl failed with error #%d: %s',
-                $e->getCode(), $e->getMessage()),
-                E_USER_ERROR);
-        
-        }
-
-
-        $curl = curl_init($URI);
-
-        curl_setopt($curl, CURLOPT_HEADER, 0);
-        $response = curl_exec($curl);
-
-        var_dump($URI, $response);
-        curl_close($curl);
-
-        // curl_setopt($curl, CURLOPT_FAILONERROR, true);
-        // curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
-        // curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        // curl_setopt($curl, CURLOPT_TIMEOUT, 15);
-        // curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        // curl_setopt($curl, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
-
-        // $response = curl_exec($curl);
-        // curl_close($curl);
-
-        if (!empty($response)) {
-            return self::_parse($response);
-        } else {
+        $uri = trim((string) $URI);
+        if ('' === $uri) {
             return false;
         }
+
+        $curl = curl_init($uri);
+
+        if (false === $curl) {
+            return false;
+        }
+
+        $userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'listekdo-opengraph/1.0';
+
+        curl_setopt_array($curl, array(
+            CURLOPT_HEADER => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => $userAgent,
+        ));
+
+        $response = curl_exec($curl);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+
+        if (false === $response || '' === $response) {
+            error_log('OpenGraph fetch error: ' . $curlError);
+            return false;
+        }
+
+        return self::_parse($response);
 	}
 
   /**
@@ -168,7 +140,7 @@ class OpenGraph
         }
 
         //Fallback to use image_src if ogp::image isn't set.
-        if (!isset($page->values['image'])) {
+		if (!isset($page->_values['image'])) {
             $domxpath = new DOMXPath($doc);
             $elements = $domxpath->query("//link[@rel='image_src']");
 

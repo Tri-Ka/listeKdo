@@ -1,4 +1,4 @@
 ---
 applyTo: '**'
 ---
-all php code must be compatible php 4.4.0 and above
+all php code must be compatible php 8 and above

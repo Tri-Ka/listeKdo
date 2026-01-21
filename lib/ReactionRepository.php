@@ -5,10 +5,6 @@ require_once dirname(__FILE__) . '/Entity/Reaction.php';
 
 class ReactionRepository extends Repository
 {
-    function ReactionRepository(&$database)
-    {
-        $this->Repository($database);
-    }
 
     function hydrate($row)
     {

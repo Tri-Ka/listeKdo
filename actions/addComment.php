@@ -4,12 +4,12 @@ include '../config.php';
 $commentRepository = getCommentRepository();
 $notificationRepository = getNotificationRepository();
 
-$content = $_POST['content'];
-$productId = $_POST['productId'];
-$userId = $_SESSION['user']['id'];
+$content = isset($_POST['content']) ? trim((string) $_POST['content']) : '';
+$productId = isset($_POST['productId']) ? (string) $_POST['productId'] : '';
+$userId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : null;
 $commentId = null;
 
-if ('' !== $content && '' !== $userId) {
+if ('' !== $content && null !== $userId && '' !== $productId) {
     $comment = $commentRepository->createComment(array(
         'content' => $content,
         'product_id' => $productId,

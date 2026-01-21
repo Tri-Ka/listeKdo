@@ -5,10 +5,6 @@ require_once dirname(__FILE__) . '/Entity/User.php';
 
 class UserRepository extends Repository
 {
-    function UserRepository(&$database)
-    {
-        $this->Repository($database);
-    }
 
     function hydrate($row)
     {

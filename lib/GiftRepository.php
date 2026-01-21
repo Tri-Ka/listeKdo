@@ -5,10 +5,6 @@ require_once dirname(__FILE__) . '/Entity/Gift.php';
 
 class GiftRepository extends Repository
 {
-    function GiftRepository(&$database)
-    {
-        $this->Repository($database);
-    }
 
     function hydrate($row)
     {

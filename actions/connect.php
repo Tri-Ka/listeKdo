@@ -1,8 +1,14 @@
 <?php
     include '../config.php';
 
-    $nom = $_POST['nom'];
-    $password = $_POST['password'];
+    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
+    $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
+
+    if ('' === $nom || '' === $password) {
+        $_SESSION['error'] = 'nom ou mot de passe invalide';
+        header('Location: ../index.php');
+        exit;
+    }
 
     $userRepository = getUserRepository();
     $user = $userRepository->findByName($nom);

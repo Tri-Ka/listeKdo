@@ -5,10 +5,6 @@ require_once dirname(__FILE__) . '/Entity/Comment.php';
 
 class CommentRepository extends Repository
 {
-    function CommentRepository(&$database)
-    {
-        $this->Repository($database);
-    }
 
     function hydrate($row)
     {

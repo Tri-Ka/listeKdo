@@ -1,7 +1,13 @@
 <?php
     include '../config.php';
 
-    $friendCode = $_GET['friendCode'];
+    $friendCode = isset($_GET['friendCode']) ? trim((string) $_GET['friendCode']) : '';
+    if ('' === $friendCode || !isset($_SESSION['user']['id'])) {
+        $_SESSION['error'] = 'ami introuvable';
+        header('Location: ../index.php');
+        exit;
+    }
+
     $userRepository = getUserRepository();
 
     $friend = $userRepository->findByCode($friendCode);

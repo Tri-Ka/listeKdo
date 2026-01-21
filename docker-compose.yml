@@ -42,6 +42,11 @@ services:
     networks:
       - listekdo_network
     restart: unless-stopped
+    command:
+      --innodb-buffer-pool-size=64M
+      --max_connections=10
+      --table_open_cache=100
+      --performance_schema=OFF
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest

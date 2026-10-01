@@ -54,7 +54,8 @@ $themes = themes();
                     );
                     ?>
                     <div class="countdown<?php echo 0 === event_days($owner) ? ' is-today' : ''; ?>" data-countdown="<?php echo e(date('Y-m-d', $next)); ?>" role="timer" aria-label="<?php echo e(event_label($owner)); ?>">
-                        <span class="countdown__label"><?php echo icon('gift'); ?> <?php echo e(event_name($owner)); ?> dans</span>
+                        <?php $age = event_age($owner); ?>
+                        <span class="countdown__label"><?php echo icon('gift'); ?> <?php echo e(event_name($owner)); ?><?php echo null !== $age ? ' · ' . (int) $age . ' ans' : ''; ?> dans</span>
                         <span class="countdown__units">
                             <?php foreach ($units as $key => $unit) : ?>
                                 <span class="countdown__unit countdown__unit--<?php echo $key; ?>">

@@ -13,7 +13,19 @@ $owner = $ctx['owner'];
                 <span class="topbar__owner-name"><?php echo e($ctx['isOwner'] ? 'Ma liste' : $owner['nom']); ?></span>
             </span>
         <?php endif; ?>
-        <span class="topbar__title"><?php echo e($owner ? theme_text($theme, 'heading', $owner) : 'Liste de Kdo'); ?></span>
+        <span class="topbar__text">
+            <?php if ($owner) : ?>
+                <small class="topbar__kicker"><?php echo e($theme['title']); ?></small>
+                <span class="topbar__title"><?php echo e($owner['nom']); ?></span>
+            <?php else : ?>
+                <small class="topbar__kicker">Bienvenue sur</small>
+                <span class="topbar__title">Liste de Kdo</span>
+            <?php endif; ?>
+        </span>
+        <?php $days = $owner ? event_days($owner) : null; ?>
+        <?php if (null !== $days) : ?>
+            <span class="topbar__days" title="<?php echo e(event_label($owner)); ?>"><?php echo 0 === $days ? '🎉' : 'J-' . (int) $days; ?></span>
+        <?php endif; ?>
     </a>
 
     <?php if ($me && 0 < count($friends)) : ?>

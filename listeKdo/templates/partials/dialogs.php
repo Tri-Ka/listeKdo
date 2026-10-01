@@ -121,7 +121,7 @@
                 <?php endif; ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Date de mon événement <small>(anniversaire, naissance… pour le compte à rebours ; Noël : le 25/12 par défaut)</small></span>
+                        <span>Ma date de naissance <small>(compte à rebours de mon anniversaire ; Noël tombe toujours le 25/12)</small></span>
                         <input type="date" name="event_date" value="<?php echo e($me['event_date'] && '0000-00-00' !== $me['event_date'] ? $me['event_date'] : ''); ?>">
                     </label>
                 <?php endif; ?>
@@ -287,7 +287,7 @@
                 </label>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Date (anniversaire, naissance prévue…)</span>
+                        <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>
                         <input type="date" name="event_date">
                     </label>
                 <?php endif; ?>
@@ -321,7 +321,7 @@
                 </label>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Date (anniversaire, naissance prévue…)</span>
+                        <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>
                         <input type="date" name="event_date" value="<?php echo e($child['event_date'] && '0000-00-00' !== $child['event_date'] ? $child['event_date'] : ''); ?>">
                     </label>
                 <?php endif; ?>

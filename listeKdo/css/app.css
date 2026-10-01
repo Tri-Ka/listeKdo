@@ -3960,3 +3960,101 @@ button.collection-pill {
         white-space: nowrap;
     }
 }
+
+/* Mobile : toutes les fenêtres en panneau pleine largeur (y compris les petites). */
+@media (max-width: 600px) {
+    .modal,
+    .modal--small {
+        width: 100%;
+        max-width: none;
+        margin: auto 0 0;
+    }
+}
+
+
+/* ---------- Cartouche de la barre du haut ---------- */
+
+.topbar__brand {
+    gap: 12px;
+    padding: 6px 8px 6px 6px;
+    border: 1px solid rgb(255 255 255 / .7);
+    transition: transform .2s var(--ease), box-shadow .2s;
+}
+
+.topbar__brand:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+.topbar__logo {
+    position: relative;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 70%, #ffb347), var(--brand));
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.topbar__brand:hover .topbar__logo .icon {
+    animation: wiggle .5s ease-in-out;
+}
+
+@keyframes wiggle {
+    25% { transform: rotate(-12deg); }
+    75% { transform: rotate(12deg); }
+}
+
+/* Petite étincelle sur le logo */
+.topbar__logo::after {
+    content: "✦";
+    position: absolute;
+    top: -4px;
+    right: -3px;
+    color: #ffc93c;
+    font-size: 13px;
+    animation: twinkle 2.4s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: .2; transform: scale(.7) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.1) rotate(20deg); }
+}
+
+.topbar__text {
+    display: grid;
+    min-width: 0;
+    line-height: 1.15;
+}
+
+.topbar__kicker {
+    color: var(--brand-strong);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.topbar__title {
+    font-size: 1.1rem;
+}
+
+.topbar__days {
+    margin-left: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.notification__hint {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+@media (max-width: 700px) {
+    .topbar__text,
+    .topbar__days {
+        display: none;
+    }
+}

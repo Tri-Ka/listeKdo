@@ -47,6 +47,11 @@ if ($owner) {
     }
 }
 
+// Rappels « l'anniversaire de … approche » (avant de charger les notifications).
+if ($me) {
+    notifications_create_event_reminders($friends);
+}
+
 echo render('page', array(
     'ctx' => $ctx,
     'me' => $me,

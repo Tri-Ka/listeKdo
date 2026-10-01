@@ -12,6 +12,8 @@
 define('NOTIF_COMMENT', 1);
 define('NOTIF_NEW_IDEA', 2);
 define('NOTIF_REACTION', 3);
+// Rappel d'événement d'un ami. author_id = l'ami, product_id = palier en jours (30, 7 ou 1), pas une idée.
+define('NOTIF_EVENT', 4);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
@@ -387,28 +389,42 @@ function secret_from_request($back)
 /* ---------- Date de l'événement ---------- */
 
 /**
+ * Date de naissance saisie dans le profil (colonne liste_user.event_date), ou null.
+ */
+function birth_date($user)
+{
+    if (!event_dates_enabled() || empty($user['event_date']) || '0000-00-00' === $user['event_date']) {
+        return null;
+    }
+
+    return $user['event_date'];
+}
+
+/**
  * Prochaine date de l'événement d'une liste (timestamp à minuit), ou null.
- * Anniversaire et Noël reviennent chaque année ; Noël tombe le 25/12 si aucune date n'est saisie.
- * Une naissance a une date unique (passée : plus de compte à rebours).
+ *   - Noël : toujours le 25 décembre ;
+ *   - anniversaire : le prochain anniversaire, calculé depuis la date de naissance ;
+ *   - naissance : la date de naissance prévue (date unique ; passée, plus de compte à rebours).
  */
 function event_next($user)
 {
     $theme = isset($user['theme']) ? $user['theme'] : 'noel';
-    $date = event_dates_enabled() && !empty($user['event_date']) && '0000-00-00' !== $user['event_date'] ? $user['event_date'] : null;
     $today = mktime(0, 0, 0, (int) date('n'), (int) date('j'), (int) date('Y'));
 
-    if (null === $date) {
-        if ('noel' !== $theme) {
+    if ('noel' === $theme) {
+        $month = 12;
+        $day = 25;
+    } else {
+        $date = birth_date($user);
+        if (null === $date) {
             return null;
         }
-        $date = date('Y') . '-12-25';
-    }
+        list($year, $month, $day) = explode('-', $date);
 
-    list($year, $month, $day) = explode('-', $date);
-    $target = mktime(0, 0, 0, (int) $month, (int) $day, (int) $year);
-
-    if ('naissance' === $theme) {
-        return $target >= $today ? $target : null;
+        if ('naissance' === $theme) {
+            $target = mktime(0, 0, 0, (int) $month, (int) $day, (int) $year);
+            return $target >= $today ? $target : null;
+        }
     }
 
     $target = mktime(0, 0, 0, (int) $month, (int) $day, (int) date('Y'));
@@ -417,6 +433,23 @@ function event_next($user)
     }
 
     return $target;
+}
+
+/**
+ * Âge fêté au prochain anniversaire (thème anniversaire uniquement), ou null.
+ */
+function event_age($user)
+{
+    $date = birth_date($user);
+    $next = event_next($user);
+
+    if ('birthday' !== $user['theme'] || null === $date || null === $next) {
+        return null;
+    }
+
+    $age = (int) date('Y', $next) - (int) substr($date, 0, 4);
+
+    return 0 < $age && $age < 130 ? $age : null;
 }
 
 /**
@@ -613,7 +646,7 @@ function object_delete($object)
 {
     $id = (int) $object['id'];
 
-    db_query('DELETE FROM notification WHERE product_id = ?', array($id));
+    db_query('DELETE FROM notification WHERE product_id = ? AND type <> ?', array($id, NOTIF_EVENT));
     db_query('DELETE FROM comment WHERE product_id = ?', array($id));
     db_query('DELETE FROM reaction WHERE product_id = ?', array($id));
     if (items_enabled()) {
@@ -977,12 +1010,58 @@ function notifications_where($user, $friends)
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         $where .= ' OR (n.author_id IN (?) AND n.type = ? AND p.user_id IN (?))';
         array_push($params, $friendIds, NOTIF_NEW_IDEA, $friendIds, NOTIF_COMMENT, $friendIds);
+        $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
+        array_push($params, $friendIds, NOTIF_EVENT);
     }
 
     return array($where . ')', $params);
 }
 
 define('NOTIFICATIONS_PER_PAGE', 10);
+
+/**
+ * Rappels d'événements : un mois, une semaine et la veille de l'événement d'un ami.
+ * Créés à la volée par le premier ami qui passe sur le site, et partagés par tous les amis
+ * (chacun garde son état lu / non lu). Seul le palier en cours est créé : pas de rafale de rappels en retard.
+ */
+function notifications_create_event_reminders($friends)
+{
+    $tiers = array(1, 7, 30);
+
+    foreach ($friends as $friend) {
+        $days = isset($friend['event_days']) ? $friend['event_days'] : event_days($friend);
+        if (null === $days || $days < 1) {
+            continue;
+        }
+
+        $tier = null;
+        foreach ($tiers as $candidate) {
+            if ($days <= $candidate) {
+                $tier = $candidate;
+                break;
+            }
+        }
+        if (null === $tier) {
+            continue;
+        }
+
+        // Déjà annoncé pour cet événement ? (le palier précédent est forcément plus ancien que 35 jours)
+        $exists = db_one(
+            'SELECT id FROM notification WHERE author_id = ? AND type = ? AND product_id = ? AND created_at >= ?',
+            array((int) $friend['id'], NOTIF_EVENT, $tier, date('Y-m-d H:i:s', time() - 35 * 86400))
+        );
+
+        // Daté de sa création : il arrive en tête des notifications, non lu.
+        if (!$exists) {
+            db_insert('notification', array(
+                'author_id' => (int) $friend['id'],
+                'product_id' => $tier,
+                'type' => NOTIF_EVENT,
+                'created_at' => db_now(),
+            ));
+        }
+    }
+}
 
 /**
  * La table notification_state existe-t-elle ? (migration sql/2026-10-01-notifications-lues.sql)
@@ -1028,12 +1107,13 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
     $rows = db_all(
         'SELECT n.id, n.type, n.created_at, n.product_id,
                 a.id AS author_id, a.nom AS author_nom, a.pictureFile AS author_pictureFile, a.pictureFileUrl AS author_pictureFileUrl,
-                p.user_id AS owner_id, o.code AS owner_code,
+                a.theme AS author_theme,
+                p.user_id AS owner_id, COALESCE(o.code, a.code) AS owner_code,
                 (' . $unread . ') AS is_unread
             FROM notification n
             INNER JOIN liste_user a ON a.id = n.author_id
-            INNER JOIN liste_noel p ON p.id = n.product_id
-            INNER JOIN liste_user o ON o.id = p.user_id
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type <> ' . NOTIF_EVENT . '
+            LEFT JOIN liste_user o ON o.id = p.user_id
             ' . $join . '
             WHERE ' . $where . '
             ORDER BY n.created_at DESC, n.id DESC
@@ -1049,6 +1129,7 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
             'nom' => $row['author_nom'],
             'pictureFile' => $row['author_pictureFile'],
             'pictureFileUrl' => $row['author_pictureFileUrl'],
+            'theme' => $row['author_theme'],
         );
         $row['new'] = (bool) $row['is_unread'];
         $row['mine'] = (int) $row['owner_id'] === (int) $user['id'];
@@ -1069,7 +1150,7 @@ function notifications_new_count($user, $friends)
     $row = db_one(
         'SELECT COUNT(*) AS total
             FROM notification n
-            INNER JOIN liste_noel p ON p.id = n.product_id
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type <> ' . NOTIF_EVENT . '
             ' . $join . '
             WHERE ' . $where . ' AND ' . $unread,
         array_merge($joinParams, $params, $unreadParams)

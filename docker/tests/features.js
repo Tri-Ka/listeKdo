@@ -47,6 +47,14 @@ async function addIdea(page, name, price) {
     await owner.waitForTimeout(1200);
     check(days === '11' && seconds !== await owner.locator('[data-unit="s"]').innerText(), 'compte à rebours : 11 jours + heures, secondes qui défilent');
 
+    /* ---- Rappel d'événement chez les amis (Mallory est amie d'Etienne) ---- */
+    await friend.goto(B);
+    await friend.click('[data-toggle-notifications][aria-controls]');
+    await friend.waitForTimeout(400);
+    const reminder = friend.locator('.notification', { hasText: 'Etienne fête son anniversaire' });
+    check(await reminder.count() === 1 && (await text(reminder)).includes('dans une semaine') === false && (await text(reminder)).includes('dans un mois'), 'rappel à J-12 : « Etienne fête son anniversaire dans un mois »');
+    await friend.keyboard.press('Escape');
+
     /* ---- Prix ---- */
     const [cheap, cheapId] = await addIdea(owner, 'Test prix petit', '12');
     const [big, bigId] = await addIdea(owner, 'Test prix gros', '45,50');

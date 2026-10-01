@@ -1,0 +1,49 @@
+# Environnement de dev LOCAL uniquement (jamais envoyé sur le FTP Free).
+#   Site        : http://localhost:8090/listeKdo/
+#   phpMyAdmin  : http://localhost:8091/
+name: listekdo
+
+services:
+  php:
+    build: .
+    image: listekdo-php4
+    ports:
+      - "127.0.0.1:8090:80"
+    volumes:
+      # La racine du dossier local = la racine du FTP Free
+      - ..:/var/www/site
+      # config.php local (BDD Docker) à la place de celui qui pointe vers sql.free.fr
+      - ./config.local.php:/var/www/site/listeKdo/config.php:ro
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:5.7
+    # Sans mode strict, comme les vieux MySQL 5.0 de Free
+    command: --sql-mode="" --character-set-server=latin1 --collation-server=latin1_swedish_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: datcharrye
+      MYSQL_USER: datcharrye
+      MYSQL_PASSWORD: datcharrye
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # Les fichiers .sql placés ici sont importés au tout premier démarrage
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "127.0.0.1:8091:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:

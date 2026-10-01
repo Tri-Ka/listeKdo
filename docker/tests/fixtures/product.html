@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Produit test extension | Boutique Test</title>
+    <meta property="og:title" content="Titre Open Graph (ne doit pas gagner)">
+    <meta property="og:image" content="product-2.jpg">
+    <meta property="og:site_name" content="Boutique Test">
+    <link rel="canonical" href="http://localhost:8090/docker/tests/fixtures/product.html?utm_source=test&amp;id=42">
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@graph": [
+        {"@type": "WebPage", "name": "Page"},
+        {"@type": "Product", "name": "Produit test extension", "description": "Une description venant de schema.org.",
+         "image": ["product-1.jpg", {"@type": "ImageObject", "url": "product-2.jpg"}],
+         "offers": {"@type": "Offer", "price": "29.90", "priceCurrency": "EUR"}}
+    ]}
+    </script>
+</head>
+<body>
+    <h1>Produit test extension</h1>
+    <img src="product-1.jpg" width="300" alt="">
+</body>
+</html>

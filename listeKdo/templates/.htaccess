@@ -1,0 +1,2 @@
+# Fichiers inclus par PHP uniquement : pas d accès direct depuis le navigateur.
+Deny from all

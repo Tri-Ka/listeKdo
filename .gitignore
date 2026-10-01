@@ -1,2 +1,16 @@
-# config.php
-uploads/*
+# Secrets : identifiants MySQL, clés d'API, mot de passe FTP
+listeKdo/config.php
+docker/config.local.php
+.vscode/
+.env
+
+# Données des utilisateurs (photos, export de la base Free)
+listeKdo/uploads/
+listeKdo/cache/
+docker/mysql-init/datcharrye.sql
+
+# Fichiers générés
+docker/tests/out/
+docker/tests/node_modules/
+docker/tests/package*.json
+.DS_Store

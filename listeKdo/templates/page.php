@@ -1,0 +1,84 @@
+<?php
+$pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
+?><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo e($pageTitle); ?></title>
+    <meta name="description" content="<?php echo e($pageTitle); ?>">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <meta name="theme-color" content="<?php echo 'birthday' === $theme['key'] ? '#fff3dc' : ('naissance' === $theme['key'] ? '#eaf4fd' : '#fdeeea'); ?>">
+    <meta property="og:title" content="<?php echo e($pageTitle); ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="http://datcharrye.free.fr/listeKdo/img/<?php echo $owner ? e($theme['key']) . '/' : ''; ?>metaOg.jpg">
+    <?php if ($owner) : ?>
+        <meta property="og:url" content="<?php echo e(share_url($owner)); ?>">
+    <?php endif; ?>
+    <link rel="icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+    <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
+    <script type="module" src="<?php echo e(asset('js/app.js')); ?>"></script>
+</head>
+
+<body data-theme="<?php echo $owner ? e($theme['key']) : 'home'; ?>">
+    <?php echo render('partials/topbar', array('ctx' => $ctx, 'friends' => $friends, 'newNotifications' => $newNotifications, 'theme' => $theme, 'myGifts' => $myGifts)); ?>
+
+    <?php if ($me) : ?>
+        <?php echo render('partials/notifications', array('notifications' => $notifications, 'newNotifications' => $newNotifications)); ?>
+    <?php endif; ?>
+
+    <main class="page">
+        <?php if (!$owner) : ?>
+            <?php echo render('partials/home', array('notFound' => '' !== input('user'))); ?>
+        <?php else : ?>
+            <?php echo render('partials/hero', array('ctx' => $ctx, 'theme' => $theme, 'objectCount' => count($objects))); ?>
+            <?php echo render('partials/tabs', array('ctx' => $ctx, 'objects' => $objects)); ?>
+
+            <section class="grid" aria-label="Idées cadeaux" data-grid>
+                <?php if ($ctx['canEdit']) : ?>
+                    <button type="button" class="card card--add" data-open-object-form>
+                        <span class="card--add__icon"><?php echo icon('plus'); ?></span>
+                        <strong>Ajouter une idée</strong>
+                        <span>Collez un lien, on s'occupe du reste</span>
+                    </button>
+                <?php endif; ?>
+
+                <?php foreach ($objects as $object) : ?>
+                    <?php echo render('partials/card', array('object' => $object, 'ctx' => $ctx)); ?>
+                <?php endforeach; ?>
+            </section>
+
+            <p class="empty" data-empty<?php echo 0 === count($objects) && !$ctx['canEdit'] ? '' : ' hidden'; ?>>Aucune idée cadeau ici pour l'instant.</p>
+
+            <?php foreach ($objects as $object) : ?>
+                <?php echo render('partials/object_dialog', array('object' => $object, 'ctx' => $ctx)); ?>
+            <?php endforeach; ?>
+
+            <?php if (!$me) : ?>
+                <div class="cta">
+                    <button type="button" class="btn btn--primary btn--lg" data-open="signup-dialog"><?php echo icon('gift'); ?> Créer ma liste</button>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+    </main>
+
+    <?php if ($owner) : ?>
+        <?php echo render('partials/footer', array('theme' => $theme, 'owner' => $owner, 'ctx' => $ctx)); ?>
+    <?php endif; ?>
+
+    <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
+
+    <?php if ($me) : ?>
+        <?php echo render('partials/my_gifts', array('myGifts' => $myGifts)); ?>
+    <?php endif; ?>
+
+    <div class="toasts" data-toasts aria-live="polite">
+        <?php if ($flash) : ?>
+            <div class="toast toast--<?php echo e($flash['type']); ?>" role="status"><?php echo e($flash['message']); ?></div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>

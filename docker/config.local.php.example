@@ -1,0 +1,31 @@
+<?php
+    // MODÈLE : copier en config.local.php (monté à la place de listeKdo/config.php dans Docker).
+    // Les clés ScraperAPI / Worker sont à reprendre de listeKdo/config.php si besoin.
+    // error_reporting(E_ALL ^ E_DEPRECATED);
+    // session_destroy();
+    if (!isset($_SESSION)) {
+        session_start();
+    }
+
+    $_host = 'mysql';
+    $_db = 'datcharrye';
+    $_username = 'datcharrye';
+    $_pass = 'datcharrye';
+
+    // Utilisée uniquement côté serveur comme repli pour les sites protégés
+    // contre les robots (Smyths, etc.). Ne jamais l'envoyer au navigateur.
+    $_scraperapi_key = '';
+    // Free ne peut pas joindre api.scraperapi.com depuis cet hébergement.
+    $_scraperapi_enabled = false;
+
+    // URL du Worker Cloudflare (à renseigner après son déploiement) et jeton privé.
+    $_metadata_worker_url = '';
+    $_metadata_worker_token = '';
+
+    // $_host = 'localhost';
+    // $_db = 'datcharrye';
+    // $_username = 'root';
+    // $_pass = 'root';
+
+    $link = mysql_connect($_host, $_username, $_pass);
+    $db_selected = mysql_select_db($_db);

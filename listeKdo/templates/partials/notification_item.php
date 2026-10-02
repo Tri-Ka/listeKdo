@@ -1,9 +1,13 @@
 <?php $states = notification_states_enabled(); ?>
 <li class="notification<?php echo $notification['new'] ? ' notification--new' : ''; ?>" data-notification="<?php echo (int) $notification['id']; ?>">
-    <a href="index.php?user=<?php echo e(rawurlencode($notification['owner_code'])); ?><?php echo NOTIF_EVENT == $notification['type'] ? '' : '#idea-' . (int) $notification['product_id']; ?>" data-notification-link>
+    <a href="index.php?user=<?php echo e(rawurlencode($notification['owner_code'])); ?><?php echo NOTIF_EVENT == $notification['type'] ? '' : (NOTIF_BADGE == $notification['type'] ? '#badges' : '#idea-' . (int) $notification['product_id']); ?>" data-notification-link>
         <?php echo avatar($notification['author'], 'notification__avatar'); ?>
         <span class="notification__text">
-            <strong><?php echo e($notification['author']['nom']); ?></strong>
+            <?php if ($notification['self'] && NOTIF_BADGE == $notification['type']) : ?>
+                <strong>Bravo !</strong>
+            <?php else : ?>
+                <strong><?php echo e($notification['author']['nom']); ?></strong>
+            <?php endif; ?>
             <?php if (NOTIF_COMMENT == $notification['type']) : ?>
                 a commenté <?php echo $notification['mine'] ? 'votre idée' : 'une idée'; ?>
                 <?php if ('' !== (string) $notification['product_nom']) : ?>
@@ -24,6 +28,19 @@
                 ?>
                 <?php echo e($theme['reminder'] . ' ' . (isset($when[$tier]) ? $when[$tier] : 'bientôt')); ?> <?php echo $theme['emoji']; ?>
                 <small class="notification__hint">Une idée de cadeau ? Jetez un œil à sa liste</small>
+            <?php elseif (NOTIF_BADGE == $notification['type']) : ?>
+                <?php
+                // Ses propres badges : « Vous avez obtenu… » (l'auteur est soi-même).
+                $badge = $notification['badge'];
+                $self = $notification['self'];
+                $what = 'trophy' === $badge['kind'] ? 'le trophée' : 'le badge';
+                ?>
+                <?php if (1 < $badge['count']) : ?>
+                    <?php echo $self ? 'Vous avez' : 'a'; ?> obtenu <?php echo (int) $badge['count']; ?> badges, dont <?php echo e($badge['emoji']); ?> <strong><?php echo e($badge['name']); ?></strong>
+                <?php else : ?>
+                    <?php echo $self ? 'Vous avez' : 'a'; ?> obtenu <?php echo $what; ?> <?php echo e($badge['emoji']); ?> <strong><?php echo e($badge['name']); ?></strong>
+                <?php endif; ?>
+                <small class="notification__hint"><?php echo $self ? 'Voir mes badges' : 'Voir ses badges'; ?></small>
             <?php elseif (NOTIF_GIFT == $notification['type']) : ?>
                 a réservé un cadeau pour <strong><?php echo e($notification['owner_nom']); ?></strong> 🎁
                 <?php if ('' !== (string) $notification['product_nom']) : ?>

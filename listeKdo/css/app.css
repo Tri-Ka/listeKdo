@@ -4785,3 +4785,296 @@ button.collection-pill {
 .topbar__settings {
     color: var(--brand);
 }
+
+/* ---------- Badges et trophées (templates/partials/badges.php, lib/badges.php) ---------- */
+
+/* Niveaux : dégradé de l'icône (from → to), ombre colorée (glow) et couleur du texte (ink). */
+.medal--bronze { --medal-bg: #fde7d6; --medal-ink: #b45315; --medal-ring: #f4c7a4; }
+.medal--silver { --medal-bg: #eaeef4; --medal-ink: #55657d; --medal-ring: #cdd5e1; }
+.medal--gold { --medal-bg: #fdf0c4; --medal-ink: #a16207; --medal-ring: #f2d474; }
+.medal--legend { --medal-bg: #ece6ff; --medal-ink: #6d3fe6; --medal-ring: #c9bbff; }
+
+.profile__badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 3px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .6);
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color .15s, transform .15s var(--ease);
+}
+
+.profile__badges:hover {
+    background: #fff;
+    transform: translateY(-1px);
+}
+
+.badges__summary {
+    margin: 0 0 4px;
+    color: var(--text-muted);
+}
+
+.badges__summary strong {
+    color: var(--text);
+    font-size: 1.2rem;
+}
+
+.badges__heading {
+    margin: 20px 0 12px;
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Vitrine : cartes verticales, icône « squircle » en dégradé. */
+.trophy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.trophy-tile {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 4px;
+    padding: 18px 12px 14px;
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    text-align: center;
+    transition: transform .2s var(--ease), box-shadow .2s;
+}
+
+.trophy-tile.is-earned {
+    box-shadow: inset 0 0 0 1px var(--medal-ring);
+}
+
+.trophy-tile.is-earned:hover {
+    transform: translateY(-3px);
+}
+
+.trophy-tile__medal {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 8px;
+    border-radius: 22px;
+    background: var(--medal-bg);
+}
+
+.trophy-tile__icon {
+    position: relative;
+    z-index: 1;
+    font-size: 34px;
+    line-height: 1;
+}
+
+/* À débloquer : icône éteinte, entourée d'un anneau de progression. */
+.trophy-tile.is-locked .trophy-tile__medal {
+    background: var(--surface-muted);
+}
+
+.trophy-tile.is-locked .trophy-tile__icon {
+    filter: grayscale(1);
+    opacity: .35;
+}
+
+.trophy-tile__medal.has-progress::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 26px;
+    background: conic-gradient(var(--brand) var(--progress), var(--line) 0);
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    padding: 3px;
+}
+
+.trophy-tile__name {
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+.trophy-tile__desc {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.trophy-tile__chip {
+    margin-top: 6px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--medal-bg);
+    color: var(--medal-ink);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.trophy-tile__count {
+    margin-top: 6px;
+    color: var(--brand-strong);
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Médailles de la fenêtre « Nouveau badge ! » (même style que la vitrine). */
+.badge-new__medal,
+.badge-new__list li {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    border-radius: 22px;
+    background: var(--medal-bg);
+}
+
+/* Fenêtre « Nouveau badge ! » */
+.badge-new__body {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding-top: 30px;
+    text-align: center;
+}
+
+.badge-new__medal {
+    width: 96px;
+    height: 96px;
+    border-radius: 30px;
+    margin-bottom: 8px;
+    font-size: 48px;
+    animation: badge-pop .7s cubic-bezier(.2, .9, .3, 1.4) both;
+}
+
+.badge-new__title {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.badge-new__name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--brand-strong);
+}
+
+.badge-new__text {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.badge-new__list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.badge-new__list li {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 24px;
+    animation: badge-pop .6s cubic-bezier(.2, .9, .3, 1.4) both;
+}
+
+.badge-new__list li:nth-child(2) { animation-delay: .06s; }
+.badge-new__list li:nth-child(3) { animation-delay: .12s; }
+.badge-new__list li:nth-child(4) { animation-delay: .18s; }
+.badge-new__list li:nth-child(5) { animation-delay: .24s; }
+.badge-new__list li:nth-child(6) { animation-delay: .3s; }
+.badge-new__list li:nth-child(7) { animation-delay: .36s; }
+.badge-new__list li:nth-child(8) { animation-delay: .42s; }
+
+.badge-new__footer {
+    justify-content: center;
+}
+
+@keyframes badge-pop {
+    from {
+        opacity: 0;
+        transform: scale(.3) rotate(-30deg);
+    }
+}
+
+/* Sous le nom : une seule barre (idées · badges · privée), au lieu de pastilles empilées. */
+.profile__card .profile__meta {
+    flex-wrap: nowrap;
+    gap: 0;
+    width: max-content;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.profile__stat {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    padding: 4px 12px;
+    color: inherit;
+    font: inherit;
+}
+
+.profile__stat + .profile__stat {
+    border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.profile__card .profile__badges {
+    margin: 0;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
+}
+
+.profile__card .profile__badges:hover {
+    background: rgb(255 255 255 / .7);
+    transform: none;
+}
+
+.profile__card .profile__private {
+    margin: 0;
+}
+
+/* Retirer de mes amis : icône discrète sur la photo, rouge au survol. */
+.profile__action-form {
+    display: contents;
+}
+
+.profile__unfriend {
+    color: var(--text-muted);
+}
+
+.profile__unfriend:hover {
+    color: var(--danger);
+}

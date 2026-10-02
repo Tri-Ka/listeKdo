@@ -18,6 +18,9 @@ define('NOTIF_EVENT', 4);
 // Jamais montrées au propriétaire de la liste : il ne doit pas savoir qui offre quoi.
 define('NOTIF_GIFT', 5);
 define('NOTIF_PARTICIPATION', 6);
+// Badges obtenus : author_id = la personne, product_id = le meilleur badge du lot (pas une idée).
+// Une seule notification par lot (le nombre de badges du lot se retrouve par la date, voir notifications_add_badges()).
+define('NOTIF_BADGE', 7);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
@@ -813,7 +816,7 @@ function object_delete($object)
 {
     $id = (int) $object['id'];
 
-    db_query('DELETE FROM notification WHERE product_id = ? AND type <> ?', array($id, NOTIF_EVENT));
+    db_query('DELETE FROM notification WHERE product_id = ? AND type NOT IN (?)', array($id, array(NOTIF_EVENT, NOTIF_BADGE)));
     db_query('DELETE FROM comment WHERE product_id = ?', array($id));
     db_query('DELETE FROM reaction WHERE product_id = ?', array($id));
     if (items_enabled()) {
@@ -1200,8 +1203,9 @@ function notifications_where($user, $friends)
 
     $userId = (int) $user['id'];
     $giftTypes = array(NOTIF_GIFT, NOTIF_PARTICIPATION);
-    $where = 'n.author_id <> ? AND ((p.user_id = ? AND n.type NOT IN (?))';
-    $params = array($userId, $userId, $giftTypes);
+    // Ses propres badges, puis les badges de ses amis (plus bas).
+    $where = '((n.type = ? AND n.author_id = ?) OR n.author_id <> ?) AND ((n.type = ? AND n.author_id = ?) OR (p.user_id = ? AND n.type NOT IN (?))';
+    $params = array(NOTIF_BADGE, $userId, $userId, NOTIF_BADGE, $userId, $userId, $giftTypes);
 
     if (0 < count($friendIds)) {
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
@@ -1209,6 +1213,8 @@ function notifications_where($user, $friends)
         array_push($params, $friendIds, NOTIF_NEW_IDEA, $friendIds, NOTIF_COMMENT, $friendIds);
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         array_push($params, $friendIds, NOTIF_EVENT);
+        $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
+        array_push($params, $friendIds, NOTIF_BADGE);
         $where .= ' OR (n.author_id IN (?) AND n.type IN (?) AND p.user_id IN (?) AND p.user_id <> ?)';
         array_push($params, $friendIds, $giftTypes, $friendIds, $userId);
         /* Cagnotte : visible de tous les amis du destinataire, même sans être ami avec le participant. */
@@ -1226,8 +1232,8 @@ function notifications_where($user, $friends)
     // Rien des listes privées des autres : ni leurs idées, ni leurs rappels d'événement.
     $hidden = hidden_list_ids($user);
     if (0 < count($hidden)) {
-        $where .= ' AND (p.user_id IS NULL OR p.user_id NOT IN (?)) AND NOT (n.type = ? AND n.author_id IN (?))';
-        array_push($params, $hidden, NOTIF_EVENT, $hidden);
+        $where .= ' AND (p.user_id IS NULL OR p.user_id NOT IN (?)) AND NOT (n.type IN (?) AND n.author_id IN (?))';
+        array_push($params, $hidden, array(NOTIF_EVENT, NOTIF_BADGE), $hidden);
     }
 
     return array($where, $params);
@@ -1328,7 +1334,7 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
                 (' . $unread . ') AS is_unread
             FROM notification n
             INNER JOIN liste_user a ON a.id = n.author_id
-            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type <> ' . NOTIF_EVENT . '
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ')
             LEFT JOIN liste_user o ON o.id = p.user_id
             LEFT JOIN reaction r ON n.type = ' . NOTIF_REACTION . ' AND r.product_id = n.product_id AND r.user_id = n.author_id
             ' . $join . '
@@ -1350,10 +1356,59 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
         );
         $row['new'] = (bool) $row['is_unread'];
         $row['mine'] = (int) $row['owner_id'] === (int) $user['id'];
+        $row['self'] = (int) $row['author_id'] === (int) $user['id'];
         $notifications[] = $row;
     }
 
-    return notifications_add_groups($notifications);
+    return notifications_add_badges(notifications_add_groups($notifications));
+}
+
+/**
+ * Badges (NOTIF_BADGE) : le badge mis en avant et le nombre de badges du lot (même date d'obtention).
+ * Ajoute 'badge' => array(emoji, name, kind, count) ; sans badge (désactivé, supprimé), la notification est ignorée.
+ */
+function notifications_add_badges($notifications)
+{
+    $ids = array();
+    foreach ($notifications as $notification) {
+        if (NOTIF_BADGE == $notification['type']) $ids[] = (int) $notification['product_id'];
+    }
+    if (0 === count($ids) || !badges_enabled()) {
+        $kept = array();
+        foreach ($notifications as $notification) {
+            if (NOTIF_BADGE != $notification['type']) $kept[] = $notification;
+        }
+        return $kept;
+    }
+
+    $badges = db_index_by(db_all('SELECT id, emoji, name, kind FROM badge WHERE id IN (?) AND active = 1', array($ids)), 'id');
+
+    // Nombre de badges par lot (personne + date d'obtention), en une requête.
+    $authors = array();
+    foreach ($notifications as $notification) {
+        if (NOTIF_BADGE == $notification['type']) $authors[] = (int) $notification['author_id'];
+    }
+    $lots = array();
+    foreach (db_all(
+        'SELECT ub.user_id, ub.earned_at, COUNT(*) AS n FROM user_badge ub INNER JOIN badge b ON b.id = ub.badge_id
+            WHERE ub.user_id IN (?) AND b.active = 1 GROUP BY ub.user_id, ub.earned_at',
+        array($authors)
+    ) as $row) {
+        $lots[$row['user_id'] . '|' . $row['earned_at']] = (int) $row['n'];
+    }
+
+    $kept = array();
+    foreach ($notifications as $notification) {
+        if (NOTIF_BADGE == $notification['type']) {
+            if (!isset($badges[$notification['product_id']])) continue;
+            $key = $notification['author_id'] . '|' . $notification['created_at'];
+            $notification['badge'] = $badges[$notification['product_id']];
+            $notification['badge']['count'] = isset($lots[$key]) ? max(1, $lots[$key]) : 1;
+        }
+        $kept[] = $notification;
+    }
+
+    return $kept;
 }
 
 /**
@@ -1405,7 +1460,7 @@ function notifications_new_count($user, $friends)
     $row = db_one(
         'SELECT COUNT(*) AS total
             FROM notification n
-            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type <> ' . NOTIF_EVENT . '
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ')
             ' . $join . '
             WHERE ' . $where . ' AND ' . $unread,
         array_merge($joinParams, $params, $unreadParams)

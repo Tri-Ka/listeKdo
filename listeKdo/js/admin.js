@@ -169,25 +169,25 @@ function searchUrl() {
 }
 
 let searchTimer = null;
-search.addEventListener('input', () => {
+search?.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => load(searchUrl()), 250);
 });
 
-search.addEventListener('submit', (event) => {
+search?.addEventListener('submit', (event) => {
     event.preventDefault();
     clearTimeout(searchTimer);
     load(searchUrl());
 });
 
-table.addEventListener('click', (event) => {
+table?.addEventListener('click', (event) => {
     const link = event.target.closest('a[data-dt-link]');
     if (!link || event.metaKey || event.ctrlKey || event.shiftKey) return;
     event.preventDefault();
     load(link.href);
 });
 
-table.addEventListener('change', async (event) => {
+table?.addEventListener('change', async (event) => {
     if (event.target.matches('[data-dt-per]')) {
         load(event.target.value);
         return;
@@ -230,7 +230,7 @@ $('[data-password-copy]', passwordDialog).addEventListener('click', async () => 
     }
 });
 
-table.addEventListener('submit', async (event) => {
+table?.addEventListener('submit', async (event) => {
     const form = event.target.closest('[data-admin-confirm]');
     if (!form) return;
     event.preventDefault();
@@ -296,7 +296,7 @@ linkShare.addEventListener('click', () => {
     navigator.share({ title: 'Liste de Kdo', text: linkText }).catch(() => {});
 });
 
-table.addEventListener('submit', async (event) => {
+table?.addEventListener('submit', async (event) => {
     const form = event.target.closest('[data-admin-link]');
     if (!form) return;
     event.preventDefault();

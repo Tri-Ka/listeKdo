@@ -57,6 +57,15 @@ if ($me) {
     notifications_create_event_reminders($friends);
 }
 
+// Badges : ceux de la personne connectée sont mis à jour, les nouveaux sont fêtés une fois.
+// La vitrine de la liste affichée montre la progression seulement à ceux qui la gèrent.
+badges_refresh($me);
+$badges = array(
+    'new' => badges_take_new($me),
+    'count' => $owner && $ctx['canView'] ? badges_count($owner) : 0,
+    'showcase' => $owner && $ctx['canView'] ? badges_showcase($owner, $ctx['canEdit']) : array(),
+);
+
 echo render('page', array(
     'ctx' => $ctx,
     'me' => $me,
@@ -68,5 +77,6 @@ echo render('page', array(
     'newNotifications' => $me ? notifications_new_count($me, $allFriends) : 0,
     'myGifts' => $me ? my_gifts($me) : array(),
     'theme' => theme_of($owner),
+    'badges' => $badges,
     'flash' => flash_take(),
 ));

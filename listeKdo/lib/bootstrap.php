@@ -31,6 +31,7 @@ require_once KDO_ROOT . '/lib/auth.php';
 require_once KDO_ROOT . '/lib/view.php';
 require_once KDO_ROOT . '/lib/upload.php';
 require_once KDO_ROOT . '/lib/admin.php';
+require_once KDO_ROOT . '/lib/badges.php';
 
 /**
  * Supprime les variables globales créées par register_globals à partir de la requête.

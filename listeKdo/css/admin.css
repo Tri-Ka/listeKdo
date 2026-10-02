@@ -974,3 +974,112 @@ a.dt__page:hover {
     outline: none;
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
 }
+
+/* ---------- Onglet Badges (templates/partials/admin_badges.php) ---------- */
+
+.badge-admin {
+    display: grid;
+    gap: 8px;
+    padding: 0 16px 16px;
+}
+
+.badge-admin__row {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.2fr) 64px 96px 108px 58px auto auto;
+    align-items: end;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--surface-muted);
+}
+
+.badge-admin__row.is-inactive {
+    opacity: .55;
+}
+
+.badge-admin__row--new {
+    margin-top: 12px;
+    background: var(--brand-soft);
+}
+
+.badge-admin__new-title {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-weight: 700;
+}
+
+.badge-admin__emoji {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: var(--medal-bg);
+}
+
+.badge-admin__emoji input {
+    width: 40px;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    text-align: center;
+}
+
+.badge-admin__field {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.badge-admin__field input {
+    width: 100%;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+}
+
+.badge-admin__field .dt__select {
+    width: 100%;
+}
+
+.badge-admin__checks {
+    display: grid;
+    gap: 2px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.badge-admin__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge-admin__holders {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+    .badge-admin__row {
+        grid-template-columns: 52px 1fr 1fr;
+    }
+
+    .badge-admin__field--desc {
+        grid-column: 2 / -1;
+    }
+}

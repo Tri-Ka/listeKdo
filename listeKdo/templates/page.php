@@ -44,7 +44,7 @@ if ($owner && !$ctx['canView']) {
                 <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> <?php echo $me ? 'Revenir à ma liste' : "Retour à l'accueil"; ?></a>
             </section>
         <?php else : ?>
-            <?php echo render('partials/hero', array('ctx' => $ctx, 'theme' => $theme, 'objectCount' => count($objects))); ?>
+            <?php echo render('partials/hero', array('ctx' => $ctx, 'theme' => $theme, 'objectCount' => count($objects), 'badges' => $badges)); ?>
             <?php echo render('partials/tabs', array('ctx' => $ctx, 'objects' => $objects)); ?>
 
             <section class="grid" aria-label="Idées cadeaux" data-grid>
@@ -81,6 +81,7 @@ if ($owner && !$ctx['canView']) {
 
     <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
     <?php echo render('partials/confirm'); ?>
+    <?php echo render('partials/badges', array('ctx' => $ctx, 'owner' => $owner, 'badges' => $badges)); ?>
     <?php if ($owner && $ctx['canEdit']) : ?>
         <?php echo render('partials/list_settings', array('owner' => $owner, 'ctx' => $ctx)); ?>
     <?php endif; ?>

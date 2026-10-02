@@ -361,6 +361,9 @@ function admin_delete_user($user)
     if (children_enabled()) {
         db_query('DELETE FROM liste_manager WHERE child_id = ? OR user_id = ?', array($id, $id));
     }
+    if (badges_enabled()) {
+        db_query('DELETE FROM user_badge WHERE user_id = ?', array($id));
+    }
     if (notification_states_enabled()) {
         db_query('DELETE FROM notification_state WHERE user_id = ?', array($id));
     }
@@ -547,4 +550,21 @@ function admin_seen($datetime)
     }
 
     return admin_date($datetime);
+}
+
+/**
+ * Badges pour l'administration, avec le nombre de personnes qui les ont obtenus.
+ */
+function admin_badges()
+{
+    $holders = array();
+    foreach (db_all('SELECT badge_id, COUNT(*) AS n FROM user_badge GROUP BY badge_id') as $row) {
+        $holders[(int) $row['badge_id']] = (int) $row['n'];
+    }
+    $badges = badges_all(false);
+    foreach ($badges as $i => $badge) {
+        $badges[$i]['holders'] = isset($holders[(int) $badge['id']]) ? $holders[(int) $badge['id']] : 0;
+    }
+
+    return $badges;
 }

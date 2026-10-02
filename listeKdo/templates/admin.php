@@ -1,5 +1,6 @@
 <?php
 $params = $table['params'];
+$onBadges = null !== $badgesAdmin;
 ?><!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -42,10 +43,14 @@ $params = $table['params'];
         <section class="panel">
             <div class="panel__head">
                 <nav class="panel__tabs" aria-label="Tableaux">
-                    <a href="<?php echo e(admin_url(array(), array('tab' => 'users'))); ?>"<?php echo 'users' === $params['tab'] ? ' aria-current="page"' : ''; ?>><?php echo icon('users'); ?> Utilisateurs</a>
+                    <a href="<?php echo e(admin_url(array(), array('tab' => 'users'))); ?>"<?php echo !$onBadges && 'users' === $params['tab'] ? ' aria-current="page"' : ''; ?>><?php echo icon('users'); ?> Utilisateurs</a>
                     <a href="<?php echo e(admin_url(array(), array('tab' => 'lists'))); ?>"<?php echo 'lists' === $params['tab'] ? ' aria-current="page"' : ''; ?>><?php echo icon('list'); ?> Listes</a>
+                    <?php if (badges_enabled()) : ?>
+                        <a href="admin.php?tab=badges"<?php echo $onBadges ? ' aria-current="page"' : ''; ?>><?php echo icon('gift'); ?> Badges</a>
+                    <?php endif; ?>
                 </nav>
 
+                <?php if (!$onBadges) : ?>
                 <form class="search" method="get" action="admin.php" role="search" data-dt-search>
                     <?php foreach (array('tab', 'sort', 'dir', 'filter', 'per') as $key) : ?>
                         <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($params[$key]); ?>">
@@ -53,11 +58,18 @@ $params = $table['params'];
                     <?php echo icon('magnifying-glass', 'search__icon'); ?>
                     <input type="search" name="q" value="<?php echo e($params['q']); ?>" placeholder="Rechercher un nom…" aria-label="Rechercher" autocomplete="off">
                 </form>
+                <?php endif; ?>
             </div>
 
-            <div class="panel__body" data-dt>
-                <?php echo render('partials/admin_table', array('table' => $table, 'me' => $me)); ?>
-            </div>
+            <?php if ($onBadges) : ?>
+                <div class="panel__body">
+                    <?php echo render('partials/admin_badges', array('badges' => $badgesAdmin)); ?>
+                </div>
+            <?php else : ?>
+                <div class="panel__body" data-dt>
+                    <?php echo render('partials/admin_table', array('table' => $table, 'me' => $me)); ?>
+                </div>
+            <?php endif; ?>
         </section>
     </main>
 

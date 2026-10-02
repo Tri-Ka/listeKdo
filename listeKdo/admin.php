@@ -12,6 +12,16 @@ if (!is_admin($me)) {
     redirect($me ? 'index.php?user=' . rawurlencode($me['code']) : 'index.php');
 }
 
+// Onglet « Badges » : à la première ouverture, les badges par défaut sont installés.
+$tab = input('tab');
+$badgesAdmin = null;
+if ('badges' === $tab && badges_enabled()) {
+    if (0 === count(badges_all(false))) {
+        badges_install();
+    }
+    $badgesAdmin = admin_badges();
+}
+
 $table = admin_table(admin_table_params());
 
 if ('1' === input('partial')) {
@@ -26,5 +36,6 @@ echo render('admin', array(
     'table' => $table,
     'stats' => admin_stats(),
     'parentOptions' => admin_parent_options(),
+    'badgesAdmin' => $badgesAdmin,
     'flash' => flash_take(),
 ));

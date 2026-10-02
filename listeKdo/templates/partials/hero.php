@@ -18,24 +18,33 @@ $themes = themes();
 
                         <?php if ($ctx['canEdit']) : ?>
                             <button type="button" class="round-btn round-btn--sm profile__action" data-open="<?php echo $ctx['isOwner'] ? 'profile-dialog' : 'child-dialog'; ?>" title="Modifier mon profil" aria-label="Modifier mon profil"><?php echo icon('pen'); ?></button>
+                        <?php elseif ($ctx['me'] && $ctx['isFriend']) : ?>
+                            <?php // Retirer de ses amis : action rare, donc une simple icône sur la photo (avec confirmation). ?>
+                            <form class="profile__action-form" method="post" action="actions/removeFriend.php">
+                                <?php echo csrf_field(); ?>
+                                <input type="hidden" name="friendCode" value="<?php echo e($owner['code']); ?>">
+                                <button type="submit" class="round-btn round-btn--sm profile__action profile__unfriend" aria-label="Retirer de mes amis" data-tip="Retirer de mes amis"
+                                    data-confirm="<?php echo e($owner['nom']); ?> n'apparaîtra plus dans vos amis. Vous pourrez l'ajouter de nouveau quand vous voulez." data-confirm-title="Retirer de vos amis ?" data-confirm-ok="Retirer" data-confirm-icon="user-xmark"><?php echo icon('user-xmark'); ?></button>
+                            </form>
                         <?php endif; ?>
                     </div>
                     <div class="profile__card">
                         <p class="profile__name"><?php echo e($owner['nom']); ?></p>
-                        <p class="profile__meta"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?>
-                            <?php if ($ctx['private']) : ?>
-                                <span class="profile__private" data-tip="Visible seulement par <?php echo $ctx['isOwner'] ? 'vous' : 'ses gestionnaires'; ?>"><?php echo icon('lock'); ?> Privée</span>
+                        <?php // Une seule barre : nombre d'idées · badges (ouvre la vitrine) · liste privée. ?>
+                        <div class="profile__meta">
+                            <span class="profile__stat"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?></span>
+                            <?php if (0 < $badges['count'] || ($ctx['canEdit'] && 0 < count($badges['showcase']))) : ?>
+                                <button type="button" class="profile__stat profile__badges" data-open="badges-dialog" aria-label="Voir les badges (<?php echo (int) $badges['count']; ?>)">🏅 <?php echo (int) $badges['count']; ?></button>
                             <?php endif; ?>
-                        </p>
-                        <?php if (!$ctx['canEdit'] && $ctx['me']) : ?>
-                            <form class="profile__friend" method="post" action="actions/<?php echo $ctx['isFriend'] ? 'removeFriend' : 'addFriend'; ?>.php">
+                            <?php if ($ctx['private']) : ?>
+                                <span class="profile__stat profile__private" data-tip="Visible seulement par <?php echo $ctx['isOwner'] ? 'vous' : 'ses gestionnaires'; ?>"><?php echo icon('lock'); ?> Privée</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (!$ctx['canEdit'] && $ctx['me'] && !$ctx['isFriend']) : ?>
+                            <form class="profile__friend" method="post" action="actions/addFriend.php">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="friendCode" value="<?php echo e($owner['code']); ?>">
-                                <?php if ($ctx['isFriend']) : ?>
-                                    <button type="submit" class="btn btn--ghost btn--sm profile__unfriend" data-confirm="<?php echo e($owner['nom']); ?> n'apparaîtra plus dans vos amis. Vous pourrez l'ajouter de nouveau quand vous voulez." data-confirm-title="Retirer de vos amis ?" data-confirm-ok="Retirer" data-confirm-icon="user-xmark"><?php echo icon('user-xmark'); ?> Retirer de mes amis</button>
-                                <?php else : ?>
-                                    <button type="submit" class="btn btn--primary btn--sm"><?php echo icon('user-plus'); ?> Ajouter à mes amis</button>
-                                <?php endif; ?>
+                                <button type="submit" class="btn btn--primary btn--sm"><?php echo icon('user-plus'); ?> Ajouter à mes amis</button>
                             </form>
                         <?php endif; ?>
                     </div>

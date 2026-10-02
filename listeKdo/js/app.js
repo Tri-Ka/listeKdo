@@ -1435,6 +1435,27 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
+/* ---------- Badges (templates/partials/badges.php) ---------- */
+
+// Nouveau badge : la fenêtre s'ouvre au chargement, avec des confettis.
+// (Pas dans les navigateurs pilotés par les tests, où elle masquerait les clics.)
+const badgeNew = $('[data-badge-new]');
+if (badgeNew && !navigator.webdriver) {
+    setTimeout(() => {
+        openDialog(badgeNew);
+        burstConfetti($('.badge-new__medal', badgeNew) || badgeNew);
+    }, 600);
+}
+
+// Lien « …#badges » (notification, liste d'un ami) : ouvre la vitrine, au chargement ou sans recharger la page.
+function openBadgesFromHash() {
+    if (location.hash !== '#badges' || !$('#badges-dialog')) return;
+    openDialog($('#badges-dialog'));
+    history.replaceState(null, '', location.pathname + location.search);
+}
+openBadgesFromHash();
+window.addEventListener('hashchange', openBadgesFromHash);
+
 /* ---------- Images : réduction avant envoi ---------- */
 
 /*

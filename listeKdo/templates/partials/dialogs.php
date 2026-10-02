@@ -235,13 +235,13 @@
             </div>
             <footer class="modal__footer">
                 <button type="submit" class="btn btn--danger" form="delete-object-form" data-delete-object hidden
-                    data-confirm="Êtes-vous sûr de vouloir supprimer cette belle idée ?" aria-label="Supprimer"><?php echo icon('trash-can'); ?></button>
+                    data-confirm="Elle disparaîtra de la liste, avec ses commentaires et ses réactions." data-confirm-title="Supprimer cette idée ?" data-confirm-ok="Supprimer" data-confirm-icon="trash-can" aria-label="Supprimer"><?php echo icon('trash-can'); ?></button>
                 <span class="modal__spacer"></span>
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
                 <button type="submit" class="btn btn--primary" data-object-form-submit>Ajouter</button>
             </footer>
         </form>
-        <form method="post" action="actions/deleteObject.php" id="delete-object-form">
+        <form method="post" action="actions/deleteObject.php" id="delete-object-form" data-delete-idea>
             <?php echo csrf_field(); ?>
             <input type="hidden" name="id" value="">
         </form>
@@ -381,7 +381,7 @@
                                 <?php if (1 < count($managers)) : ?>
                                     <button type="submit" formaction="actions/childManager.php" formnovalidate name="manager_remove" value="<?php echo (int) $manager['id']; ?>"
                                         class="managers__remove" aria-label="Retirer <?php echo e($manager['nom']); ?>"
-                                        data-confirm="<?php echo e($manager['nom']); ?> ne pourra plus gérer cette liste. Continuer ?"><?php echo icon('xmark'); ?></button>
+                                        data-confirm="<?php echo e($manager['nom']); ?> ne pourra plus gérer cette liste." data-confirm-title="Retirer ce gestionnaire ?" data-confirm-ok="Retirer" data-confirm-icon="user-xmark"><?php echo icon('xmark'); ?></button>
                                 <?php endif; ?>
                             </li>
                         <?php endforeach; ?>
@@ -406,7 +406,7 @@
                 <?php endif; ?>
             </div>
             <footer class="modal__footer">
-                <button type="submit" class="btn btn--danger" form="delete-child-form" data-confirm="Supprimer « <?php echo e($child['nom']); ?> » et toutes ses idées ?" aria-label="Supprimer la liste"><?php echo icon('trash-can'); ?></button>
+                <button type="submit" class="btn btn--danger" form="delete-child-form" data-confirm="« <?php echo e($child['nom']); ?> » et toutes ses idées seront définitivement supprimées." data-confirm-title="Supprimer cette liste ?" data-confirm-ok="Supprimer" data-confirm-icon="trash-can" aria-label="Supprimer la liste"><?php echo icon('trash-can'); ?></button>
                 <span class="modal__spacer"></span>
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
                 <button type="submit" class="btn btn--primary">Enregistrer</button>

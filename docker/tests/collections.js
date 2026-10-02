@@ -41,7 +41,7 @@ async function session(browser, name) {
     let card = owner.locator('.card', { hasText: 'Collection test BD' });
     const id = await card.getAttribute('data-object');
     check(await card.locator('.item').count() === 3, 'collection créée avec 3 éléments');
-    check((await card.locator('.card__badge').first().innerText()).includes('Collection · 3'), 'badge « Collection · 3 »');
+    check((await card.locator('.card__badge--idea').innerText()).includes('Collection · 3'), 'badge « Collection · 3 »');
     check(await card.locator('.item__form, .item__by').count() === 0, 'propriétaire : aucune case ni réservation visible');
 
     // Un ami réserve « Tome 2 ».
@@ -60,6 +60,7 @@ async function session(browser, name) {
 
     // Le propriétaire modifie : renomme Tome 1, retire Tome 3, ajoute Tome 4.
     await owner.reload();
+    await owner.locator(`#idea-${id} [data-card-menu] summary`).click();
     await owner.locator(`#idea-${id} [data-open-object-form]`).click();
     const rows = owner.locator('[data-collection-list] li');
     check(await rows.count() === 3, 'modification : 3 éléments pré-remplis');
@@ -82,8 +83,11 @@ async function session(browser, name) {
     check((await card.locator('.collection-pill').innerText()).includes('0 / 3'), 'ami : libère Tome 2');
 
     // Nettoyage : suppression par le propriétaire.
+    await owner.locator(`#idea-${id} [data-card-menu] summary`).click();
     await owner.locator(`#idea-${id} [data-open-object-form]`).click();
-    await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-delete-object]')]);
+    await owner.click('#object-form-dialog [data-delete-object]');
+    await owner.click('#confirm-dialog [data-confirm-ok]');
+    await owner.waitForSelector('.toast--success >> text=Idée supprimée');
     check(await owner.locator(`#idea-${id}`).count() === 0, 'collection supprimée');
 
     check(owner.errors.length + friend.errors.length === 0, 'aucune erreur JS ' + [...owner.errors, ...friend.errors].join(' | '));

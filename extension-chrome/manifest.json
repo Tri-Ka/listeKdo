@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Liste de Kdo",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "description": "Ajoute le produit de la page en cours à votre liste de cadeaux.",
     "action": {
         "default_title": "Ajouter à ma liste de Kdo",

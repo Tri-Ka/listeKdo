@@ -51,7 +51,14 @@ async function login(p, name) {
   const shown = await f.locator('.card[data-object]:visible').evaluateAll(cs => cs.map(c => c.dataset.gifted));
   check(shown.length > 0 && shown.every(g => g === '1'), 'onglet « Déjà offertes » : ' + shown.length + ' idée(s)');
   await f.click('[data-filter="all"]');
+  // Confirmation dans une fenêtre du site (plus de confirm() du navigateur) : « Annuler » ne change rien.
   await f.locator(`#idea-${cardId} .gifted-pill--mine`).click();
+  check(await f.locator('#confirm-dialog[open] [data-confirm-title]').innerText() === "Vous ne l'offrez plus ?", 'confirmation dans une fenêtre du site');
+  await f.click('#confirm-dialog [data-close]');
+  await f.waitForTimeout(300);
+  check(await f.locator(`#idea-${cardId}.card--gifted`).count() === 1, 'confirmation annulée : toujours offert');
+  await f.locator(`#idea-${cardId} .gifted-pill--mine`).click();
+  await f.click('#confirm-dialog [data-confirm-ok]');
   await f.waitForSelector(`#idea-${cardId}:not(.card--gifted)`);
   check(true, 'annuler le don (AJAX)');
 
@@ -76,6 +83,7 @@ async function login(p, name) {
   check(txt === "Test d'apostrophe <b>pas gras</b> & \"guillemets\"", 'commentaire ajouté et échappé : ' + txt);
   await f.screenshot({ path: `${__dirname}/out/e2e-friend-dialog.png` });
   await dlg.locator('.comment').last().locator('.comment__delete button').click();
+  await f.click('#confirm-dialog [data-confirm-ok]');
   await f.waitForFunction(([id, n]) => document.querySelectorAll(`#object-${id} .comment`).length === n, [cardId, before]);
   check(true, 'commentaire supprimé');
   await f.keyboard.press('Escape');
@@ -168,6 +176,7 @@ async function login(p, name) {
   check(await newCard.locator('a[href^="javascript"]').count() === 0, 'lien javascript: refusé');
   check(await o.locator('.toast--success').count() === 1, 'message de succès affiché');
 
+  await newCard.locator('[data-card-menu] summary').click();
   await newCard.locator('[data-open-object-form]').click();
   check(await o.inputValue('#object-form-dialog input[name=nom]') === 'Idée de test e2e', 'formulaire pré-rempli');
   await o.fill('#object-form-dialog input[name=nom]', 'Idée modifiée e2e');
@@ -176,8 +185,17 @@ async function login(p, name) {
   check((await edited.locator('.card__title').innerText()).toLowerCase() === 'idée modifiée e2e', 'idée modifiée');
   check(await edited.locator('.card__image img').getAttribute('src') === imgSrc, 'image conservée après modification');
 
+  await edited.locator('[data-card-menu] summary').click();
   await edited.locator('[data-open-object-form]').click();
-  await Promise.all([o.waitForNavigation(), o.click('#object-form-dialog [data-delete-object]')]);
+  await o.click('#object-form-dialog [data-delete-object]');
+  const totalBefore = Number(await o.locator('[data-count-total]').innerText());
+  await o.click('#confirm-dialog [data-confirm-ok]');
+  await o.waitForSelector('.trash-fly');
+  check(true, 'suppression : la corbeille apparaît');
+  await o.waitForSelector(`#idea-${newId}`, { state: 'detached' });
+  await o.waitForSelector('.trash-fly', { state: 'detached' });
+  check(Number(await o.locator('[data-count-total]').innerText()) === totalBefore - 1, 'suppression sans rechargement, compteur mis à jour');
+  await o.reload();
   check(await o.locator(`#idea-${newId}`).count() === 0, 'idée supprimée');
 
   await Promise.all([o.waitForNavigation(), o.click('.theme-picker [value="noel"]')]);

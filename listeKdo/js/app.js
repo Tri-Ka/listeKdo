@@ -94,17 +94,28 @@ document.addEventListener('click', (event) => {
         return;
     }
 
-    // Clic sur le fond sombre autour de la fenêtre.
-    if (event.target instanceof HTMLDialogElement) {
-        const box = event.target.getBoundingClientRect();
-        const inside = event.clientX >= box.left && event.clientX <= box.right
-            && event.clientY >= box.top && event.clientY <= box.bottom;
-        if (!inside) event.target.close();
+    // Clic sur le fond sombre autour de la fenêtre : il faut aussi que l'appui ait commencé sur le fond.
+    // Sinon, sélectionner du texte et relâcher la souris hors de la fenêtre la fermerait.
+    if (event.target instanceof HTMLDialogElement && pressedOnBackdrop === event.target
+        && outsideDialog(event.target, event)) {
+        event.target.close();
     }
 });
 
+// Fenêtre dont le fond sombre a reçu l'appui (souris ou doigt), ou null.
+let pressedOnBackdrop = null;
+
+function outsideDialog(dialog, event) {
+    const box = dialog.getBoundingClientRect();
+    return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+}
+
+document.addEventListener('pointerdown', (event) => {
+    pressedOnBackdrop = event.target instanceof HTMLDialogElement && outsideDialog(event.target, event) ? event.target : null;
+});
+
 function openFromHash() {
-    const [, kind, id] = location.hash.match(/^#(idea|card)-(\d+)$/) ?? [];
+    const [, kind, id] = location.hash.match(/^#(idea|card|new)-(\d+)$/) ?? [];
     const card = id && document.getElementById(`idea-${id}`);
     if (!card) return;
 
@@ -112,10 +123,28 @@ function openFromHash() {
 
     if (kind === 'idea') {
         openDialog(document.getElementById(`object-${id}`));
+    } else if (kind === 'new') {
+        // Idée tout juste ajoutée : elle tombe à sa place, avec des confettis.
+        card.classList.add('is-new');
+        // Les vignettes ont déjà une animation d'entrée (« rise ») : on attend la fin de la nôtre.
+        card.addEventListener('animationend', function done(event) {
+            if (event.target !== card || event.animationName !== 'highlight') return;
+            // Sans cela, l'animation d'entrée « rise » repartirait de zéro (clignotement).
+            card.style.animation = 'none';
+            card.classList.remove('is-new');
+            card.removeEventListener('animationend', done);
+        });
+        setTimeout(() => burstConfetti(card), 380);
+        history.replaceState(null, '', location.pathname + location.search);
     } else {
         // Après un ajout ou une modification : on met la carte en évidence.
         card.classList.add('is-highlighted');
-        card.addEventListener('animationend', () => card.classList.remove('is-highlighted'), { once: true });
+        card.addEventListener('animationend', function done(event) {
+            if (event.target !== card || event.animationName !== 'highlight') return;
+            card.style.animation = 'none';
+            card.classList.remove('is-highlighted');
+            card.removeEventListener('animationend', done);
+        });
         history.replaceState(null, '', location.pathname + location.search);
     }
 }
@@ -184,12 +213,46 @@ document.addEventListener('click', hideTooltip);
 
 /* ---------- Confirmations ---------- */
 
+/*
+ * data-confirm="Message" : demande confirmation dans une fenêtre (templates/partials/confirm.php)
+ * au lieu de confirm() du navigateur. Une fois confirmé, le clic est rejoué sur le même bouton.
+ */
+const confirmDialog = $('#confirm-dialog');
+let confirmedTrigger = null;
+
+function askConfirm(trigger) {
+    const data = trigger.dataset;
+    $('[data-confirm-title]', confirmDialog).textContent = data.confirmTitle || 'Vous êtes sûr ?';
+    $('[data-confirm-text]', confirmDialog).textContent = data.confirm;
+    $('[data-confirm-ok]', confirmDialog).textContent = data.confirmOk || 'Confirmer';
+    const icon = $('[data-confirm-icon]', confirmDialog);
+    icon.setAttribute('href', icon.getAttribute('href').replace(/#.*$/, `#i-${data.confirmIcon || 'triangle-exclamation'}`));
+
+    // Ouverte par-dessus la fenêtre en cours (sans la fermer, contrairement à openDialog()).
+    confirmDialog.returnValue = '';
+    confirmDialog.showModal();
+    document.body.classList.add('is-locked');
+
+    return new Promise((resolve) => {
+        confirmDialog.addEventListener('close', () => resolve(confirmDialog.returnValue === 'ok'), { once: true });
+    });
+}
+
 document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-confirm]');
-    if (trigger && !confirm(trigger.dataset.confirm)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+    if (!trigger || !confirmDialog) return;
+    if (confirmedTrigger === trigger) {
+        confirmedTrigger = null;
+        return;
     }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    askConfirm(trigger).then((ok) => {
+        if (!ok) return;
+        confirmedTrigger = trigger;
+        trigger.click();
+    });
 }, true);
 
 /* ---------- Formulaires envoyés en arrière-plan ---------- */
@@ -215,16 +278,21 @@ const ajaxHandlers = {
         refreshFilters();
     },
 
-    received(form, data) {
+    async received(form, data) {
         const card = form.closest('.card');
-        if (card) {
-            card.dataset.received = data.received ? '1' : '0';
-            card.classList.toggle('card--received', data.received);
+        form.closest('details')?.removeAttribute('open');
+        // Rangée dans le carton d'archives quand elle quitte l'onglet affiché.
+        if (card && data.received && currentFilter !== 'received' && !card.hidden) await fileInArchive(card);
+        // Vignette et fiche refaites par le serveur : « Je l'offre », étiquettes et menu suivent l'état.
+        if (card && data.card) {
+            const fresh = html(data.card).firstElementChild;
+            // Pas d'animation d'apparition : la vignette change sur place.
+            fresh.style.animation = 'none';
+            card.replaceWith(fresh);
+            gridObserver?.observe(fresh);
         }
-        const button = form.querySelector('.received-btn');
-        button?.setAttribute('aria-pressed', data.received);
-        const label = button?.querySelector('span');
-        if (label) label.textContent = data.received ? 'Remettre dans la liste' : "Je l'ai reçu";
+        const dialog = data.dialog && card ? document.getElementById(`object-${card.dataset.object}`) : null;
+        if (dialog && !dialog.open) dialog.replaceWith(html(data.dialog));
         toast(data.message, 'success');
         refreshFilters();
     },
@@ -503,26 +571,57 @@ if (drawer) {
 const grid = $('[data-grid]');
 let layoutPending = false;
 
-function layoutGrid() {
-    if (!grid || layoutPending) return;
+// Dernière position connue de chaque vignette (dans la grille), pour animer les déplacements.
+const gridPositions = new WeakMap();
+let gridAnimate = true;
+
+/*
+ * animate = false : pas d'animation (premier affichage, redimensionnement de la fenêtre).
+ * Sinon, chaque vignette déplacée glisse depuis son ancienne place (technique FLIP),
+ * et celles qui réapparaissent (filtre) arrivent en fondu.
+ */
+function layoutGrid(animate = true) {
+    if (!grid) return;
+    if (animate !== true) gridAnimate = false;
+    if (layoutPending) return;
     layoutPending = true;
     requestAnimationFrame(() => {
         layoutPending = false;
+        const smooth = gridAnimate && grid.classList.contains('is-masonry') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+        gridAnimate = true;
         grid.classList.add('is-masonry');
         const gap = 24;
-        for (const item of grid.children) {
-            if (item.hidden) continue;
-            item.style.gridRowEnd = `span ${Math.ceil((item.getBoundingClientRect().height + gap) / 4)}`;
+        const items = [...grid.children].filter((item) => !item.hidden);
+        // offsetHeight / offsetTop ignorent les transformations : une animation en cours ne fausse pas la mise en page.
+        for (const item of items) {
+            item.style.gridRowEnd = `span ${Math.ceil((item.offsetHeight + gap) / 4)}`;
         }
+        for (const item of items) {
+            const before = gridPositions.get(item);
+            const after = { x: item.offsetLeft, y: item.offsetTop };
+            gridPositions.set(item, after);
+            if (!smooth || item.classList.contains('is-new') || item.style.visibility === 'hidden') continue;
+            if (!before) {
+                item.animate([{ opacity: 0, transform: 'scale(.92)' }, { opacity: 1, transform: 'none' }], { duration: 350, easing: 'ease-out' });
+            } else if (Math.abs(before.x - after.x) > 1 || Math.abs(before.y - after.y) > 1) {
+                item.animate(
+                    [{ transform: `translate(${before.x - after.x}px, ${before.y - after.y}px)` }, { transform: 'none' }],
+                    { duration: 450, easing: 'cubic-bezier(.2, .8, .2, 1)' },
+                );
+            }
+        }
+        // Vignettes masquées : on oublie leur place, elles réapparaîtront en fondu.
+        [...grid.children].filter((item) => item.hidden).forEach((item) => gridPositions.delete(item));
     });
 }
 
+// Recalcule quand une vignette change de taille (image chargée, réservation, filtre…).
+const gridObserver = grid ? new ResizeObserver(() => layoutGrid()) : null;
+
 if (grid) {
-    // Recalcule quand une vignette change de taille (image chargée, réservation, filtre…).
-    const observer = new ResizeObserver(layoutGrid);
-    [...grid.children].forEach((item) => observer.observe(item));
-    window.addEventListener('resize', layoutGrid);
-    layoutGrid();
+    [...grid.children].forEach((item) => gridObserver.observe(item));
+    window.addEventListener('resize', () => layoutGrid(false));
+    layoutGrid(false);
 }
 
 /* ---------- Idées offertes et filtres ---------- */
@@ -1072,6 +1171,263 @@ async function microlinkMetadata(url, signal) {
         return null;
     }
 }
+
+/* Pastille ronde (corbeille, carton d'archives) qui apparaît en bas à droite le temps d'une animation. */
+async function showDropZone(icon, modifier) {
+    const sprite = $('svg use')?.getAttribute('href')?.split('#')[0] || 'img/icons.svg';
+    const zone = document.createElement('div');
+    zone.className = `trash-fly ${modifier}`;
+    zone.innerHTML = `<svg class="icon" aria-hidden="true"><use href="${sprite}#i-${icon}"></use></svg>`;
+    document.body.append(zone);
+    await zone.animate(
+        [{ transform: 'translateY(140%) scale(.4)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+        { duration: 280, easing: 'cubic-bezier(.2, .9, .3, 1.3)', fill: 'forwards' },
+    ).finished;
+    return zone;
+}
+
+async function hideDropZone(zone) {
+    await zone.animate(
+        [{ transform: 'none', opacity: 1 }, { transform: 'translateY(140%) scale(.4)', opacity: 0 }],
+        { duration: 300, delay: 100, easing: 'ease-in', fill: 'forwards' },
+    ).finished;
+    zone.remove();
+}
+
+/* Copie de la vignette, posée par-dessus, que l'on peut animer librement (la vraie est cachée). */
+function cardGhost(card) {
+    const from = card.getBoundingClientRect();
+    const ghost = card.cloneNode(true);
+    ghost.removeAttribute('id');
+    ghost.classList.add('trash-fly__ghost');
+    Object.assign(ghost.style, {
+        visibility: 'visible', left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`,
+    });
+    document.body.append(ghost);
+    return { ghost, from };
+}
+
+/*
+ * « J'ai reçu » : la vignette se réduit en fiche, glisse jusqu'au carton d'archives et y est rangée,
+ * le carton se tasse puis s'en va.
+ */
+async function fileInArchive(card) {
+    card.style.visibility = 'hidden';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const box = await showDropZone('box-archive', 'trash-fly--archive');
+    const { ghost, from } = cardGhost(card);
+    const to = box.getBoundingClientRect();
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const size = Math.min(1, 64 / from.width);
+
+    // On soulève la fiche, elle file au-dessus du carton, puis descend dedans (en passant derrière lui).
+    await ghost.animate(
+        [
+            { transform: 'none', opacity: 1 },
+            { transform: 'translateY(-18px) scale(1.03) rotate(-2deg)', opacity: 1, offset: .15 },
+            { transform: `translate(${dx}px, ${dy - to.height * 1.1}px) scale(${size}) rotate(0deg)`, opacity: 1, offset: .75 },
+            { transform: `translate(${dx}px, ${dy}px) scale(${size * .8})`, opacity: 0 },
+        ],
+        { duration: 900, easing: 'cubic-bezier(.45, 0, .25, 1)', fill: 'forwards' },
+    ).finished;
+    ghost.remove();
+
+    // Le carton se tasse (couvercle refermé), puis repart.
+    await box.animate(
+        [{ transform: 'none' }, { transform: 'scale(1.12, .82)' }, { transform: 'scale(.96, 1.06)' }, { transform: 'none' }],
+        { duration: 420, easing: 'ease-out' },
+    ).finished;
+    await hideDropZone(box);
+}
+
+/* Confettis aux couleurs du thème, lancés depuis le centre d'une vignette. */
+function burstConfetti(element) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(document.body);
+    const colors = ['--brand', '--confetti-1', '--confetti-2', '--confetti-3'].map((name) => style.getPropertyValue(name).trim() || '#f5a524');
+
+    for (let i = 0; i < 28; i++) {
+        const piece = document.createElement('span');
+        piece.className = 'confetti-piece';
+        piece.style.background = colors[i % colors.length];
+        piece.style.left = `${box.left + box.width / 2}px`;
+        piece.style.top = `${box.top + box.height / 3}px`;
+        if (i % 3 === 0) piece.style.borderRadius = '50%';
+        document.body.append(piece);
+
+        const angle = (Math.PI * 2 * i) / 28 + Math.random() * .4;
+        const distance = 90 + Math.random() * 110;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance - 60;
+        piece.animate(
+            [
+                { transform: 'translate(-50%, -50%) rotate(0deg) scale(1)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${Math.random() * 540}deg) scale(1)`, opacity: 1, offset: .55 },
+                { transform: `translate(calc(-50% + ${x * 1.15}px), calc(-50% + ${y + 140}px)) rotate(${Math.random() * 720}deg) scale(.6)`, opacity: 0 },
+            ],
+            { duration: 1100 + Math.random() * 400, easing: 'cubic-bezier(.2, .7, .4, 1)', fill: 'forwards' },
+        ).finished.then(() => piece.remove());
+    }
+}
+
+/* Mot de bande dessinée (« Cling ! ») qui jaillit à un endroit de l'écran puis s'efface. */
+function onomatopoeia(text, x, y) {
+    const word = document.createElement('span');
+    word.className = 'onomatopoeia';
+    word.textContent = text;
+    word.style.left = `${x}px`;
+    word.style.top = `${y}px`;
+    document.body.append(word);
+    word.animate(
+        [
+            { transform: 'translate(-50%, -50%) scale(.2) rotate(-25deg)', opacity: 0 },
+            { transform: 'translate(-50%, -50%) scale(1.25) rotate(-8deg)', opacity: 1, offset: .25 },
+            { transform: 'translate(-50%, -50%) scale(1) rotate(-12deg)', opacity: 1, offset: .7 },
+            { transform: 'translate(-50%, -80%) scale(.9) rotate(-12deg)', opacity: 0 },
+        ],
+        { duration: 900, easing: 'ease-out', fill: 'forwards' },
+    ).finished.then(() => word.remove());
+}
+
+/* Contour bosselé d'une boule de papier. */
+const PAPER_BALL = '46% 54% 42% 58% / 55% 45% 57% 43%';
+
+/*
+ * Effet « chiffonné » : un filtre SVG (bruit + déplacement) déforme la vignette de plus en plus fort,
+ * des plis apparaissent (.is-crumpled), et elle se ramasse en boule irrégulière de taille `size`.
+ */
+async function crumple(element, size) {
+    let filter = document.getElementById('crumple-filter');
+    if (!filter) {
+        document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+            <filter id="crumple-filter" x="-20%" y="-20%" width="140%" height="140%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7"/>
+                <feDisplacementMap in="SourceGraphic" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+            </filter></svg>`);
+        filter = document.getElementById('crumple-filter');
+    }
+    const displacement = filter.querySelector('feDisplacementMap');
+    element.style.filter = 'url(#crumple-filter)';
+    element.classList.add('is-crumpled');
+
+    const duration = 520;
+    const start = performance.now();
+    const distort = (now) => {
+        const t = Math.min(1, (now - start) / duration);
+        displacement.setAttribute('scale', String(70 * t * t));
+        if (t < 1) requestAnimationFrame(distort);
+    };
+    requestAnimationFrame(distort);
+
+    await element.animate(
+        [
+            { transform: 'none', borderRadius: '22px' },
+            { transform: `rotate(6deg) skew(6deg, -4deg) scale(${.55 + size * .3}, ${.5 + size * .25})`, borderRadius: '30% 40% 35% 45%', offset: .35 },
+            { transform: `rotate(-10deg) skew(-8deg, 5deg) scale(${size * 1.6}, ${size * 1.3})`, borderRadius: '40% 50% 45% 55%', offset: .7 },
+            { transform: `translateY(14px) rotate(-4deg) scale(${size})`, borderRadius: PAPER_BALL },
+        ],
+        { duration, easing: 'cubic-bezier(.3, 0, .3, 1)', fill: 'forwards' },
+    ).finished;
+}
+
+/*
+ * Animation de suppression : une corbeille apparaît en bas à droite, une copie de la vignette s'y
+ * envole comme un lancer de basket (balle, parabole, rebond sur le cercle), la corbeille tremblote puis s'en va. La vignette d'origine reste
+ * cachée (visibility) jusqu'à la réponse du serveur, pour pouvoir la réafficher en cas d'erreur.
+ */
+async function throwInTrash(card) {
+    card.style.visibility = 'hidden';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const trash = await showDropZone('trash-can', 'trash-fly--trash');
+    const { ghost, from } = cardGhost(card);
+
+    // Lancer de basket : la vignette se ramasse en balle, part en cloche (parabole) en tournant, puis touche le cercle et rentre.
+    const to = trash.getBoundingClientRect();
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const ball = Math.min(1, 56 / Math.min(from.width, from.height));
+
+    // Préparation du tir : la feuille est chiffonnée (déformation SVG de plus en plus forte, plis), puis roulée en boule.
+    await crumple(ghost, ball);
+
+    // Parabole : x avance régulièrement, y suit une cloche bien plus haute que le départ et l'arrivée.
+    const rimY = dy - to.height * .55;
+    const height = Math.max(220, Math.abs(rimY) * .6 + 160);
+    const arc = [];
+    for (let i = 0; i <= 24; i++) {
+        const t = i / 24;
+        const x = dx * t;
+        const y = 14 + (rimY - 14) * t - 4 * height * t * (1 - t);
+        arc.push({ transform: `translate(${x}px, ${y}px) rotate(${-720 * t}deg) scale(${ball * (1 - .35 * t)})`, borderRadius: PAPER_BALL });
+    }
+    await ghost.animate(arc, { duration: 800, easing: 'linear', fill: 'forwards' }).finished;
+
+    // Le cercle : « Cling ! », petit rebond, puis la balle tombe dans la corbeille.
+    onomatopoeia('Cling !', to.left + to.width / 2 - 30, to.top - 34);
+    const end = ball * .65;
+    await ghost.animate(
+        [
+            { transform: `translate(${dx}px, ${rimY}px) rotate(-720deg) scale(${end})`, borderRadius: PAPER_BALL, opacity: 1 },
+            { transform: `translate(${dx + 10}px, ${rimY - 22}px) rotate(-780deg) scale(${end})`, borderRadius: PAPER_BALL, opacity: 1, offset: .4 },
+            { transform: `translate(${dx}px, ${dy}px) rotate(-840deg) scale(${end * .3})`, borderRadius: PAPER_BALL, opacity: 0 },
+        ],
+        { duration: 380, easing: 'ease-in', fill: 'forwards' },
+    ).finished;
+    ghost.remove();
+
+    // La corbeille avale la vignette puis tremblote, avant de redescendre.
+    await trash.animate(
+        [
+            { transform: 'none' },
+            { transform: 'scale(1.25, .8)' },
+            { transform: 'rotate(-14deg) scale(1.05)' },
+            { transform: 'rotate(12deg)' },
+            { transform: 'rotate(-9deg)' },
+            { transform: 'rotate(7deg)' },
+            { transform: 'rotate(-4deg)' },
+            { transform: 'rotate(2deg)' },
+            { transform: 'none' },
+        ],
+        { duration: 650, easing: 'ease-out' },
+    ).finished;
+    await hideDropZone(trash);
+}
+
+/*
+ * Suppression d'une idée (form[data-delete-idea] : menu « ⋯ » de la vignette ou fenêtre de modification),
+ * en arrière-plan : la vignette part dans la corbeille (throwInTrash), puis disparaît de la liste.
+ */
+document.addEventListener('submit', async (event) => {
+    const form = event.target.closest('form[data-delete-idea]');
+    if (!form) return;
+    event.preventDefault();
+    const card = document.getElementById(`idea-${form.elements.id.value}`);
+    form.closest('dialog')?.close();
+    card?.querySelector('details[open]')?.removeAttribute('open');
+
+    const request = post(form.getAttribute('action'), new FormData(form));
+    try {
+        const [result] = await Promise.allSettled([request, card ? throwInTrash(card) : null]);
+        if (result.status === 'rejected') throw result.reason;
+        card?.remove();
+        const total = $('[data-count-total]');
+        if (total) {
+            const count = Math.max(0, Number(total.textContent) - 1);
+            total.textContent = count;
+            if (total.nextSibling) total.nextSibling.textContent = count > 1 ? ' idées' : ' idée';
+        }
+        refreshFilters();
+        layoutGrid();
+        toast('Idée supprimée.', 'success');
+    } catch (error) {
+        if (card) card.style.visibility = '';
+        toast(error.message, 'error');
+    }
+});
 
 /* ---------- Images : réduction avant envoi ---------- */
 

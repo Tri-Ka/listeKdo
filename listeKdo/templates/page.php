@@ -80,6 +80,7 @@ if ($owner && !$ctx['canView']) {
     <?php endif; ?>
 
     <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
+    <?php echo render('partials/confirm'); ?>
 
     <?php if ($me) : ?>
         <?php echo render('partials/my_gifts', array('myGifts' => $myGifts)); ?>

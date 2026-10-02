@@ -16,14 +16,14 @@ $received = $object['received'];
             <img src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.svg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.svg">
         </button>
 
-        <?php if ($received) : ?>
+        <?php // Les deux étiquettes sont toujours là : .card--received choisit laquelle s'affiche (« J'ai reçu » sans recharger). ?>
+        <?php if ($ctx['canEdit'] && received_enabled()) : ?>
             <span class="card__badge card__badge--received"><?php echo icon('circle-check'); ?> Reçu</span>
-        <?php else : ?>
-            <span class="card__badge"><?php echo icon($object['is_group'] ? 'users' : 'gift'); ?>
-                <?php echo $object['is_collection'] ? 'Collection · ' . (int) $object['items_total'] : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
-            <?php if ($ctx['canGift']) : ?>
-                <span class="card__badge card__badge--gifted gift-only"><?php echo icon('circle-check'); ?> Déjà offert</span>
-            <?php endif; ?>
+        <?php endif; ?>
+        <span class="card__badge card__badge--idea"><?php echo icon($object['is_group'] ? 'users' : 'gift'); ?>
+            <?php echo $object['is_collection'] ? 'Collection · ' . (int) $object['items_total'] : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
+        <?php if ($ctx['canGift']) : ?>
+            <span class="card__badge card__badge--gifted gift-only"><?php echo icon('circle-check'); ?> Déjà offert</span>
         <?php endif; ?>
 
         <?php echo render('partials/favorite', array('object' => $object, 'ctx' => $ctx)); ?>
@@ -32,37 +32,6 @@ $received = $object['received'];
             <span class="card__price"><?php echo e(format_price($object['price'])); ?></span>
         <?php endif; ?>
 
-        <?php if ($ctx['canEdit']) : ?>
-            <?php $manager = $ctx['canGift']; ?>
-        <?php if ($manager || received_enabled()) : ?>
-            <details class="card-menu card-menu--overlay" data-card-menu>
-                <summary class="card-menu__toggle" aria-label="Plus d'actions" data-tip="Plus d'actions"><?php echo icon('ellipsis'); ?></summary>
-                <div class="card-menu__panel">
-                    <?php if ($manager) : ?>
-                        <button type="button" data-open-object-form="<?php echo e(kdo_json(array(
-                'id' => $id,
-                'nom' => $object['nom'],
-                'description' => $object['description'],
-                'image' => $object['image'],
-                'link' => $object['link'],
-                'price' => null !== $object['price'] ? str_replace('.', ',', (string) $object['price']) : '',
-                'items' => $object['items'] ? array_map('item_for_form', $object['items']) : array(),
-            ))); ?>"><?php echo icon('pen'); ?> Modifier</button>
-                    <?php endif; ?>
-                    <?php if (received_enabled()) : ?>
-                        <form method="post" action="actions/toggleReceived.php" data-ajax="received">
-                            <?php echo csrf_field(); ?>
-                            <input type="hidden" name="id" value="<?php echo $id; ?>">
-                            <button type="submit" class="received-btn" aria-pressed="<?php echo $received ? 'true' : 'false'; ?>">
-                                <?php echo icon($received ? 'arrow-up-right-from-square' : 'box-archive'); ?>
-                                <span><?php echo $received ? 'Remettre dans la liste' : "Je l'ai reçu"; ?></span>
-                            </button>
-                        </form>
-                    <?php endif; ?>
-                </div>
-            </details>
-        <?php endif; ?>
-        <?php endif; ?>
     </div>
 
     <div class="card__body">
@@ -91,28 +60,48 @@ $received = $object['received'];
         </div>
 
         <div class="card__cta">
-            <?php if ($ctx['canEdit']) : ?>
-                <?php $manager = $ctx['canGift']; ?>
-                <?php if (!$manager) : ?>
-                    <button type="button" class="btn btn--soft" aria-label="Modifier <?php echo e($object['nom']); ?>"
-                        data-open-object-form="<?php echo e(kdo_json(array(
-                        'id' => $id,
-                        'nom' => $object['nom'],
-                        'description' => $object['description'],
-                        'image' => $object['image'],
-                        'link' => $object['link'],
-                        'price' => null !== $object['price'] ? str_replace('.', ',', (string) $object['price']) : '',
-                        'items' => $object['items'] ? array_map('item_for_form', $object['items']) : array(),
-                    ))); ?>"><?php echo icon('pen'); ?> Modifier</button>
-                <?php endif; ?>
-            <?php endif; ?>
-
             <?php if ($ctx['canGift'] && !$received) : ?>
                 <div class="gift-slot" data-gift-slot="<?php echo $id; ?>">
                     <?php echo render('partials/gift', array('object' => $object, 'ctx' => $ctx)); ?>
                 </div>
             <?php elseif (!$ctx['canEdit'] && '' !== $object['link']) : ?>
                 <a class="btn btn--primary" href="<?php echo e($object['link']); ?>" target="_blank" rel="noopener nofollow">Voir <?php echo icon('chevron-right'); ?></a>
+            <?php endif; ?>
+
+            <?php if ($ctx['canEdit']) : ?>
+                <?php
+                $editData = kdo_json(array(
+                    'id' => $id,
+                    'nom' => $object['nom'],
+                    'description' => $object['description'],
+                    'image' => $object['image'],
+                    'link' => $object['link'],
+                    'price' => null !== $object['price'] ? str_replace('.', ',', (string) $object['price']) : '',
+                    'items' => $object['items'] ? array_map('item_for_form', $object['items']) : array(),
+                ));
+                ?>
+                <details class="card-menu" data-card-menu>
+                    <summary class="round-btn" aria-label="Modifier, marquer comme reçu, supprimer" data-tip="Modifier…"><?php echo icon('ellipsis'); ?></summary>
+                    <div class="card-menu__panel">
+                        <button type="button" data-open-object-form="<?php echo e($editData); ?>"><?php echo icon('pen'); ?> Modifier</button>
+                        <?php if (received_enabled()) : ?>
+                            <form method="post" action="actions/toggleReceived.php" data-ajax="received">
+                                <?php echo csrf_field(); ?>
+                                <input type="hidden" name="id" value="<?php echo $id; ?>">
+                                <button type="submit" class="received-btn" aria-pressed="<?php echo $received ? 'true' : 'false'; ?>">
+                                    <?php echo icon($received ? 'arrow-up-right-from-square' : 'box-archive'); ?>
+                                    <span><?php echo $received ? 'Remettre dans la liste' : "Je l'ai reçu"; ?></span>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                        <form method="post" action="actions/deleteObject.php" data-delete-idea>
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="id" value="<?php echo $id; ?>">
+                            <button type="submit" class="card-menu__danger"
+                                data-confirm="Elle disparaîtra de la liste, avec ses commentaires et ses réactions." data-confirm-title="Supprimer cette idée ?" data-confirm-ok="Supprimer" data-confirm-icon="trash-can"><?php echo icon('trash-can'); ?> Supprimer</button>
+                        </form>
+                    </div>
+                </details>
             <?php endif; ?>
         </div>
     </footer>

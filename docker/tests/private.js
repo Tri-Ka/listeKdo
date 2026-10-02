@@ -34,7 +34,15 @@ async function setPrivate(page, on) {
     const friend = await session(browser, 'Mallory');
 
     await owner.goto(`${B}?user=${ETIENNE}`);
-    const ideaId = await owner.locator('.card[data-object]').first().getAttribute('data-object');
+    const ideaId = await owner.locator('.card[data-object][data-received="0"]').first().getAttribute('data-object');
+
+    /* ---- Actions d'une idée : menu « ⋯ » dans le pied de la vignette ---- */
+    const firstCard = owner.locator(`#idea-${ideaId}`);
+    await firstCard.locator('.card__actions [data-card-menu] summary').click();
+    const menuText = await firstCard.locator('.card-menu__panel').innerText();
+    check(menuText.includes('Modifier') && menuText.includes("Je l'ai reçu") && menuText.includes('Supprimer'), 'menu « ⋯ » en bas : modifier, reçu, supprimer');
+    await firstCard.screenshot({ path: `${__dirname}/out/card-menu.png` });
+    await firstCard.locator('.card__actions [data-card-menu] summary').click();
 
     /* ---- Rendre la liste privée ---- */
     await setPrivate(owner, true);
@@ -83,6 +91,23 @@ async function setPrivate(page, on) {
     const childUrl = owner.url().split('#')[0];
     check(await owner.locator('.profile__private').count() === 1 && await owner.locator('.card--add').count() === 1, 'liste secondaire privée : le gestionnaire la voit et la modifie');
     check(await owner.locator('#child-dialog input[name=is_private][type=checkbox]').isChecked(), 'liste secondaire : case cochée dans sa fiche');
+    // Gestionnaire : « Je l'ai reçu » retire « Je l'offre » sans recharger, « Remettre dans la liste » le remet.
+    await owner.click('.card--add');
+    await owner.fill('#object-form-dialog input[name=nom]', 'Idée reçue test');
+    await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-object-form-submit]')]);
+    const childCard = () => owner.locator('.card', { hasText: 'Idée reçue test' });
+    check(await childCard().locator('.gift-slot').count() === 1, 'gestionnaire : « Je l\'offre » sur l\'idée');
+    await childCard().locator('[data-card-menu] summary').click();
+    await childCard().locator('.received-btn').click();
+    await owner.waitForSelector('.card[data-received="1"]', { state: 'attached' });
+    check(await childCard().locator('.gift-slot').count() === 0 && (await childCard().locator('.received-btn').innerText()).includes('Remettre'),
+        'reçu : plus de « Je l\'offre », menu à jour, sans recharger');
+    await owner.click('[data-filter="received"]');
+    await childCard().locator('[data-card-menu] summary').click();
+    await childCard().locator('.received-btn').click();
+    await owner.waitForSelector('.card[data-received="0"]', { state: 'attached' });
+    check(await childCard().locator('.gift-slot').count() === 1, 'remise dans la liste : « Je l\'offre » revient');
+
     await friend.goto(childUrl);
     check(await friend.locator('.private-notice').count() === 1, 'liste secondaire privée : l\'amie voit « Cette liste est privée »');
     check(await friend.locator('.friends a[href*="index.php?user="]', { hasText: 'Test1prive' }).count() === 0
@@ -90,8 +115,11 @@ async function setPrivate(page, on) {
 
     // Nettoyage.
     await owner.goto(`${B}?user=${ETIENNE}`);
+    await owner.locator(`#idea-${secretId} [data-card-menu] summary`).click();
     await owner.locator(`#idea-${secretId} [data-open-object-form]`).click();
-    await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-delete-object]')]);
+    await owner.click('#object-form-dialog [data-delete-object]');
+    await owner.click('#confirm-dialog [data-confirm-ok]');
+    await owner.waitForSelector('.toast--success >> text=Idée supprimée');
 
     check(owner.errors.length === 0 && friend.errors.length === 0, 'aucune erreur JS ' + owner.errors.concat(friend.errors).join(' | '));
     await browser.close();

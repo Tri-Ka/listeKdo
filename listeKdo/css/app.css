@@ -1458,7 +1458,7 @@ button {
     box-shadow: 0 4px 12px rgb(31 157 85 / .3);
 }
 
-.show-gifted .card--gifted .card__badge:not(.card__badge--gifted) {
+.show-gifted .card--gifted .card__badge:not(.card__badge--gifted):not(.card__badge--received) {
     display: none;
 }
 
@@ -3351,11 +3351,6 @@ button.heart-btn:hover {
     display: contents;
 }
 
-.received-btn[aria-pressed="true"] {
-    border-color: var(--success);
-    color: var(--success);
-}
-
 /* ---------- Offrir à plusieurs ---------- */
 
 .gift-actions {
@@ -3693,33 +3688,9 @@ button.collection-pill {
     display: contents;
 }
 
-/* Menu « ⋯ » posé sur l'image, à gauche du cœur ; il s'ouvre vers le bas. */
-.card-menu--overlay {
-    position: absolute;
-    top: 10px;
-    right: 58px;
-}
-
-.card-menu--overlay .card-menu__panel {
-    top: calc(100% + 8px);
-    bottom: auto;
-}
-
-.card-menu__toggle {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #fff;
-    color: var(--text);
-    font-size: 16px;
-    box-shadow: var(--shadow-sm);
-    transition: transform .2s var(--ease);
-}
-
-.card-menu__toggle:hover {
-    transform: scale(1.1);
+.card-menu__panel .card-menu__danger,
+.card-menu__panel .card-menu__danger .icon {
+    color: var(--danger);
 }
 
 /* ---------- « Je l'offre » : seul ou à plusieurs ---------- */
@@ -4538,4 +4509,188 @@ button.collection-pill {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* ---------- Fenêtre de confirmation (templates/partials/confirm.php) ---------- */
+
+.confirm {
+    width: min(400px, calc(100% - 32px));
+}
+
+.confirm__body {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding-top: 28px;
+    text-align: center;
+}
+
+.confirm__icon {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: #fdecec;
+    color: var(--danger);
+    font-size: 24px;
+    box-shadow: 0 0 0 8px #fef5f5;
+    animation: confirm-pop .35s var(--ease);
+}
+
+.confirm__title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.confirm__text {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.confirm__footer {
+    justify-content: center;
+}
+
+.confirm__footer .btn {
+    flex: 1;
+}
+
+/* Action confirmée : rouge plein, plus visible que le bouton « danger » habituel. */
+.confirm__footer .btn--danger {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 8px 20px rgb(229 72 77 / .3);
+}
+
+.confirm__footer .btn--danger:hover {
+    background: #cf3a3f;
+}
+
+/* Mobile : panneau pleine largeur, comme les autres fenêtres. */
+@media (max-width: 600px) {
+    .confirm {
+        width: 100%;
+    }
+}
+
+@keyframes confirm-pop {
+    from { transform: scale(.6); opacity: 0; }
+}
+
+/* ---------- Animation de suppression d'une idée (js/app.js : throwInTrash) ---------- */
+
+.trash-fly {
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: #fff;
+    font-size: 30px;
+    box-shadow: 0 0 0 10px rgb(229 72 77 / .15), 0 18px 40px rgb(229 72 77 / .35);
+    pointer-events: none;
+    transform: translateY(140%);
+    transform-origin: 50% 80%;
+}
+
+.trash-fly__ghost {
+    position: fixed;
+    z-index: 999;
+    margin: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform-origin: center;
+}
+
+/* Plis et ombres du papier chiffonné (js/app.js : crumple). */
+.trash-fly__ghost::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(115deg, transparent 30%, rgb(0 0 0 / .14) 31%, transparent 34%),
+        linear-gradient(65deg, transparent 55%, rgb(0 0 0 / .12) 56%, transparent 60%),
+        linear-gradient(160deg, transparent 20%, rgb(255 255 255 / .5) 22%, transparent 26%),
+        linear-gradient(20deg, transparent 68%, rgb(0 0 0 / .1) 69%, transparent 73%),
+        radial-gradient(circle at 35% 30%, rgb(255 255 255 / .35), transparent 45%),
+        radial-gradient(circle at 70% 75%, rgb(0 0 0 / .22), transparent 55%);
+    opacity: 0;
+    transition: opacity .4s;
+    pointer-events: none;
+}
+
+.trash-fly__ghost.is-crumpled::after {
+    opacity: 1;
+}
+
+/* Carton d'archives (« J'ai reçu ») : même pastille que la corbeille, en vert. */
+.trash-fly--archive {
+    background: var(--success);
+    box-shadow: 0 0 0 10px rgb(31 157 85 / .15), 0 18px 40px rgb(31 157 85 / .35);
+}
+
+/* ---------- Nouvelle idée : elle tombe à sa place, avec des confettis (js/app.js : burstConfetti) ---------- */
+
+.card.is-new {
+    animation: card-new .7s cubic-bezier(.2, .9, .3, 1.25) both, highlight 1.8s .5s var(--ease);
+}
+
+@keyframes card-new {
+    from {
+        opacity: 0;
+        transform: translateY(-60px) scale(.7) rotate(-4deg);
+    }
+}
+
+.confetti-piece {
+    position: fixed;
+    z-index: 1000;
+    width: 9px;
+    height: 14px;
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card.is-new {
+        animation: highlight 1.6s var(--ease);
+    }
+}
+
+/* Étiquette « Reçu » ou étiquette habituelle, selon l'état de la vignette (basculé par js/app.js). */
+.card:not(.card--received) .card__badge--received,
+.card--received .card__badge--idea,
+.card--received .card__badge--gifted {
+    display: none !important;
+}
+
+/* « Cling ! » : onomatopée de bande dessinée, sur une étoile jaune (js/app.js : onomatopoeia). */
+.onomatopoeia {
+    position: fixed;
+    z-index: 1001;
+    display: grid;
+    place-items: center;
+    padding: 18px 22px;
+    color: #fff;
+    font: 800 26px/1 var(--font);
+    letter-spacing: .02em;
+    white-space: nowrap;
+    text-shadow: 2px 2px 0 #1d2440, -1px -1px 0 #1d2440, 1px -1px 0 #1d2440, -1px 1px 0 #1d2440;
+    pointer-events: none;
+}
+
+.onomatopoeia::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: #ffd23f;
+    clip-path: polygon(50% 0, 61% 26%, 90% 10%, 78% 40%, 100% 52%, 76% 63%, 88% 92%, 59% 76%, 46% 100%, 37% 74%, 8% 88%, 22% 60%, 0 46%, 25% 37%, 12% 10%, 40% 24%);
 }

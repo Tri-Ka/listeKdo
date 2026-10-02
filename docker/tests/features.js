@@ -97,6 +97,7 @@ async function addIdea(page, name, price) {
     check(await owner.locator(`#idea-${bigId} .collection-pill, #object-${bigId} .group`).count() === 0, 'propriétaire : ne voit pas le cadeau à plusieurs');
     await friend.locator(`#idea-${bigId} .collection-pill`).click();
     await friend.click(`#object-${bigId} button[value=leave]`);
+    await friend.click('#confirm-dialog [data-confirm-ok]');
     await friend.waitForFunction((id) => !document.querySelector(`#object-${id} .group__list`), bigId);
     check(true, 'se retirer du cadeau à plusieurs');
     await friend.keyboard.press('Escape');
@@ -145,14 +146,18 @@ async function addIdea(page, name, price) {
 
     // Suppression de la liste de test.
     await owner.click('.profile__action');
-    await Promise.all([owner.waitForNavigation(), owner.click('#child-dialog [form="delete-child-form"]')]);
+    await owner.click('#child-dialog [form="delete-child-form"]');
+    await Promise.all([owner.waitForNavigation(), owner.click('#confirm-dialog [data-confirm-ok]')]);
     check(!owner.url().includes(childUrl.split('user=')[1]), 'liste d\'enfant supprimée');
 
     // Nettoyage des idées de test.
     await owner.goto(`${B}?user=${ETIENNE}`);
     for (const id of [cheapId, bigId]) {
+        await owner.locator(`#idea-${id} [data-card-menu] summary`).click();
         await owner.locator(`#idea-${id} [data-open-object-form]`).click();
-        await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-delete-object]')]);
+        await owner.click('#object-form-dialog [data-delete-object]');
+        await owner.click('#confirm-dialog [data-confirm-ok]');
+        await owner.waitForSelector(`#idea-${id}`, { state: 'detached' });
     }
     await owner.click('.profile__action');
     await owner.fill('#profile-dialog input[name=event_date]', '');

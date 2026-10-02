@@ -192,7 +192,7 @@ form.addEventListener('submit', async (event) => {
         if (!data?.ok) throw new Error(data?.message || "L'ajout a échoué, réessayez.");
 
         $('[data-open-list]').onclick = () => {
-            chrome.tabs.create({ url: `${site}index.php?user=${encodeURIComponent(fields.owner.value)}#card-${data.id}` });
+            chrome.tabs.create({ url: `${site}index.php?user=${encodeURIComponent(fields.owner.value)}#new-${data.id}` });
             window.close();
         };
         const doneImage = $('[data-done-image]');

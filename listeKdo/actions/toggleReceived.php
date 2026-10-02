@@ -15,4 +15,25 @@ if (!received_enabled()) {
 $received = empty($object['received_at']);
 object_set_received($object, $received);
 
-succeed(array('received' => $received), list_url($owner['code']), $received ? 'Idée archivée dans « Reçus ».' : 'Idée remise dans la liste.');
+// La vignette et sa fiche sont renvoyées entières : « Je l'offre », étiquettes et menu changent avec l'état.
+$objects = objects_for_user($owner['id']);
+$object = $objects[$object['id']];
+$isOwner = (int) $me['id'] === (int) $owner['id'];
+$ctx = array(
+    'me' => $me,
+    'owner' => $owner,
+    'isOwner' => $isOwner,
+    'isFriend' => false,
+    'canEdit' => true,
+    'canGift' => !$isOwner,
+    'private' => is_private_list($owner),
+    'canView' => true,
+    'children' => array(),
+    'ownerChildren' => array(),
+);
+
+succeed(array(
+    'received' => $received,
+    'card' => render('partials/card', array('object' => $object, 'ctx' => $ctx)),
+    'dialog' => render('partials/object_dialog', array('object' => $object, 'ctx' => $ctx)),
+), list_url($owner['code']), $received ? 'Idée archivée dans « Reçus ».' : 'Idée remise dans la liste.');

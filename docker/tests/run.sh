@@ -24,6 +24,7 @@ for id in $(sql "SELECT id FROM liste_user WHERE nom LIKE 'Test1%';" | tail -n +
 sql "DELETE FROM liste_user WHERE nom LIKE 'Test1%';"
 # Liste privée (private.js) : remise en public même si le test s'arrête en cours de route.
 sql "UPDATE liste_user SET is_private = 0 WHERE id = 1;" || true
+sql "DELETE FROM liste_noel WHERE nom = 'Idée reçue test';"
 sql "DELETE FROM notification WHERE product_id IN (SELECT id FROM liste_noel WHERE nom = 'Produit test extension'); DELETE FROM liste_noel WHERE nom = 'Produit test extension'; DELETE FROM liste_item WHERE product_id NOT IN (SELECT id FROM liste_noel);"
 find ../../listeKdo/uploads/img -type f -newer out/.start -delete
 # Photo de profil envoyée par features.js (l'ancienne est remise par « saved »).

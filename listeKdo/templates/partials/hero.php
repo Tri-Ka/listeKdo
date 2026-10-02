@@ -32,7 +32,7 @@ $themes = themes();
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="friendCode" value="<?php echo e($owner['code']); ?>">
                                 <?php if ($ctx['isFriend']) : ?>
-                                    <button type="submit" class="btn btn--ghost btn--sm profile__unfriend" data-confirm="Retirer <?php echo e($owner['nom']); ?> de vos amis ?"><?php echo icon('user-xmark'); ?> Retirer de mes amis</button>
+                                    <button type="submit" class="btn btn--ghost btn--sm profile__unfriend" data-confirm="<?php echo e($owner['nom']); ?> n'apparaîtra plus dans vos amis. Vous pourrez l'ajouter de nouveau quand vous voulez." data-confirm-title="Retirer de vos amis ?" data-confirm-ok="Retirer" data-confirm-icon="user-xmark"><?php echo icon('user-xmark'); ?> Retirer de mes amis</button>
                                 <?php else : ?>
                                     <button type="submit" class="btn btn--primary btn--sm"><?php echo icon('user-plus'); ?> Ajouter à mes amis</button>
                                 <?php endif; ?>

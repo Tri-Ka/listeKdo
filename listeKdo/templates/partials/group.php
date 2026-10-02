@@ -46,7 +46,7 @@ $percent = null !== $object['price'] && 0 < $object['price'] ? min(100, round($o
             </label>
             <button type="submit" name="do" value="join" class="btn btn--primary"><?php echo icon('users'); ?> <?php echo $mine ? 'Modifier' : 'Je participe'; ?></button>
             <?php if ($mine) : ?>
-                <button type="submit" name="do" value="leave" class="btn btn--ghost" data-confirm="Vous ne participez plus à ce cadeau ?">Me retirer</button>
+                <button type="submit" name="do" value="leave" class="btn btn--ghost" data-confirm="Votre participation à ce cadeau commun sera retirée." data-confirm-title="Quitter ce cadeau commun ?" data-confirm-ok="Me retirer" data-confirm-icon="users">Me retirer</button>
             <?php endif; ?>
         </form>
     <?php endif; ?>

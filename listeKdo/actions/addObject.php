@@ -55,4 +55,5 @@ if ($isCollection) {
 
 notify($me['id'], $id, NOTIF_NEW_IDEA);
 
-succeed(array('id' => $id), $back . '#card-' . $id, 'Idée ajoutée !');
+// #new- : la page joue l'animation d'arrivée de la nouvelle idée (js/app.js : openFromHash).
+succeed(array('id' => $id), $back . '#new-' . $id, 'Idée ajoutée !');

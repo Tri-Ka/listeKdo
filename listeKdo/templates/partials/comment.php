@@ -9,7 +9,7 @@
             <form method="post" action="actions/deleteComment.php" data-ajax="delete-comment" class="comment__delete">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="id" value="<?php echo (int) $comment['id']; ?>">
-                <button type="submit" title="Supprimer mon commentaire" aria-label="Supprimer mon commentaire" data-confirm="Supprimer ce commentaire ?"><?php echo icon('trash-can'); ?></button>
+                <button type="submit" title="Supprimer mon commentaire" aria-label="Supprimer mon commentaire" data-confirm="Il sera définitivement effacé." data-confirm-title="Supprimer ce commentaire ?" data-confirm-ok="Supprimer" data-confirm-icon="trash-can"><?php echo icon('trash-can'); ?></button>
             </form>
         <?php endif; ?>
     </div>

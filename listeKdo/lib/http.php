@@ -165,3 +165,17 @@ function managed_object($me, $id)
 
     return array($object, $owner);
 }
+
+/**
+ * Idée d'une liste que l'utilisateur peut voir (une liste privée n'est visible que de ceux qui la gèrent).
+ */
+function visible_object($me, $id)
+{
+    $object = object_find($id);
+
+    if ($object && !can_view($me, user_find($object['user_id']))) {
+        return null;
+    }
+
+    return $object;
+}

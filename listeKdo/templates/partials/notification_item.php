@@ -6,8 +6,14 @@
             <strong><?php echo e($notification['author']['nom']); ?></strong>
             <?php if (NOTIF_COMMENT == $notification['type']) : ?>
                 a commenté <?php echo $notification['mine'] ? 'votre idée' : 'une idée'; ?>
+                <?php if ('' !== (string) $notification['product_nom']) : ?>
+                    <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
+                <?php endif; ?>
             <?php elseif (NOTIF_NEW_IDEA == $notification['type']) : ?>
                 a ajouté une nouvelle idée
+                <?php if ('' !== (string) $notification['product_nom']) : ?>
+                    <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
+                <?php endif; ?>
             <?php elseif (NOTIF_EVENT == $notification['type']) : ?>
                 <?php
                 $when = array(1 => 'demain', 7 => 'dans une semaine', 30 => 'dans un mois');

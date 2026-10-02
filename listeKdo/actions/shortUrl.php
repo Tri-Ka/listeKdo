@@ -7,7 +7,7 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 
 $owner = user_find_by_code(input('user'));
 
-if (!$owner) {
+if (!$owner || !can_view(current_user(), $owner)) {
     send_json(array('ok' => false, 'message' => "Cette liste n'existe pas."), 404);
 }
 

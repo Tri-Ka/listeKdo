@@ -93,9 +93,29 @@ function theme_of($user)
 
 /**
  * Texte de thème avec le nom du propriétaire (« Anniversaire de Mallory »).
+ * Pour une liste secondaire, voir le commentaire de themes().
  */
 function theme_text($theme, $field, $owner)
 {
+    static $secondary = array();
+
+    if ($owner) {
+        $id = (int) $owner['id'];
+        if (!isset($secondary[$id])) {
+            $secondary[$id] = is_child_list($owner);
+        }
+
+        // Liste secondaire : son nom peut être un titre, on ne l'insère pas dans une phrase.
+        if ($secondary[$id]) {
+            if ('heading' === $field) {
+                return $owner['nom'];
+            }
+            if (isset($theme[$field . '_list'])) {
+                return $theme[$field . '_list'];
+            }
+        }
+    }
+
     return sprintf($theme[$field], $owner ? $owner['nom'] : 'vous');
 }
 

@@ -54,6 +54,16 @@
     --accent-to: #a5722b;
 }
 
+[data-theme="wishlist"] {
+    --brand: #2d4f86;
+    --brand-strong: #1e3864;
+    --brand-soft: #e6edf8;
+    --hero-from: #eee7db;
+    --hero-to: #fbf9f5;
+    --accent-from: #f3a0a0;
+    --accent-to: #2d4f86;
+}
+
 *,
 *::before,
 *::after {

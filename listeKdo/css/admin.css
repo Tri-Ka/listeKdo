@@ -517,6 +517,7 @@
 .dt__theme--birthday { background: #fff1d6; color: #a86400; }
 .dt__theme--naissance { background: #e7f1fd; color: #3576c4; }
 .dt__theme--mariage { background: #f6eee4; color: #8a6a3d; }
+.dt__theme--wishlist { background: #f0ebff; color: #6a48e0; }
 
 .dt__progress {
     display: inline-flex;

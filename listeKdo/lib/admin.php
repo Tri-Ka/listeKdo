@@ -98,7 +98,7 @@ function admin_filters($tab)
     if ('lists' === $tab) {
         $filters = array('all' => 'Toutes', 'active' => 'Avec des idées', 'empty' => 'Vides');
         if (children_enabled()) {
-            $filters['children'] = "Listes d'enfants";
+            $filters['children'] = 'Secondaires';
         }
 
         return $filters;
@@ -106,7 +106,7 @@ function admin_filters($tab)
 
     $filters = array('all' => 'Tous', 'admin' => 'Admins', 'accounts' => 'Comptes');
     if (children_enabled()) {
-        $filters['children'] = 'Enfants';
+        $filters['children'] = 'Secondaires';
     }
 
     return $filters;

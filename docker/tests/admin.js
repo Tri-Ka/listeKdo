@@ -171,7 +171,7 @@ const waitTable = (page) => page.waitForFunction(() => !document.querySelector('
     await admin.fill('#admin-parent-input', name);
     await admin.click('[data-managers-add] button');
     await admin.waitForSelector('.toast--error');
-    check((await admin.locator('.toast--error').last().innerText()).includes('propre parent'), 'parents : pas son propre parent');
+    check((await admin.locator('.toast--error').last().innerText()).includes('propre gestionnaire'), 'gestionnaires : pas son propre gestionnaire');
     await admin.fill('#admin-parent-input', 'Etienne');
     await admin.click('[data-managers-add] button');
     await admin.waitForSelector('[data-managers-list] li');
@@ -184,7 +184,7 @@ const waitTable = (page) => page.waitForFunction(() => !document.querySelector('
     const parentView = await admin.context().newPage();
     await parentView.goto(B);
     await parentView.click('.user-menu summary');
-    check(await parentView.locator('.user-menu__panel a', { hasText: 'Liste de ' + name }).count() === 1, 'Etienne : liste de l\'enfant dans son menu');
+    check(await parentView.locator('.user-menu__panel a', { hasText: name }).count() === 1, 'Etienne : liste de l\'enfant dans son menu');
     await parentView.goto(B + 'index.php?q=&user=' + await rows(admin).first().locator('.dt__person').getAttribute('href').then((h) => h.split('user=')[1]));
     check(await parentView.locator('.card--add').count() === 1, 'Etienne peut modifier la liste');
     await parentView.close();

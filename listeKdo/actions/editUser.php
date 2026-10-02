@@ -21,7 +21,26 @@ if ('' !== $password && $password !== $repeat) {
     fail('Les mots de passe sont différents.', $back);
 }
 
+// Question secrète : modifiée seulement si une réponse est saisie (sinon on garde l'actuelle).
+// Vérifiée avant tout enregistrement, pour ne pas sauver le reste du profil en affichant une erreur.
+$secret = null;
+if (secret_enabled()) {
+    $question = input('secret_question');
+    if ('__custom' === $question) {
+        $question = input('secret_question_custom');
+    }
+    if ('' !== input('secret_answer')) {
+        $secret = secret_from_request($back);
+    } elseif ('' !== (string) $me['secret_question'] && '' !== $question && $question !== $me['secret_question']) {
+        fail('Indiquez la réponse de votre nouvelle question secrète.', $back);
+    }
+}
+
 $changes = array('nom' => $name, 'theme' => valid_theme(input('theme'), $me['theme']));
+
+if (private_enabled() && isset($_POST['is_private'])) {
+    $changes['is_private'] = '1' === input('is_private') ? 1 : 0;
+}
 
 if (event_dates_enabled() && isset($_POST['event_date'])) {
     $changes['event_date'] = valid_date(input('event_date'));
@@ -52,12 +71,8 @@ if (upload_present('pictureFile')) {
 
 db_update('liste_user', $changes, array('id' => (int) $me['id']));
 
-// Question secrète : modifiée seulement si une réponse est saisie (sinon on garde l'actuelle).
-if (secret_enabled() && '' !== input('secret_answer')) {
-    $secret = secret_from_request($back);
+if ($secret) {
     secret_set($me, $secret[0], $secret[1]);
-} elseif (secret_enabled() && '' !== (string) $me['secret_question'] && input('secret_question') && input('secret_question') !== $me['secret_question']) {
-    fail('Indiquez la réponse de votre nouvelle question secrète.', $back);
 }
 
 // Le mot de passe fait partie de la signature du cookie : on le renouvelle.

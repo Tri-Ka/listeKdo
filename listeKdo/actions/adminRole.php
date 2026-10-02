@@ -16,7 +16,7 @@ if ((int) $user['id'] === (int) $me['id']) {
 }
 
 if ('admin' === $role && admin_is_child_account($user)) {
-    fail("Une liste d'enfant ne peut pas être administrateur : elle n'a pas de mot de passe.", '../admin.php');
+    fail("Une liste secondaire sans mot de passe ne peut pas être administrateur.", '../admin.php');
 }
 
 admin_set_role($user, $role);

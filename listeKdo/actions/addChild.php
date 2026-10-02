@@ -7,14 +7,14 @@ require_post();
 $me = require_login();
 
 if (!children_enabled()) {
-    fail("Les listes d'enfants ne sont pas encore activées.", list_url($me['code']), 500);
+    fail("Les listes secondaires ne sont pas encore activées.", list_url($me['code']), 500);
 }
 
 $name = input('nom');
 $theme = valid_theme(input('theme'), 'birthday');
 
 if ('' === $name || strlen($name) > 100) {
-    fail('Indiquez le prénom de l\'enfant.', list_url($me['code']));
+    fail('Indiquez le nom de la liste.', list_url($me['code']));
 }
 
 $childId = child_create($me, $name, $theme);
@@ -24,6 +24,10 @@ if (!$childId) {
 
 if (event_dates_enabled()) {
     db_update('liste_user', array('event_date' => valid_date(input('event_date'))), array('id' => (int) $childId));
+}
+
+if (private_enabled() && '1' === input('is_private')) {
+    db_update('liste_user', array('is_private' => 1), array('id' => (int) $childId));
 }
 
 if (upload_present('pictureFile')) {
@@ -41,4 +45,4 @@ foreach (user_friends($me['id']) as $friend) {
 }
 friend_add($child, $me);
 
-succeed(array(), list_url($child['code']), 'La liste de ' . $child['nom'] . ' est créée : ajoutez ses premières idées !');
+succeed(array(), list_url($child['code']), '« ' . $child['nom'] . ' » est créée : ajoutez ses premières idées !');

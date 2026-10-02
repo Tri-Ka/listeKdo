@@ -24,9 +24,14 @@ define('NOTIF_PARTICIPATION', 6);
  * Les décorations sont dans img/deco/<thème>/ (découpées dans img/elements*.png).
  *   event     : nom de l'événement (« Anniversaire dans 12 jours », compte à rebours)
  *   soon      : idem quand la date est unique et à venir (« Naissance prévue dans… »)
- *   date      : 'christmas' (25/12), 'yearly' (chaque année, depuis la date saisie) ou 'once' (date unique)
+ *   date      : 'christmas' (25/12), 'yearly' (chaque année, depuis la date saisie), 'once' (date unique) ou 'none'
  *   reminder  : rappel aux amis (« Coline fête son anniversaire dans une semaine »), avec son emoji
  *   color     : couleur de la barre du navigateur (<meta name="theme-color">)
+ */
+/*
+ * Textes des thèmes : %s est le nom du propriétaire. Une liste secondaire peut porter un titre
+ * (« Mariage de Julie & Max ») plutôt qu'un prénom : son titre de page est alors son nom seul,
+ * et elle utilise subtitle_list / note_list (sans le nom) quand ils existent.
  */
 function themes()
 {
@@ -37,6 +42,8 @@ function themes()
             'heading' => 'Anniversaire de %s',
             'subtitle' => "Une liste d'idées cadeaux pour faire briller les yeux de %s ✨",
             'note' => "Rendez l'anniversaire de %s encore plus magique !",
+            'subtitle_list' => "Une liste d'idées cadeaux pour un anniversaire inoubliable ✨",
+            'note_list' => 'Rendez cet anniversaire encore plus magique !',
             'left' => array('gifts', 'star'),
             'right' => array('balloons', 'bunting'),
             'footer' => 'cake',
@@ -53,6 +60,8 @@ function themes()
             'heading' => 'Noël de %s',
             'subtitle' => 'Les idées cadeaux de %s pour un Noël magique 🎄',
             'note' => 'Aidez le Père Noël à gâter %s !',
+            'subtitle_list' => 'Des idées cadeaux pour un Noël magique 🎄',
+            'note_list' => 'Aidez le Père Noël à faire des heureux !',
             'left' => array('ornament', 'candy', 'star'),
             'right' => array('gifts', 'gingerbread', 'snowflake'),
             'footer' => 'stocking',
@@ -85,6 +94,8 @@ function themes()
             'heading' => 'Mariage de %s',
             'subtitle' => 'Les idées cadeaux de %s pour célébrer le grand jour 💍',
             'note' => 'Merci de partager ce jour de bonheur avec %s !',
+            'subtitle_list' => 'Des idées cadeaux pour célébrer le grand jour 💍',
+            'note_list' => 'Merci de partager ce jour de bonheur avec nous !',
             'left' => array('bouquet', 'hearts'),
             'right' => array('balloons', 'dove', 'glasses'),
             'footer' => 'rings',
@@ -94,6 +105,25 @@ function themes()
             'reminder' => 'se marie',
             'emoji' => '💍',
             'color' => '#f8f1e6',
+        ),
+        // Neutre : une liste d'envies sans événement (pas de date ni de compte à rebours).
+        'wishlist' => array(
+            'label' => 'Wishlist',
+            'title' => 'Wishlist',
+            'heading' => 'Wishlist de %s',
+            'subtitle' => 'Les envies de %s, pour lui faire plaisir quand vous voulez 💫',
+            'note' => 'Merci de faire plaisir à %s !',
+            'subtitle_list' => 'Des envies à offrir quand vous voulez 💫',
+            'note_list' => 'Merci pour vos attentions !',
+            'left' => array('gifts', 'heart', 'leaf'),
+            'right' => array('bag', 'tag', 'star'),
+            'footer' => 'clipboard',
+            'event' => 'Le grand jour',
+            'soon' => 'Le grand jour',
+            'date' => 'none',
+            'reminder' => 'a de nouvelles envies',
+            'emoji' => '🎁',
+            'color' => '#f5efe5',
         ),
     );
 }
@@ -230,6 +260,68 @@ function can_manage($me, $owner)
 
     return children_enabled()
         && null !== db_one('SELECT child_id FROM liste_manager WHERE child_id = ? AND user_id = ?', array((int) $owner['id'], (int) $me['id']));
+}
+
+/**
+ * La colonne liste_user.is_private existe-t-elle ? (migration sql/2026-10-02-liste-privee.sql)
+ */
+function private_enabled()
+{
+    return db_has_column('liste_user', 'is_private');
+}
+
+function is_private_list($user)
+{
+    return $user && private_enabled() && !empty($user['is_private']);
+}
+
+/**
+ * L'utilisateur peut-il voir cette liste ? Une liste privée n'est visible que de ceux qui la gèrent.
+ */
+function can_view($me, $owner)
+{
+    return !is_private_list($owner) || can_manage($me, $owner);
+}
+
+/**
+ * Ids des listes privées que l'utilisateur ne peut pas voir (une seule requête, plus ses listes secondaires).
+ */
+function hidden_list_ids($me)
+{
+    if (!private_enabled()) {
+        return array();
+    }
+
+    $mine = array($me ? (int) $me['id'] : 0);
+    if ($me) {
+        foreach (user_children($me['id']) as $child) {
+            $mine[] = (int) $child['id'];
+        }
+    }
+
+    $ids = array();
+    foreach (db_all('SELECT id FROM liste_user WHERE is_private = 1 AND id NOT IN (?)', array($mine)) as $row) {
+        $ids[] = (int) $row['id'];
+    }
+
+    return $ids;
+}
+
+/**
+ * Retire d'une liste d'utilisateurs les listes privées que l'utilisateur ne peut pas voir.
+ */
+function visible_lists($me, $users)
+{
+    $hidden = hidden_list_ids($me);
+    $visible = array();
+
+    foreach ($users as $user) {
+        if (!in_array((int) $user['id'], $hidden)) {
+            $visible[] = $user;
+        }
+    }
+
+    return $visible;
 }
 
 function child_create($parent, $name, $theme)
@@ -457,13 +549,18 @@ function birth_date($user)
  * Prochaine date de l'événement d'une liste (timestamp à minuit), ou null.
  *   - Noël : toujours le 25 décembre ;
  *   - anniversaire : le prochain anniversaire, calculé depuis la date de naissance ;
- *   - naissance, mariage : la date prévue (date unique ; passée, plus de compte à rebours).
+ *   - naissance, mariage : la date prévue (date unique ; passée, plus de compte à rebours) ;
+ *   - wishlist : pas d'événement.
  */
 function event_next($user)
 {
     $themes = themes();
     $mode = isset($user['theme']) && isset($themes[$user['theme']]) ? $themes[$user['theme']]['date'] : 'christmas';
     $today = mktime(0, 0, 0, (int) date('n'), (int) date('j'), (int) date('Y'));
+
+    if ('none' === $mode) {
+        return null;
+    }
 
     if ('christmas' === $mode) {
         $month = 12;
@@ -1091,7 +1188,16 @@ function notifications_where($user, $friends)
         array_push($params, $friendIds, $giftTypes, $friendIds, $userId);
     }
 
-    return array($where . ')', $params);
+    $where .= ')';
+
+    // Rien des listes privées des autres : ni leurs idées, ni leurs rappels d'événement.
+    $hidden = hidden_list_ids($user);
+    if (0 < count($hidden)) {
+        $where .= ' AND (p.user_id IS NULL OR p.user_id NOT IN (?)) AND NOT (n.type = ? AND n.author_id IN (?))';
+        array_push($params, $hidden, NOTIF_EVENT, $hidden);
+    }
+
+    return array($where, $params);
 }
 
 define('NOTIFICATIONS_PER_PAGE', 10);

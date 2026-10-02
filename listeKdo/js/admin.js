@@ -340,8 +340,8 @@ function managersBody(op, parent = '') {
 function renderManagers(data) {
     $('[data-managers-name]', managersDialog).textContent = data.name;
     $('[data-managers-state]', managersDialog).textContent = data.managers.length
-        ? `C'est une liste d'enfant, gérée par ${data.managers.length > 1 ? 'ces parents' : 'ce parent'} :`
-        : 'Ce n\'est pas une liste d\'enfant. Ajoutez un parent pour en faire une.';
+        ? `C'est une liste secondaire, gérée par ${data.managers.length > 1 ? 'ces gestionnaires' : 'ce gestionnaire'} :`
+        : 'Ce n\'est pas une liste secondaire. Ajoutez un gestionnaire pour en faire une.';
 
     managersList.replaceChildren(...data.managers.map((manager) => {
         const item = document.createElement('li');
@@ -396,7 +396,7 @@ managersAdd.addEventListener('submit', async (event) => {
     const name = parentInput.value.trim().toLowerCase();
     const option = [...$$('#admin-parent-options option')].find((o) => o.value.trim().toLowerCase() === name);
     if (!option) {
-        toast('Choisissez un parent dans la liste proposée.', 'error');
+        toast('Choisissez un gestionnaire dans la liste proposée.', 'error');
         return;
     }
 

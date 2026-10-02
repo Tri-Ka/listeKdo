@@ -20,4 +20,4 @@ db_query('DELETE FROM liste_manager WHERE child_id = ?', array((int) $child['id'
 db_query('DELETE FROM liste_user WHERE id = ?', array((int) $child['id']));
 upload_purge_orphan_images();
 
-succeed(array(), list_url($me['code']), 'La liste de ' . $child['nom'] . ' a été supprimée.');
+succeed(array(), list_url($me['code']), '« ' . $child['nom'] . ' » a été supprimée.');

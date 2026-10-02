@@ -21,27 +21,27 @@ if ('add' === $op) {
     $parent = user_find(input_int('parent'));
 
     if (!$parent) {
-        fail('Choisissez un parent dans la liste.', '../admin.php?tab=lists', 404);
+        fail('Choisissez un gestionnaire dans la liste.', '../admin.php?tab=lists', 404);
     }
     if ((int) $parent['id'] === (int) $child['id']) {
-        fail('Une liste ne peut pas être son propre parent.', '../admin.php?tab=lists');
+        fail('Une liste ne peut pas être son propre gestionnaire.', '../admin.php?tab=lists');
     }
     if (admin_is_child_account($parent) || is_child_list($parent)) {
-        fail($parent['nom'] . " est déjà une liste d'enfant : elle ne peut pas être parent.", '../admin.php?tab=lists');
+        fail($parent['nom'] . " est déjà une liste secondaire : elle ne peut pas être gestionnaire.", '../admin.php?tab=lists');
     }
     if (0 < count(user_children($child['id']))) {
-        fail($child['nom'] . " gère déjà des listes d'enfants : elle ne peut pas devenir une liste d'enfant.", '../admin.php?tab=lists');
+        fail($child['nom'] . " gère déjà des listes secondaires : elle ne peut pas devenir une liste secondaire.", '../admin.php?tab=lists');
     }
 
     manager_add($child['id'], $parent['id']);
     // Comme depuis la liste de l'enfant : le parent apparaît dans ses amis.
     friend_add($child, $parent);
-    $message = $parent['nom'] . ' est maintenant parent de ' . $child['nom'] . '.';
+    $message = $parent['nom'] . ' gère maintenant « ' . $child['nom'] . ' ».';
 } elseif ('remove' === $op) {
     manager_remove($child['id'], input_int('parent'));
     $message = 0 < count(child_managers($child['id']))
-        ? 'Parent retiré.'
-        : $child['nom'] . " n'est plus une liste d'enfant.";
+        ? 'Gestionnaire retiré.'
+        : $child['nom'] . " n'est plus une liste secondaire.";
 }
 
 $managers = array();

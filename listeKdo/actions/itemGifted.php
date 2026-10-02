@@ -7,7 +7,7 @@ require_post();
 $me = require_login();
 
 $item = items_enabled() ? db_one('SELECT * FROM liste_item WHERE id = ?', array(input_int('id'))) : null;
-$object = $item ? object_find($item['product_id']) : null;
+$object = $item ? visible_object($me, $item['product_id']) : null;
 
 if (!$object || (int) $object['user_id'] === (int) $me['id']) {
     fail("Cet élément n'existe pas.", '../index.php', 404);

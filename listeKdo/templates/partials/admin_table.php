@@ -41,7 +41,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                     <?php echo admin_th($params, 'role', 'Rôle'); ?>
                     <?php echo admin_th($params, 'ideas', 'Idées', 'dt__num'); ?>
                     <?php echo admin_th($params, 'friends', 'Amis', 'dt__num'); ?>
-                    <?php if (children_enabled()) : ?><?php echo admin_th($params, 'children', 'Enfants', 'dt__num'); ?><?php endif; ?>
+                    <?php if (children_enabled()) : ?><?php echo admin_th($params, 'children', 'Gère', 'dt__num'); ?><?php endif; ?>
                     <?php if (last_seen_enabled()) : ?><?php echo admin_th($params, 'last_seen', 'Dernière visite'); ?><?php endif; ?>
                     <?php if (secret_enabled()) : ?><th scope="col" class="dt__num">Question</th><?php endif; ?>
                     <th scope="col" class="dt__actions"><span class="sr-only">Actions</span></th>
@@ -63,7 +63,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                                 <strong><?php echo e($row['nom']); ?></strong>
                                 <small>
                                     #<?php echo (int) $row['id']; ?>
-                                    <?php if ($isChild) : ?> · <span class="dt__tag dt__tag--child"><?php echo icon('child-reaching'); ?> Enfant</span><?php endif; ?>
+                                    <?php if ($isChild) : ?> · <span class="dt__tag dt__tag--child"><?php echo icon('layer-group'); ?> Secondaire</span><?php endif; ?>
                                     <?php if ($isMe) : ?> · <span class="dt__tag">Vous</span><?php endif; ?>
                                 </small>
                             </span>
@@ -100,7 +100,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                             <div class="dt__btns">
                             <a class="round-btn round-btn--sm" href="<?php echo e($listUrl); ?>" data-tip="Voir la liste" aria-label="Voir la liste de <?php echo e($row['nom']); ?>"><?php echo icon('eye'); ?></a>
                                 <?php if (children_enabled()) : ?>
-                                    <button type="button" class="round-btn round-btn--sm" data-admin-managers="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-tip="Parents (liste d'enfant)" aria-label="Parents de <?php echo e($row['nom']); ?>"><?php echo icon('child-reaching'); ?></button>
+                                    <button type="button" class="round-btn round-btn--sm" data-admin-managers="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-tip="Gestionnaires (liste secondaire)" aria-label="Gestionnaires de <?php echo e($row['nom']); ?>"><?php echo icon('layer-group'); ?></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -127,7 +127,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                         <td class="dt__num" data-label="Idées"><?php echo (int) $row['ideas']; ?></td>
                         <td class="dt__num" data-label="Amis"><?php echo (int) $row['friends']; ?></td>
                         <?php if (children_enabled()) : ?>
-                            <td class="dt__num" data-label="Enfants"><?php echo 0 < (int) $row['children'] ? (int) $row['children'] : '<span class="dt__muted">—</span>'; ?></td>
+                            <td class="dt__num" data-label="Listes gérées"><?php echo 0 < (int) $row['children'] ? (int) $row['children'] : '<span class="dt__muted">—</span>'; ?></td>
                         <?php endif; ?>
                         <?php if (last_seen_enabled()) : ?>
                             <td data-label="Dernière visite">
@@ -156,7 +156,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                             <div class="dt__btns">
                             <a class="round-btn round-btn--sm" href="<?php echo e($listUrl); ?>" data-tip="Voir la liste" aria-label="Voir la liste de <?php echo e($row['nom']); ?>"><?php echo icon('eye'); ?></a>
                                 <?php if (children_enabled()) : ?>
-                                    <button type="button" class="round-btn round-btn--sm" data-admin-managers="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-tip="Parents (liste d'enfant)" aria-label="Parents de <?php echo e($row['nom']); ?>"><?php echo icon('child-reaching'); ?></button>
+                                    <button type="button" class="round-btn round-btn--sm" data-admin-managers="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-tip="Gestionnaires (liste secondaire)" aria-label="Gestionnaires de <?php echo e($row['nom']); ?>"><?php echo icon('layer-group'); ?></button>
                                 <?php endif; ?>
                             <?php if (!admin_is_child_account($row) && reset_links_enabled()) : ?>
                                 <form method="post" action="actions/adminResetLink.php" data-admin-link>

@@ -118,6 +118,16 @@
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
                 <?php echo render('partials/theme_field', array('current' => $me['theme'])); ?>
+                <?php if (private_enabled()) : ?>
+                    <label class="switch">
+                        <input type="hidden" name="is_private" value="0">
+                        <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($me['is_private']) ? ' checked' : ''; ?>>
+                        <span>
+                            <strong>Liste privée</strong>
+                            <small>Visible par vous seul : vos amis ne la voient plus, même avec le lien</small>
+                        </span>
+                    </label>
+                <?php endif; ?>
                 <?php if (secret_enabled()) : ?>
                     <?php echo render('partials/secret_fields', array('current' => $me['secret_question'], 'required' => false)); ?>
                 <?php endif; ?>
@@ -216,6 +226,11 @@
                     </label>
                 </div>
                 <img class="image-preview" alt="" data-image-preview hidden>
+                <?php // Images trouvées sur la page du produit (js/app.js) : un clic choisit l'image de l'idée. ?>
+                <div class="image-choices" data-image-choices hidden>
+                    <span class="image-choices__label">Images trouvées sur la page : cliquez pour choisir</span>
+                    <div class="image-choices__list" data-image-choices-list></div>
+                </div>
                 <p class="form__tip"><?php echo icon('puzzle-piece'); ?> Plus rapide : <button type="button" class="link-btn" data-open="extension-dialog">l'extension Chrome</button> ajoute un produit depuis sa page.</p>
             </div>
             <footer class="modal__footer">
@@ -269,23 +284,32 @@
         <form method="post" action="actions/addChild.php" enctype="multipart/form-data" data-resize-images>
             <?php echo csrf_field(); ?>
             <header class="modal__header">
-                <h2 id="child-new-title">Créer la liste d'un enfant</h2>
+                <h2 id="child-new-title">Créer une liste secondaire</h2>
                 <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
             </header>
             <div class="modal__body form">
-                <p class="form__intro">Vous gérez sa liste depuis votre compte : ajouter des idées, changer le thème… L'enfant n'a pas besoin de compte. Vous continuez à voir ce qui lui est offert, pour coordonner.</p>
+                <p class="form__intro">Une liste que vous gérez depuis votre compte, pour un enfant, un couple, un animal… : ajouter des idées, changer le thème… Elle n'a pas besoin de compte. Vous continuez à voir ce qui y est offert, pour coordonner.</p>
                 <label class="field">
-                    <span>Prénom *</span>
-                    <input type="text" name="nom" required maxlength="100">
+                    <span>Nom ou titre de la liste *</span>
+                    <input type="text" name="nom" required maxlength="100" placeholder="Léo, Mariage de Julie & Max, Rex…">
                 </label>
                 <label class="field">
                     <span>Photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
                 <?php echo render('partials/theme_field', array('current' => 'birthday')); ?>
+                <?php if (private_enabled()) : ?>
+                    <label class="switch">
+                        <input type="checkbox" name="is_private" value="1" role="switch">
+                        <span>
+                            <strong>Liste privée</strong>
+                            <small>Visible seulement par ses gestionnaires, même avec le lien</small>
+                        </span>
+                    </label>
+                <?php endif; ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>
+                        <span>Date de l'événement <small>(date de naissance pour un anniversaire, date du mariage ou de la naissance prévue)</small></span>
                         <input type="date" name="event_date">
                     </label>
                 <?php endif; ?>
@@ -305,12 +329,12 @@
             <?php echo csrf_field(); ?>
             <input type="hidden" name="owner" value="<?php echo e($child['code']); ?>">
             <header class="modal__header">
-                <h2 id="child-title">Liste de <?php echo e($child['nom']); ?></h2>
+                <h2 id="child-title">Modifier « <?php echo e($child['nom']); ?> »</h2>
                 <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
             </header>
             <div class="modal__body form">
                 <label class="field">
-                    <span>Prénom *</span>
+                    <span>Nom ou titre de la liste *</span>
                     <input type="text" name="nom" required maxlength="100" value="<?php echo e($child['nom']); ?>">
                 </label>
                 <label class="field">
@@ -318,9 +342,19 @@
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
                 <?php echo render('partials/theme_field', array('current' => $child['theme'])); ?>
+                <?php if (private_enabled()) : ?>
+                    <label class="switch">
+                        <input type="hidden" name="is_private" value="0">
+                        <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($child['is_private']) ? ' checked' : ''; ?>>
+                        <span>
+                            <strong>Liste privée</strong>
+                            <small>Visible seulement par ses gestionnaires, même avec le lien</small>
+                        </span>
+                    </label>
+                <?php endif; ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>
+                        <span>Date de l'événement <small>(date de naissance pour un anniversaire, date du mariage ou de la naissance prévue)</small></span>
                         <input type="date" name="event_date" value="<?php echo e($child['event_date'] && '0000-00-00' !== $child['event_date'] ? $child['event_date'] : ''); ?>">
                     </label>
                 <?php endif; ?>
@@ -338,7 +372,7 @@
                 }
                 ?>
                 <div class="field managers">
-                    <span>Parents qui gèrent cette liste</span>
+                    <span>Gestionnaires de cette liste</span>
                     <ul class="managers__list">
                         <?php foreach ($managers as $manager) : ?>
                             <li class="child-chip">
@@ -354,8 +388,8 @@
                     </ul>
                     <?php if (0 < count($candidates)) : ?>
                         <div class="managers__add">
-                            <select name="manager_id" aria-label="Ajouter un parent">
-                                <option value="">Ajouter un parent parmi mes amis…</option>
+                            <select name="manager_id" aria-label="Ajouter un gestionnaire">
+                                <option value="">Ajouter un gestionnaire parmi mes amis…</option>
                                 <?php foreach ($candidates as $candidate) : ?>
                                     <option value="<?php echo (int) $candidate['id']; ?>"><?php echo e($candidate['nom']); ?></option>
                                 <?php endforeach; ?>
@@ -372,7 +406,7 @@
                 <?php endif; ?>
             </div>
             <footer class="modal__footer">
-                <button type="submit" class="btn btn--danger" form="delete-child-form" data-confirm="Supprimer la liste de <?php echo e($child['nom']); ?> et toutes ses idées ?" aria-label="Supprimer la liste"><?php echo icon('trash-can'); ?></button>
+                <button type="submit" class="btn btn--danger" form="delete-child-form" data-confirm="Supprimer « <?php echo e($child['nom']); ?> » et toutes ses idées ?" aria-label="Supprimer la liste"><?php echo icon('trash-can'); ?></button>
                 <span class="modal__spacer"></span>
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
                 <button type="submit" class="btn btn--primary">Enregistrer</button>

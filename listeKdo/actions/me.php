@@ -15,7 +15,7 @@ if (!$me) {
 // Listes où l'extension peut ajouter une idée : la sienne, puis celles des enfants gérés.
 $lists = array(array('code' => $me['code'], 'nom' => 'Ma liste', 'avatar' => avatar_url($me)));
 foreach (user_children($me['id']) as $child) {
-    $lists[] = array('code' => $child['code'], 'nom' => 'Liste de ' . $child['nom'], 'avatar' => avatar_url($child));
+    $lists[] = array('code' => $child['code'], 'nom' => $child['nom'], 'avatar' => avatar_url($child));
 }
 
 send_json(array(

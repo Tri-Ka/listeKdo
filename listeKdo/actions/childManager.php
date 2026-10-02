@@ -11,26 +11,26 @@ $child = target_owner($me);
 $back = list_url($child['code']);
 
 if ((int) $child['id'] === (int) $me['id'] || !is_child_list($child)) {
-    fail("Ce n'est pas la liste d'un enfant.", $back);
+    fail("Ce n'est pas une liste secondaire.", $back);
 }
 
 if ('' !== input('manager_remove')) {
     $managers = child_managers($child['id']);
     if (count($managers) < 2) {
-        fail('La liste doit garder au moins un parent.', $back);
+        fail('La liste doit garder au moins un gestionnaire.', $back);
     }
     manager_remove($child['id'], input_int('manager_remove'));
     // On s'est retiré soi-même : retour à sa propre liste.
     $back = input_int('manager_remove') === (int) $me['id'] ? list_url($me['code']) : $back;
-    succeed(array(), $back, 'Parent retiré.');
+    succeed(array(), $back, 'Gestionnaire retiré.');
 }
 
 $parent = user_find(input_int('manager_id'));
 if (!$parent || !user_has_friend($me['id'], $parent['code'])) {
-    fail('Choisissez un parent parmi vos amis.', $back);
+    fail('Choisissez un gestionnaire parmi vos amis.', $back);
 }
 
 manager_add($child['id'], $parent['id']);
 friend_add($child, $parent);
 
-succeed(array(), $back, $parent['nom'] . ' peut maintenant gérer la liste de ' . $child['nom'] . '.');
+succeed(array(), $back, $parent['nom'] . ' peut maintenant gérer « ' . $child['nom'] . ' ».');

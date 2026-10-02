@@ -89,6 +89,10 @@ function metadata_fetch_page($url)
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language: fr-FR,fr;q=0.9,en;q=0.8'
         ));
+        /* Les certificats racine de Free (et de PHP 4 en local) sont trop anciens : sans cela, tout site HTTPS échoue.
+         * On ne fait que lire des informations publiques, comme pour le Worker et ScraperAPI plus bas. */
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
 
         $response = curl_exec($curl);
         $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -189,18 +193,29 @@ function metadata_title_from_url($url)
     $parts = @parse_url($url);
     if ($parts === false || !isset($parts['path'])) return '';
 
-    $segments = explode('/', trim($parts['path'], '/'));
-    for ($i = count($segments) - 1; $i >= 0; $i--) {
-        $segment = urldecode($segments[$i]);
-        if ($segment === '' || preg_match('/^\d+$/', $segment)) continue;
-        if (strtolower($segment) === 'p' || strtolower($segment) === 'product' || strtolower($segment) === 'products') continue;
-
-        $title = preg_replace('/[-_]+/', ' ', $segment);
-        $title = trim(preg_replace('/\s+/', ' ', $title));
-        if ($title !== '') return $title;
+    /* Le segment le plus « lisible » du lien (le plus de mots), par ex. velo-de-ville-elops-500 plutôt que R-p-301186. */
+    $best = '';
+    $bestWords = 0;
+    foreach (explode('/', trim($parts['path'], '/')) as $segment) {
+        $segment = preg_replace('/\.(html?|php|aspx?)$/i', '', urldecode($segment));
+        $words = preg_split('/[-_+\s]+/', $segment);
+        /* Codes produit en fin de lien (ni112o0ff, a11, 80275887…) : retirés. */
+        while (count($words) > 1 && preg_match('/\d/', $words[count($words) - 1])) {
+            array_pop($words);
+        }
+        $count = 0;
+        foreach ($words as $word) {
+            if (preg_match('/^[^\d]{3,}$/', $word)) $count++;
+        }
+        if ($count > $bestWords) {
+            $best = implode(' ', $words);
+            $bestWords = $count;
+        }
     }
 
-    return '';
+    if ($bestWords < 2) return '';
+    $title = trim(preg_replace('/\s+/', ' ', $best));
+    return strtoupper(substr($title, 0, 1)) . substr($title, 1);
 }
 
 function metadata_fetch_with_scraper_api($url)
@@ -342,12 +357,115 @@ function metadata_parse_page($html, $pageUrl)
         if (isset($attributes['href'])) $image = metadata_clean_text($attributes['href']);
     }
 
-    if ($image !== '') {
-        $absoluteImage = metadata_absolute_url($image, $pageUrl);
-        if ($absoluteImage !== false) $image = $absoluteImage;
+    /* Données produit schema.org (JSON-LD) : plus fiables sur les boutiques, et elles donnent le prix. */
+    $product = metadata_json_ld_product($html);
+    /* Comme l'extension Chrome : le produit schema.org passe avant Open Graph (souvent le nom du site ou une bannière). */
+    if ($product['name'] !== '') $title = $product['name'];
+    if ($product['description'] !== '') $description = $product['description'];
+    if ($product['image'] !== '') $image = $product['image'];
+    $price = $product['price'];
+    if ($price === '') $price = metadata_first_value($values, array('product:price:amount', 'og:price:amount'));
+
+    /* Images proposées au choix : l'image retenue d'abord, puis les autres (Open Graph, produit, grandes images de la page). */
+    $candidates = array_merge(array($image), $product['images'], metadata_meta_images($tags[0]), metadata_page_images($html));
+    $images = array();
+    $seen = array();
+    foreach ($candidates as $candidate) {
+        if ($candidate === '' || preg_match('/\.svg(\?|$)|logo|icon|sprite|pixel|placeholder|spacer|blank\.|data:/i', $candidate)) continue;
+        $absolute = metadata_absolute_url($candidate, $pageUrl);
+        /* Même image en plusieurs tailles (?f=xl, ?w=200…) : une seule fois. */
+        $key = preg_replace('/[?#].*$/', '', $absolute);
+        if ($absolute === false || isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $images[] = $absolute;
+        if (count($images) >= 8) break;
+    }
+    $image = count($images) > 0 ? $images[0] : '';
+
+    return array('title' => $title, 'description' => $description, 'image' => $image, 'images' => $images, 'price' => $price);
+}
+
+/* Toutes les balises og:image / twitter:image (une page peut en déclarer plusieurs). */
+function metadata_meta_images($tags)
+{
+    $images = array();
+    foreach ($tags as $tag) {
+        $attributes = metadata_attributes($tag);
+        $name = isset($attributes['property']) ? $attributes['property'] : (isset($attributes['name']) ? $attributes['name'] : '');
+        if (preg_match('/^(og:image(:secure_url|:url)?|twitter:image(:src)?)$/i', $name) && isset($attributes['content'])) {
+            $images[] = metadata_clean_text($attributes['content']);
+        }
+    }
+    return $images;
+}
+
+/* Images de la page qui ressemblent à des photos de produit (src, data-src ou grande largeur annoncée). */
+function metadata_page_images($html)
+{
+    $images = array();
+    preg_match_all('/<img\b[^>]*>/i', $html, $tags);
+    foreach ($tags[0] as $tag) {
+        $attributes = metadata_attributes($tag);
+        $src = '';
+        foreach (array('data-old-hires', 'data-zoom-image', 'data-src', 'data-lazy-src', 'src') as $key) {
+            if (isset($attributes[$key]) && preg_match('/\.(jpe?g|png|webp)(\?|$)|\/images?\//i', $attributes[$key])) {
+                $src = $attributes[$key];
+                break;
+            }
+        }
+        if ($src === '') continue;
+        /* Les petites images (vignettes, pictos) sont ignorées quand leur taille est indiquée. */
+        if (isset($attributes['width']) && (int) $attributes['width'] > 0 && (int) $attributes['width'] < 150) continue;
+        $images[] = html_entity_decode($src);
+        if (count($images) >= 20) break;
+    }
+    return $images;
+}
+
+/*
+ * Lecture approximative d'un bloc JSON-LD de type Product (pas de json_decode en PHP 4) :
+ * premier nom, première description, première image et premier prix trouvés dans le bloc.
+ */
+function metadata_json_ld_product($html)
+{
+    $product = array('name' => '', 'description' => '', 'image' => '', 'images' => array(), 'price' => '');
+    if (!preg_match_all('#<script[^>]+application/ld\+json[^>]*>(.*?)</script>#is', $html, $scripts)) {
+        return $product;
     }
 
-    return array('title' => $title, 'description' => $description, 'image' => $image);
+    foreach ($scripts[1] as $json) {
+        if (!preg_match('/"@type"\s*:\s*(\[[^\]]*)?"Product"/', $json, $match, PREG_OFFSET_CAPTURE)) {
+            continue;
+        }
+        /* On lit à partir de la déclaration « Product », pour ne pas prendre le nom du site ou du fil d'Ariane. */
+        $json = substr($json, $match[0][1]);
+        if (preg_match('/"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $json, $m)) $product['name'] = metadata_json_string($m[1]);
+        if (preg_match('/"description"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $json, $m)) $product['description'] = metadata_json_string($m[1]);
+        if (preg_match('/"image"\s*:\s*(?:\[\s*)?(?:\{[^}]*?"(?:url|contentUrl)"\s*:\s*)?"([^"]+)"/', $json, $m)) $product['image'] = metadata_json_string($m[1]);
+        /* Liste d'images : "image": ["a.jpg", "b.jpg"] ou [{"url": "a.jpg"}, …]. */
+        if (preg_match('/"image"\s*:\s*\[(.*?)\]/s', $json, $m) && preg_match_all('/"(https?:[^"]+|\/[^"]+\.(?:jpe?g|png|webp)[^"]*|[^"\/]+\.(?:jpe?g|png|webp))"/i', $m[1], $all)) {
+            foreach ($all[1] as $url) $product['images'][] = metadata_json_string($url);
+        }
+        if (preg_match('/"(?:price|lowPrice)"\s*:\s*"?([0-9]+(?:[.,][0-9]+)?)/', $json, $m)) $product['price'] = $m[1];
+        break;
+    }
+
+    return $product;
+}
+
+/* Chaîne JSON -> texte (échappements courants, dont \u00e9 converti en UTF-8). */
+function metadata_json_string($value)
+{
+    $value = preg_replace('/\\\\u([0-9a-fA-F]{4})/e', 'metadata_utf8(hexdec("$1"))', $value);
+    $value = str_replace(array('\\/', '\\"', '\\n', '\\r', '\\t', '\\\\'), array('/', '"', ' ', ' ', ' ', '\\'), $value);
+    return metadata_clean_text($value);
+}
+
+function metadata_utf8($code)
+{
+    if ($code < 0x80) return chr($code);
+    if ($code < 0x800) return chr(0xC0 | ($code >> 6)) . chr(0x80 | ($code & 0x3F));
+    return chr(0xE0 | ($code >> 12)) . chr(0x80 | (($code >> 6) & 0x3F)) . chr(0x80 | ($code & 0x3F));
 }
 
 function metadata_attributes($tag)

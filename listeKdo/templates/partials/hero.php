@@ -22,7 +22,11 @@ $themes = themes();
                     </div>
                     <div class="profile__card">
                         <p class="profile__name"><?php echo e($owner['nom']); ?></p>
-                        <p class="profile__meta"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?></p>
+                        <p class="profile__meta"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?>
+                            <?php if ($ctx['private']) : ?>
+                                <span class="profile__private" data-tip="Visible seulement par <?php echo $ctx['isOwner'] ? 'vous' : 'ses gestionnaires'; ?>"><?php echo icon('lock'); ?> Privée</span>
+                            <?php endif; ?>
+                        </p>
                         <?php if (!$ctx['canEdit'] && $ctx['me']) : ?>
                             <form class="profile__friend" method="post" action="actions/<?php echo $ctx['isFriend'] ? 'removeFriend' : 'addFriend'; ?>.php">
                                 <?php echo csrf_field(); ?>
@@ -84,7 +88,7 @@ $themes = themes();
             </div>
         </div>
 
-        <?php if ($owner) : ?>
+        <?php if ($owner && !$ctx['private']) : ?>
             <?php $url = share_url($owner); ?>
             <div class="share" data-share data-share-code="<?php echo e($owner['code']); ?>">
                 <p class="share__label">Partager cette liste avec vos amis</p>
@@ -107,7 +111,7 @@ $themes = themes();
                 <span>Voir aussi :</span>
                 <?php foreach ($ctx['ownerChildren'] as $child) : ?>
                     <a class="child-chip" href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>">
-                        <?php echo avatar($child, 'child-chip__avatar'); ?> Liste de <?php echo e($child['nom']); ?>
+                        <?php echo avatar($child, 'child-chip__avatar'); ?> <?php echo e($child['nom']); ?>
                     </a>
                 <?php endforeach; ?>
             </nav>

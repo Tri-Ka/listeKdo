@@ -41,7 +41,11 @@ async function addIdea(page, name, price) {
     await owner.goto(`${B}?user=${ETIENNE}`);
     await owner.click('.profile__action');
     await owner.fill('#profile-dialog input[name=event_date]', inTwelveDays);
+    // Etienne a une question secrète personnalisée (« test ») : modifier le profil ne doit pas en redemander la réponse.
+    await owner.setInputFiles('#profile-dialog input[name=pictureFile]', 'fixtures/photo.jpg');
     await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    check(await owner.locator('.toast--success').count() === 1 && await owner.locator('.toast--error').count() === 0,
+        'profil (photo) enregistré sans redemander la question secrète personnalisée');
     check(await owner.locator('#profile-dialog input[name=theme]:checked').getAttribute('value') === 'birthday', 'profil : type de liste actuel coché');
     const days = await owner.locator('[data-unit="d"]').innerText();
     const seconds = await owner.locator('[data-unit="s"]').innerText();
@@ -119,6 +123,8 @@ async function addIdea(page, name, price) {
     await Promise.all([owner.waitForNavigation(), owner.click('#child-new-dialog button[type=submit]')]);
     check(await text(owner.locator('.profile__name')) === 'Léo test', 'liste d\'enfant créée');
     const childUrl = owner.url().split('#')[0];
+    // Le nom d'une liste secondaire peut être un titre : pas de « Anniversaire de … » ni de nom dans le sous-titre.
+    check(await owner.title() === 'Léo test' && !(await text(owner.locator('.hero__subtitle'))).includes('Léo test'), 'liste secondaire : titre = son nom, sous-titre neutre');
     const [childIdea, childIdeaId] = await addIdea(owner, 'Test idée enfant', '');
     check(await childIdea.count() === 1, 'le parent ajoute une idée à la liste de l\'enfant');
     check(await owner.locator('.gift-slot').count() > 0, 'le parent voit aussi les dons (pour coordonner)');
@@ -135,7 +141,7 @@ async function addIdea(page, name, price) {
     await friend.reload();
     check(await friend.locator(`#idea-${childIdeaId} [data-card-menu] [data-open-object-form]`).count() === 1, 'le deuxième parent peut modifier la liste (menu « ⋯ »)');
     await friend.click('.user-menu summary');
-    check(await friend.locator('.user-menu__panel a', { hasText: 'Liste de Léo test' }).count() === 1, 'menu du 2e parent : « Liste de Léo test »');
+    check(await friend.locator('.user-menu__panel a', { hasText: 'Léo test' }).count() === 1, 'menu du 2e gestionnaire : « Léo test »');
 
     // Suppression de la liste de test.
     await owner.click('.profile__action');

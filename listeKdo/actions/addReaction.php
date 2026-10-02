@@ -3,7 +3,7 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 $me = require_login();
 
-$object = object_find(input_int('object'));
+$object = visible_object($me, input_int('object'));
 $type = input_int('value');
 $types = reaction_types();
 

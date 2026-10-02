@@ -1,6 +1,6 @@
 /*
  * Liste de Kdo — feuille de style unique, sans framework.
- * Les thèmes (birthday, noel, naissance, mariage) ne changent que les variables.
+ * Les thèmes (birthday, noel, naissance, mariage, wishlist) ne changent que les variables.
  */
 
 /* ---------- Thèmes ---------- */
@@ -73,6 +73,19 @@
     --confetti-1: #f2c9c4;
     --confetti-2: #b9cbb0;
     --confetti-3: #e3c27d;
+}
+
+/* Wishlist (neutre) : bleu marine, crème et touches de corail. */
+[data-theme="wishlist"] {
+    --brand: #2d4f86;
+    --brand-strong: #1e3864;
+    --brand-soft: #e6edf8;
+    --page: #fbf9f5;
+    --hero-from: #eee7db;
+    --hero-to: #fbf9f5;
+    --confetti-1: #f3a0a0;
+    --confetti-2: #a9c4ea;
+    --confetti-3: #e9c46a;
 }
 
 /* ---------- Base ---------- */
@@ -979,6 +992,7 @@ button {
 .theme-picker__option--naissance::before { background: linear-gradient(135deg, #f7a8c8 50%, #9cc8f2 50%); }
 .theme-picker__option--birthday { --dot: #f5a524; }
 .theme-picker__option--mariage { --dot: #c19a5b; }
+.theme-picker__option--wishlist { --dot: #2d4f86; }
 
 .theme-picker__option:hover {
     background: rgb(255 255 255 / .9);
@@ -1007,13 +1021,13 @@ button {
 
 .theme-field__options {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 520px) {
     .theme-field__options {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -1048,6 +1062,11 @@ button {
 .theme-field__option--mariage {
     --ring: #a5722b;
     background: linear-gradient(160deg, #fbf5ea, #f0e2c9);
+}
+
+.theme-field__option--wishlist {
+    --ring: #2d4f86;
+    background: linear-gradient(160deg, #f8f4ec, #e5ebf5);
 }
 
 .theme-field__option:hover {
@@ -1151,6 +1170,13 @@ button {
 [data-theme="mariage"] .deco--hearts { width: 110px; left: 170px; top: 0; }
 [data-theme="mariage"] .deco--balloons { width: 140px; right: 10px; top: -30px; }
 [data-theme="mariage"] .deco--dove { width: 120px; right: 170px; top: 50px; }
+[data-theme="wishlist"] .deco--gifts { width: 280px; left: 0; bottom: 0; }
+[data-theme="wishlist"] .deco--heart { width: 80px; left: 40px; top: 0; rotate: -10deg; }
+[data-theme="wishlist"] .deco--leaf { width: 80px; left: 200px; top: 50px; }
+[data-theme="wishlist"] .deco--bag { width: 140px; right: 20px; bottom: 0; }
+[data-theme="wishlist"] .deco--tag { width: 120px; right: 170px; top: 20px; rotate: -6deg; }
+[data-theme="wishlist"] .deco--star { width: 54px; right: 50px; top: 0; }
+
 [data-theme="mariage"] .deco--glasses { width: 170px; right: 120px; bottom: 0; }
 
 /* ---------- Vagues (séparateurs, templates/partials/waves.php) ---------- */
@@ -2543,6 +2569,15 @@ button.heart-btn:hover {
     background: linear-gradient(160deg, #fbf5ea, #f0e2c9);
 }
 
+.occasion--wishlist {
+    background: linear-gradient(160deg, #f8f4ec, #e5ebf5);
+}
+
+/* Nombre impair de thèmes : le dernier prend toute la largeur. */
+.occasion:last-child:nth-child(odd) {
+    grid-column: span 2;
+}
+
 .steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -2906,24 +2941,28 @@ button.heart-btn:hover {
     background: color-mix(in srgb, var(--brand-soft) 45%, #fff);
 }
 
-.collection__toggle {
+.collection__toggle,
+.switch {
     display: flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
 }
 
-.collection__toggle span {
+.collection__toggle span,
+.switch span {
     display: grid;
     font-size: 14px;
 }
 
-.collection__toggle small {
+.collection__toggle small,
+.switch small {
     color: var(--text-muted);
     font-weight: 400;
 }
 
-.collection__toggle input {
+.collection__toggle input,
+.switch input {
     appearance: none;
     position: relative;
     flex: none;
@@ -2936,7 +2975,8 @@ button.heart-btn:hover {
     transition: background-color .2s;
 }
 
-.collection__toggle input::after {
+.collection__toggle input::after,
+.switch input::after {
     content: "";
     position: absolute;
     top: 3px;
@@ -2949,11 +2989,13 @@ button.heart-btn:hover {
     transition: transform .2s var(--ease);
 }
 
-.collection__toggle input:checked {
+.collection__toggle input:checked,
+.switch input:checked {
     background: var(--brand);
 }
 
-.collection__toggle input:checked::after {
+.collection__toggle input:checked::after,
+.switch input:checked::after {
     transform: translateX(18px);
 }
 
@@ -4244,6 +4286,51 @@ button.collection-pill {
     color: currentColor;
 }
 
+/* Liste privée : pastille à côté du nombre d'idées */
+.profile__private {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+    padding-left: 9px;
+    border-left: 1px solid currentColor;
+}
+
+/* Lien vers une liste privée qu'on ne peut pas voir */
+.private-notice {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    max-width: 440px;
+    margin: 80px auto;
+    padding: 40px 24px;
+    border-radius: var(--radius);
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 8px 24px rgb(29 36 64 / .08);
+}
+
+.private-notice h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.private-notice p {
+    margin: 0 0 8px;
+    color: var(--text-muted);
+}
+
+.private-notice__icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 26px;
+}
+
 /* Ajouter / retirer des amis : bouton avec libellé sous le nombre d'idées. */
 .profile__friend {
     margin: 4px 0 0;
@@ -4385,4 +4472,70 @@ button.collection-pill {
         radial-gradient(circle at 35% 18%, var(--confetti-3) 0 4px, transparent 5px),
         radial-gradient(circle at 64% 12%, var(--confetti-1) 0 5px, transparent 6px),
         linear-gradient(180deg, var(--hero-from), color-mix(in srgb, var(--hero-from) 70%, var(--page)));
+}
+
+/* Carte de thème seule sur sa ligne : image de la même taille que les autres. */
+.occasion:last-child:nth-child(odd) img {
+    width: min(220px, 50%);
+}
+
+/* Accueil mobile : la pastille de la barre du haut garde son texte (sinon elle est vide). */
+@media (max-width: 700px) {
+    body .topbar__brand:not(:has(.topbar__owner)) .topbar__text {
+        display: grid;
+    }
+
+    body .topbar__brand:not(:has(.topbar__owner)) .topbar__title {
+        display: block;
+        font-size: 15px;
+    }
+}
+
+/* Choix parmi les images trouvées sur la page du produit (formulaire d'idée). */
+.image-choices {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.image-choices__label {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.image-choices__list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 6px;
+    scrollbar-width: thin;
+}
+
+.image-choices__item {
+    flex: none;
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform .15s var(--ease), box-shadow .15s;
+}
+
+.image-choices__item:hover {
+    transform: translateY(-2px);
+}
+
+.image-choices__item[aria-pressed="true"] {
+    outline: 3px solid var(--brand);
+    outline-offset: 1px;
+}
+
+.image-choices__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }

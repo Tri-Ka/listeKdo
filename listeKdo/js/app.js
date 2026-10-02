@@ -860,7 +860,44 @@ if (objectDialog) {
     const showPreview = (src) => {
         preview.hidden = !src;
         if (src) preview.src = src;
+        $$('[data-image-choice]', form).forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.imageChoice === src)));
     };
+
+    // Plusieurs images trouvées : vignettes cliquables pour choisir celle de l'idée.
+    const choices = $('[data-image-choices]', form);
+    const showChoices = (images) => {
+        const list = $('[data-image-choices-list]', choices);
+        list.replaceChildren();
+        images.forEach((src) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'image-choices__item';
+            button.dataset.imageChoice = src;
+            button.setAttribute('aria-label', 'Choisir cette image');
+            button.setAttribute('aria-pressed', String(src === fields.image.value));
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.referrerPolicy = 'no-referrer';
+            // Image introuvable ou interdite d'affichage hors du site : on la retire.
+            img.addEventListener('error', () => {
+                button.remove();
+                if (list.children.length < 2) choices.hidden = true;
+            });
+            button.append(img);
+            list.append(button);
+        });
+        choices.hidden = images.length < 2;
+    };
+
+    choices.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-image-choice]');
+        if (!button) return;
+        fields.file.value = '';
+        fields.image.value = button.dataset.imageChoice;
+        showPreview(button.dataset.imageChoice);
+    });
 
     document.addEventListener('click', (event) => {
         const trigger = event.target.closest('[data-open-object-form]');
@@ -881,6 +918,7 @@ if (objectDialog) {
         $('[data-object-form-title]', form).textContent = object ? `Modifier : ${object.nom}` : 'Une nouvelle idée ?';
         $('[data-object-form-submit]', form).textContent = object ? 'Enregistrer' : 'Ajouter';
         showPreview(object?.image);
+        showChoices([]);
         setCollection(object?.items || []);
         openDialog(objectDialog);
     });
@@ -966,18 +1004,39 @@ if (objectDialog) {
                     signal: controller.signal,
                     headers: { Accept: 'application/json', 'X-CSRF-Token': csrfToken },
                 });
-                const metadata = await response.json();
+                let metadata = await response.json();
+
+                // Le serveur (Free) est souvent bloqué : on demande alors à Microlink, directement depuis le navigateur.
+                if (!metadata.success || metadata.partial || !metadata.image) {
+                    const extra = await microlinkMetadata(url, controller.signal);
+                    if (extra) {
+                        metadata = {
+                            success: true,
+                            // Un nom deviné depuis le lien (« partial ») vaut moins que le vrai titre de la page.
+                            title: metadata.success && !metadata.partial && metadata.title ? metadata.title : (extra.title || metadata.title),
+                            partial: !extra.title && (metadata.partial || !metadata.success),
+                            description: metadata.description || extra.description,
+                            image: metadata.image || extra.image,
+                            images: [...(metadata.images || []), ...(extra.image ? [extra.image] : [])],
+                            price: metadata.price || '',
+                        };
+                    }
+                }
 
                 // On n'écrase jamais ce que l'utilisateur a déjà saisi.
                 if (metadata.success) {
-                    if (metadata.title && !fields.nom.value) fields.nom.value = metadata.title;
+                    if (metadata.title && !fields.nom.value) fields.nom.value = productTitle(metadata.title);
                     if (metadata.description && !fields.description.value) fields.description.value = metadata.description;
                     if (metadata.image && !fields.image.value && !fields.file.files.length) {
                         fields.image.value = metadata.image;
                         showPreview(metadata.image);
                     }
+                    if (metadata.price && fields.price && !fields.price.value) fields.price.value = String(metadata.price).replace('.', ',');
+                    if (!fields.file.files.length) showChoices([...new Set(metadata.images || [])]);
                 }
-                status.textContent = metadata.message || (metadata.success ? 'Informations récupérées ✔' : '');
+                status.textContent = metadata.partial || !metadata.success
+                    ? 'Ce site bloque la lecture automatique : complétez à la main (ou utilisez l’extension Chrome).'
+                    : (metadata.image ? 'Informations récupérées ✔' : 'Informations récupérées ✔ (pas d’image trouvée)');
             } catch (error) {
                 if (error.name !== 'AbortError') status.textContent = '';
             } finally {
@@ -985,6 +1044,33 @@ if (objectDialog) {
             }
         }, 600);
     });
+}
+
+/* « L’orchidée 10311 | Creator Expert | Boutique LEGO® » -> « L’orchidée 10311 » (nom du site retiré). */
+function productTitle(title) {
+    const [first] = title.split(' | ');
+    return first.trim().length >= 4 ? first.trim() : title;
+}
+
+/*
+ * Microlink (offre gratuite, sans clé, ~25 liens par jour et par visiteur) lit la page à notre place.
+ * Appelé depuis le navigateur : Free ne peut pas le joindre, et aucun secret n'est nécessaire.
+ */
+async function microlinkMetadata(url, signal) {
+    try {
+        const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`, { signal });
+        const result = await response.json();
+        const data = result.status === 'success' ? result.data : null;
+        if (!data) return null;
+        // Microlink renvoie parfois le lien lui-même comme titre, ou un logo (SVG) comme image : on les ignore.
+        const title = data.title && data.title.includes(' ') && !/introuvable|not found|access denied|captcha|robot/i.test(data.title) ? data.title : '';
+        const image = data.image?.url && !/\.svg(\?|$)/i.test(data.image.url) ? data.image.url : '';
+        if (!title && !image) return null;
+        return { title, description: title ? data.description || '' : '', image };
+    } catch (error) {
+        if (error.name === 'AbortError') throw error;
+        return null;
+    }
 }
 
 /* ---------- Images : réduction avant envoi ---------- */

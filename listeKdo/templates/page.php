@@ -1,5 +1,8 @@
 <?php
 $pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
+if ($owner && !$ctx['canView']) {
+    $pageTitle = 'Liste privée';
+}
 ?><!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -33,6 +36,13 @@ $pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
     <main class="page">
         <?php if (!$owner) : ?>
             <?php echo render('partials/home', array('notFound' => '' !== input('user'))); ?>
+        <?php elseif (!$ctx['canView']) : ?>
+            <section class="private-notice">
+                <span class="private-notice__icon"><?php echo icon('lock'); ?></span>
+                <h1>Cette liste est privée</h1>
+                <p>Pour l'instant, seule la personne qui l'a créée peut la voir.</p>
+                <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> <?php echo $me ? 'Revenir à ma liste' : "Retour à l'accueil"; ?></a>
+            </section>
         <?php else : ?>
             <?php echo render('partials/hero', array('ctx' => $ctx, 'theme' => $theme, 'objectCount' => count($objects))); ?>
             <?php echo render('partials/tabs', array('ctx' => $ctx, 'objects' => $objects)); ?>
@@ -65,7 +75,7 @@ $pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
         <?php endif; ?>
     </main>
 
-    <?php if ($owner) : ?>
+    <?php if ($owner && $ctx['canView']) : ?>
         <?php echo render('partials/footer', array('theme' => $theme, 'owner' => $owner, 'ctx' => $ctx)); ?>
     <?php endif; ?>
 

@@ -34,7 +34,7 @@ $params = $table['params'];
 
         <ul class="stats">
             <li class="stat stat--users"><span class="stat__icon"><?php echo icon('users'); ?></span><strong><?php echo (int) $stats['users']; ?></strong><span>utilisateurs</span></li>
-            <li class="stat stat--children"><span class="stat__icon"><?php echo icon('child-reaching'); ?></span><strong><?php echo (int) $stats['children']; ?></strong><span>listes d'enfants</span></li>
+            <li class="stat stat--children"><span class="stat__icon"><?php echo icon('layer-group'); ?></span><strong><?php echo (int) $stats['children']; ?></strong><span>listes secondaires</span></li>
             <li class="stat stat--ideas"><span class="stat__icon"><?php echo icon('list'); ?></span><strong><?php echo (int) $stats['ideas']; ?></strong><span>idées</span></li>
             <li class="stat stat--gifted"><span class="stat__icon"><?php echo icon('gift'); ?></span><strong><?php echo (int) $stats['gifted']; ?></strong><span>offertes</span></li>
         </ul>
@@ -117,15 +117,15 @@ $params = $table['params'];
 
     <dialog class="modal modal--small" id="admin-managers" aria-labelledby="admin-managers-title">
         <header class="modal__header">
-            <h2 id="admin-managers-title">Parents de <span data-managers-name></span></h2>
+            <h2 id="admin-managers-title">Gestionnaires de <span data-managers-name></span></h2>
             <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
         </header>
         <div class="modal__body">
             <p class="admin__hint" data-managers-state></p>
             <ul class="managers" data-managers-list></ul>
             <form class="managers__add" data-managers-add>
-                <label class="sr-only" for="admin-parent-input">Ajouter un parent</label>
-                <input type="text" id="admin-parent-input" list="admin-parent-options" placeholder="Ajouter un parent…" autocomplete="off" required>
+                <label class="sr-only" for="admin-parent-input">Ajouter un gestionnaire</label>
+                <input type="text" id="admin-parent-input" list="admin-parent-options" placeholder="Ajouter un gestionnaire…" autocomplete="off" required>
                 <datalist id="admin-parent-options">
                     <?php foreach ($parentOptions as $option) : ?>
                         <option value="<?php echo e($option['nom']); ?>" data-id="<?php echo (int) $option['id']; ?>"></option>
@@ -133,7 +133,7 @@ $params = $table['params'];
                 </datalist>
                 <button type="submit" class="btn btn--primary btn--sm"><?php echo icon('plus'); ?> Ajouter</button>
             </form>
-            <p class="admin__hint">Les parents peuvent modifier la liste et voient qui offre quoi. Le parent est aussi ajouté aux amis de la liste.</p>
+            <p class="admin__hint">Une liste avec au moins un gestionnaire est une liste secondaire. Les gestionnaires peuvent la modifier et voient qui offre quoi ; ils sont aussi ajoutés à ses amis.</p>
         </div>
         <footer class="modal__footer">
             <button type="button" class="btn btn--ghost" data-close>Fermer</button>

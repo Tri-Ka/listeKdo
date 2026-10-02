@@ -5,7 +5,7 @@
             <p class="home-hero__alert"><?php echo icon('triangle-exclamation'); ?> Cette liste n'existe pas ou plus.</p>
         <?php endif; ?>
         <h1>Une liste de cadeaux à partager avec vos proches</h1>
-        <p>Anniversaire, Noël, naissance, mariage : ajoutez vos idées, envoyez le lien, chacun réserve ce qu'il offre.</p>
+        <p>Anniversaire, Noël, naissance, mariage ou simple wishlist : ajoutez vos idées, envoyez le lien, chacun réserve ce qu'il offre.</p>
         <div class="home-hero__actions">
             <button type="button" class="btn btn--primary btn--lg" data-open="signup-dialog"><?php echo icon('gift'); ?> Créer ma liste</button>
             <button type="button" class="btn btn--light btn--lg" data-open="login-dialog">J'ai déjà un compte</button>

@@ -13,7 +13,7 @@ if (!$user || !reset_links_enabled()) {
 }
 
 if (admin_is_child_account($user)) {
-    fail("Une liste d'enfant n'a pas de mot de passe : elle est gérée par ses parents.", '../admin.php');
+    fail("Cette liste secondaire n'a pas de mot de passe : elle est gérée par ses gestionnaires.", '../admin.php');
 }
 
 $link = reset_link_create($user);

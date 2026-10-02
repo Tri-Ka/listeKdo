@@ -20,6 +20,10 @@ if ('' === $name) {
 
 $changes = array('nom' => $name, 'theme' => valid_theme(input('theme'), $child['theme']));
 
+if (private_enabled() && isset($_POST['is_private'])) {
+    $changes['is_private'] = '1' === input('is_private') ? 1 : 0;
+}
+
 if (event_dates_enabled() && isset($_POST['event_date'])) {
     $changes['event_date'] = valid_date(input('event_date'));
 }

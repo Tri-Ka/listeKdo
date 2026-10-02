@@ -2,7 +2,8 @@
 $me = $ctx['me'];
 $children = isset($ctx['children']) && is_array($ctx['children']) ? $ctx['children'] : array();
 $myGifts = isset($myGifts) && is_array($myGifts) ? $myGifts : array();
-$owner = $ctx['owner'];
+// Liste privée qu'on ne peut pas voir : ni son nom ni sa photo dans la barre.
+$owner = $ctx['canView'] ? $ctx['owner'] : null;
 ?>
 <header class="topbar">
     <a class="topbar__brand" href="<?php echo $owner ? 'index.php?user=' . e(rawurlencode($owner['code'])) : 'index.php'; ?>">
@@ -82,10 +83,10 @@ $owner = $ctx['owner'];
                     <p class="user-menu__name"><?php echo e($me['nom']); ?></p>
                     <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>"><?php echo icon('list'); ?> Ma liste</a>
                     <?php foreach ($children as $child) : ?>
-                        <a href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>"><?php echo icon('child-reaching'); ?> Liste de <?php echo e($child['nom']); ?></a>
+                        <a href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>"><?php echo icon('layer-group'); ?> <?php echo e($child['nom']); ?></a>
                     <?php endforeach; ?>
                     <?php if (children_enabled()) : ?>
-                        <button type="button" data-open="child-new-dialog"><?php echo icon('plus'); ?> Créer la liste d'un enfant</button>
+                        <button type="button" data-open="child-new-dialog"><?php echo icon('plus'); ?> Créer une liste secondaire</button>
                     <?php endif; ?>
                     <?php $giftCount = my_gifts_count($myGifts); ?>
                     <button type="button" data-open="my-gifts-dialog"><?php echo icon('gift'); ?> Les cadeaux que j'offre

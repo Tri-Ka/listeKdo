@@ -6,7 +6,7 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 $me = require_login();
 
-$object = object_find(input_int('id'));
+$object = visible_object($me, input_int('id'));
 if (!$object || !participations_enabled() || (int) $object['user_id'] === (int) $me['id']) {
     fail("Cette idée n'existe pas.", '../index.php', 404);
 }

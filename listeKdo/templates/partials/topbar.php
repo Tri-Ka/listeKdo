@@ -92,6 +92,9 @@ $owner = $ctx['owner'];
                         <?php if (0 < $giftCount) : ?><span class="user-menu__count"><?php echo (int) $giftCount; ?></span><?php endif; ?></button>
                     <button type="button" data-open="profile-dialog"><?php echo icon('user'); ?> Mon profil</button>
                     <button type="button" data-open="extension-dialog"><?php echo icon('puzzle-piece'); ?> Extension Chrome</button>
+                    <?php if (is_admin($me)) : ?>
+                        <a href="admin.php"><?php echo icon('shield-halved'); ?> Administration</a>
+                    <?php endif; ?>
                     <form method="post" action="actions/disconnect.php">
                         <?php echo csrf_field(); ?>
                         <button type="submit"><?php echo icon('right-from-bracket'); ?> Se déconnecter</button>

@@ -8,7 +8,7 @@ $pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
     <title><?php echo e($pageTitle); ?></title>
     <meta name="description" content="<?php echo e($pageTitle); ?>">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <meta name="theme-color" content="<?php echo 'birthday' === $theme['key'] ? '#fff3dc' : ('naissance' === $theme['key'] ? '#eaf4fd' : '#fdeeea'); ?>">
+    <meta name="theme-color" content="<?php echo e($theme['color']); ?>">
     <meta property="og:title" content="<?php echo e($pageTitle); ?>">
     <meta property="og:type" content="website">
     <meta property="og:image" content="http://datcharrye.free.fr/listeKdo/img/<?php echo $owner ? e($theme['key']) . '/' : ''; ?>metaOg.jpg">

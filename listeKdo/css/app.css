@@ -1,6 +1,6 @@
 /*
  * Liste de Kdo — feuille de style unique, sans framework.
- * Les thèmes (birthday, noel, naissance) ne changent que les variables.
+ * Les thèmes (birthday, noel, naissance, mariage) ne changent que les variables.
  */
 
 /* ---------- Thèmes ---------- */
@@ -49,16 +49,30 @@
     --confetti-3: #ffd36b;
 }
 
+/* Naissance : rose et bleu mélangés (lilas, pervenche), pour ne favoriser aucun genre. */
 [data-theme="naissance"] {
-    --brand: #4a90e2;
-    --brand-strong: #3576c4;
-    --brand-soft: #e7f1fd;
-    --page: #f3f8fe;
-    --hero-from: #d6e9fb;
-    --hero-to: #f3f8fe;
-    --confetti-1: #f9b6cf;
-    --confetti-2: #a9d1f7;
+    --brand: #6b74d0;
+    --brand-strong: #5059b8;
+    --brand-soft: #fbe8f1;
+    --page: #faf8fd;
+    --hero-from: #ebe6f8;
+    --hero-to: #faf8fd;
+    --confetti-1: #f7a8c8;
+    --confetti-2: #9cc8f2;
     --confetti-3: #ffe08a;
+}
+
+/* Mariage : or, ivoire, rose poudré et vert sauge. */
+[data-theme="mariage"] {
+    --brand: #a5722b;
+    --brand-strong: #85591d;
+    --brand-soft: #f6ecdc;
+    --page: #fcf9f4;
+    --hero-from: #f1e4cf;
+    --hero-to: #fcf9f4;
+    --confetti-1: #f2c9c4;
+    --confetti-2: #b9cbb0;
+    --confetti-3: #e3c27d;
 }
 
 /* ---------- Base ---------- */
@@ -862,11 +876,13 @@ button {
     box-shadow: var(--shadow);
 }
 
+/* Pastille « modifier » en haut à droite, posée sur le bord du cercle (loin du prénom). */
 .profile__action {
     position: absolute;
-    right: 2px;
-    bottom: 2px;
-    border: 0;
+    top: 0;
+    right: 0;
+    z-index: 3;
+    border: 3px solid #fff;
     box-shadow: var(--shadow);
 }
 
@@ -959,8 +975,10 @@ button {
 }
 
 .theme-picker__option--noel { --dot: #d93644; }
-.theme-picker__option--naissance { --dot: #4a90e2; }
+.theme-picker__option--naissance { --dot: #8f8ad8; }
+.theme-picker__option--naissance::before { background: linear-gradient(135deg, #f7a8c8 50%, #9cc8f2 50%); }
 .theme-picker__option--birthday { --dot: #f5a524; }
+.theme-picker__option--mariage { --dot: #c19a5b; }
 
 .theme-picker__option:hover {
     background: rgb(255 255 255 / .9);
@@ -972,6 +990,115 @@ button {
     color: var(--text);
     box-shadow: var(--shadow-sm);
     cursor: default;
+}
+
+/* Choix du type de liste dans les formulaires (partials/theme_field.php). */
+.theme-field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.theme-field legend {
+    margin-bottom: 6px;
+    padding: 0;
+}
+
+.theme-field__options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+@media (max-width: 420px) {
+    .theme-field__options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.theme-field__option {
+    --ring: #f5a524;
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 12px 6px 10px;
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px rgb(29 36 64 / .06);
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .2s var(--ease), box-shadow .15s;
+}
+
+.theme-field__option--birthday {
+    background: linear-gradient(160deg, #fff1cf, #ffe2a8);
+}
+
+.theme-field__option--noel {
+    --ring: #d93644;
+    background: linear-gradient(160deg, #ffe8e4, #ffd2cb);
+}
+
+.theme-field__option--naissance {
+    --ring: #6b74d0;
+    background: linear-gradient(120deg, #fde4ef, #e4e2f7 50%, #d8eafb);
+}
+
+.theme-field__option--mariage {
+    --ring: #a5722b;
+    background: linear-gradient(160deg, #fbf5ea, #f0e2c9);
+}
+
+.theme-field__option:hover {
+    transform: translateY(-2px);
+}
+
+.theme-field__option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.theme-field__option img {
+    width: 100%;
+    height: 48px;
+    object-fit: contain;
+    filter: saturate(.6);
+    opacity: .7;
+    transition: filter .15s, opacity .15s, transform .2s var(--ease);
+}
+
+.theme-field__option:has(input:checked) {
+    box-shadow: inset 0 0 0 2px var(--ring), 0 6px 16px -6px var(--ring);
+}
+
+.theme-field__option:has(input:checked) img {
+    filter: none;
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+/* Coche sur la carte choisie. */
+.theme-field__option:has(input:checked)::after {
+    content: "✓";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ring);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.theme-field__option:has(input:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
 }
 
 .hero__deco {
@@ -1000,24 +1127,31 @@ button {
     50% { translate: 0 -8px; }
 }
 
-/* Positions des décorations, par thème */
-[data-theme="birthday"] .deco--gifts { width: 240px; left: 0; bottom: 10px; }
-[data-theme="birthday"] .deco--hat { width: 70px; left: 210px; top: 30px; rotate: 14deg; }
-[data-theme="birthday"] .deco--balloons { width: 170px; right: 40px; top: 0; }
-[data-theme="birthday"] .deco--bunting { width: 220px; right: 0; bottom: 0; }
+/* Positions des décorations, par thème (colonnes de part et d'autre du titre, 280 px de haut au moins) */
+[data-theme="birthday"] .deco--gifts { width: 250px; left: 0; bottom: 0; }
+[data-theme="birthday"] .deco--star { width: 46px; left: 200px; top: 20px; }
+[data-theme="birthday"] .deco--balloons { width: 150px; right: 30px; top: -20px; }
+[data-theme="birthday"] .deco--bunting { width: 230px; right: 0; bottom: 0; }
 
-[data-theme="noel"] .deco--holly { width: 130px; left: 20px; top: 10px; }
-[data-theme="noel"] .deco--ornament { width: 90px; left: 150px; top: 120px; }
-[data-theme="noel"] .deco--candy { width: 80px; left: 30px; bottom: 10px; rotate: -12deg; }
-[data-theme="noel"] .deco--scene { width: 380px; right: 0; bottom: 0; }
-[data-theme="noel"] .deco--snowflake { width: 64px; right: 200px; top: 0; }
+[data-theme="noel"] .deco--ornament { width: 80px; left: 30px; top: 0; }
+[data-theme="noel"] .deco--candy { width: 150px; left: 0; bottom: 0; }
+[data-theme="noel"] .deco--star { width: 44px; left: 160px; top: 90px; }
+[data-theme="noel"] .deco--gifts { width: 280px; right: 0; bottom: 0; }
+[data-theme="noel"] .deco--gingerbread { width: 90px; right: 200px; top: 0; rotate: -8deg; }
+[data-theme="noel"] .deco--snowflake { width: 44px; right: 40px; top: 30px; }
 
-[data-theme="naissance"] .deco--moon { width: 130px; left: 20px; top: 0; }
-[data-theme="naissance"] .deco--cloud { width: 120px; left: 150px; top: 120px; }
-[data-theme="naissance"] .deco--bottle { width: 70px; left: 40px; bottom: 0; rotate: -10deg; }
-[data-theme="naissance"] .deco--mobile { width: 130px; right: 150px; top: -20px; }
-[data-theme="naissance"] .deco--teddy { width: 130px; right: 20px; bottom: 0; }
-[data-theme="naissance"] .deco--heart { width: 54px; right: 60px; top: 30px; }
+[data-theme="naissance"] .deco--mobile { width: 130px; left: 20px; top: -20px; }
+[data-theme="naissance"] .deco--bottle { width: 64px; left: 170px; bottom: 10px; rotate: -10deg; }
+[data-theme="naissance"] .deco--heart { width: 40px; left: 190px; top: 40px; }
+[data-theme="naissance"] .deco--teddy { width: 150px; right: 10px; bottom: 0; }
+[data-theme="naissance"] .deco--rattle { width: 90px; right: 190px; bottom: 20px; rotate: 10deg; }
+[data-theme="naissance"] .deco--pacifier { width: 70px; right: 60px; top: 0; }
+
+[data-theme="mariage"] .deco--bouquet { width: 230px; left: 0; bottom: 0; }
+[data-theme="mariage"] .deco--hearts { width: 110px; left: 170px; top: 0; }
+[data-theme="mariage"] .deco--balloons { width: 140px; right: 10px; top: -30px; }
+[data-theme="mariage"] .deco--dove { width: 120px; right: 170px; top: 50px; }
+[data-theme="mariage"] .deco--glasses { width: 170px; right: 120px; bottom: 0; }
 
 /* ---------- Vagues (séparateurs, templates/partials/waves.php) ---------- */
 
@@ -2377,9 +2511,6 @@ button.heart-btn:hover {
     transform: translateY(-4px) rotate(-1deg);
 }
 
-.occasion:first-child {
-    grid-column: span 2;
-}
 
 .occasion img {
     width: min(300px, 100%);
@@ -2405,7 +2536,11 @@ button.heart-btn:hover {
 }
 
 .occasion--naissance {
-    background: linear-gradient(160deg, #e9f4fe, #d3e8fb);
+    background: linear-gradient(120deg, #fde4ef, #e4e2f7 50%, #d8eafb);
+}
+
+.occasion--mariage {
+    background: linear-gradient(160deg, #fbf5ea, #f0e2c9);
 }
 
 .steps {
@@ -2468,12 +2603,18 @@ button.heart-btn:hover {
 }
 
 @media (max-width: 480px) {
+    /* 4 thèmes : on garde la grille 2 x 2, en plus compact. */
     .occasions {
-        grid-template-columns: 1fr;
+        gap: 10px;
     }
 
-    .occasion:first-child {
-        grid-column: auto;
+    .occasion {
+        padding: 16px 10px 38px;
+    }
+
+    .occasion span {
+        bottom: 10px;
+        font-size: 12px;
     }
 
     .home-hero__actions .btn {
@@ -3808,7 +3949,7 @@ button.collection-pill {
         box-shadow: var(--shadow);
     }
 
-    .tabs-select > .icon {
+    .tabs-select > .icon:not(.tabs-select__chevron) {
         position: absolute;
         left: 18px;
         color: var(--brand);
@@ -4057,4 +4198,191 @@ button.collection-pill {
     .topbar__days {
         display: none;
     }
+}
+
+
+/* ---------- Nom et nombre d'idées sous la photo : deux pastilles distinctes ---------- */
+
+.profile__card {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    z-index: 2;
+    margin-top: -16px;
+}
+
+/* Prénom : pastille blanche à cheval sur le bas de la photo */
+.profile__card .profile__name {
+    margin: 0;
+    padding: 6px 20px;
+    border: 3px solid #fff;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 1.2rem;
+    line-height: 1.2;
+    box-shadow: 0 6px 18px rgb(29 36 64 / .12);
+}
+
+/* Nombre d'idées : petite pastille aux couleurs du thème */
+.profile__card .profile__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .6);
+    color: var(--brand-strong);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: none;
+    backdrop-filter: blur(4px);
+}
+
+.profile__card .profile__meta .icon {
+    color: currentColor;
+}
+
+/* Ajouter / retirer des amis : bouton avec libellé sous le nombre d'idées. */
+.profile__friend {
+    margin: 4px 0 0;
+}
+
+/* Retirer : action rare, donc discrète. */
+.profile__unfriend {
+    min-height: 30px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* Réaction dans le texte d'une notification */
+.notification__reaction {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    vertical-align: -3px;
+}
+
+/* Mobile : mêmes infos que sur ordinateur (type de liste, nom, J-xx), en plus petit, à côté de la photo. */
+@media (max-width: 700px) {
+    .topbar__owner-name {
+        display: none;
+    }
+
+    .topbar__owner ~ .topbar__text {
+        display: grid;
+        min-width: 0;
+    }
+
+    /* C'est la carte de la liste qui rétrécit, jamais les boutons de droite. */
+    .topbar__owner ~ .topbar__text ~ .topbar__days,
+    .topbar__actions {
+        flex-shrink: 0;
+    }
+
+    .topbar__owner ~ .topbar__text .topbar__kicker {
+        overflow: hidden;
+        font-size: 9px;
+        letter-spacing: .04em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body .topbar__owner ~ .topbar__text .topbar__title {
+        display: block;
+        overflow: hidden;
+        font-size: 15px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .topbar__owner ~ .topbar__days {
+        display: inline-block;
+        flex: none;
+        margin-left: 2px;
+        padding: 3px 7px;
+        font-size: 11px;
+    }
+}
+
+/* Petits écrans : le J-xx devient une pastille posée sur la photo, pour laisser la place au nom. */
+@media (max-width: 420px) {
+    .topbar__brand {
+        position: relative;
+    }
+
+    body .topbar__owner ~ .topbar__days {
+        position: absolute;
+        left: 0;
+        bottom: -4px;
+        margin: 0;
+        padding: 1px 5px;
+        border: 2px solid #fff;
+        font-size: 9px;
+        line-height: 1.3;
+    }
+}
+
+/* « Offert par … » : la photo de celui qui offre, avec une petite coche verte. */
+.gifted-pill__avatar {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin-left: -6px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.gifted-pill:has(.gifted-pill__avatar) {
+    position: relative;
+    padding-left: 12px;
+}
+
+.gifted-pill:has(.gifted-pill__avatar)::before {
+    content: "✓";
+    position: absolute;
+    left: 24px;
+    bottom: 4px;
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--success);
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* Idée déjà offerte : vignette atténuée (les boutons du bas restent nets). */
+.show-gifted .card--gifted .card__image img {
+    opacity: .5;
+    filter: grayscale(.5);
+    transition: opacity .2s, filter .2s;
+}
+
+.show-gifted .card--gifted .card__body {
+    opacity: .55;
+}
+
+.show-gifted .card--gifted:hover .card__image img {
+    opacity: .8;
+    filter: none;
+}
+
+/* Naissance : voile rose à gauche et bleu à droite par-dessus l'en-tête lilas. */
+[data-theme="naissance"] .hero {
+    background-image:
+        linear-gradient(105deg, rgb(250 200 222 / .6), transparent 42%, transparent 58%, rgb(176 210 246 / .6)),
+        radial-gradient(circle at 12% 30%, var(--confetti-1) 0 5px, transparent 6px),
+        radial-gradient(circle at 88% 22%, var(--confetti-2) 0 6px, transparent 7px),
+        radial-gradient(circle at 22% 82%, var(--confetti-3) 0 5px, transparent 6px),
+        radial-gradient(circle at 76% 76%, var(--confetti-1) 0 4px, transparent 5px),
+        radial-gradient(circle at 35% 18%, var(--confetti-3) 0 4px, transparent 5px),
+        radial-gradient(circle at 64% 12%, var(--confetti-1) 0 5px, transparent 6px),
+        linear-gradient(180deg, var(--hero-from), color-mix(in srgb, var(--hero-from) 70%, var(--page)));
 }

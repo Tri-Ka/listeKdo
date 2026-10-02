@@ -5,5 +5,6 @@ $me = require_login();
 
 list($object, $owner) = managed_object($me, input_int('id'));
 object_delete($object);
+upload_purge_orphan_images();
 
 succeed(array(), list_url($owner['code']), 'Idée supprimée.');

@@ -21,7 +21,7 @@ if ('' !== $password && $password !== $repeat) {
     fail('Les mots de passe sont différents.', $back);
 }
 
-$changes = array('nom' => $name);
+$changes = array('nom' => $name, 'theme' => valid_theme(input('theme'), $me['theme']));
 
 if (event_dates_enabled() && isset($_POST['event_date'])) {
     $changes['event_date'] = valid_date(input('event_date'));

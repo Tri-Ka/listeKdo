@@ -14,24 +14,27 @@ $themes = themes();
             <?php if ($owner) : ?>
                 <div class="profile">
                     <div class="profile__avatar">
-                        <img src="<?php echo e(avatar_url($owner)); ?>" alt="" width="132" height="132" data-tip="<?php echo e($owner['nom']); ?>" data-fallback="img/avatar-default.png">
+                        <img src="<?php echo e(avatar_url($owner)); ?>" alt="" width="132" height="132" data-tip="<?php echo e($owner['nom']); ?>" data-fallback="<?php echo e(avatar_default_url($owner)); ?>">
 
                         <?php if ($ctx['canEdit']) : ?>
                             <button type="button" class="round-btn round-btn--sm profile__action" data-open="<?php echo $ctx['isOwner'] ? 'profile-dialog' : 'child-dialog'; ?>" title="Modifier mon profil" aria-label="Modifier mon profil"><?php echo icon('pen'); ?></button>
-                        <?php elseif ($ctx['me']) : ?>
-                            <form method="post" action="actions/<?php echo $ctx['isFriend'] ? 'removeFriend' : 'addFriend'; ?>.php">
+                        <?php endif; ?>
+                    </div>
+                    <div class="profile__card">
+                        <p class="profile__name"><?php echo e($owner['nom']); ?></p>
+                        <p class="profile__meta"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?></p>
+                        <?php if (!$ctx['canEdit'] && $ctx['me']) : ?>
+                            <form class="profile__friend" method="post" action="actions/<?php echo $ctx['isFriend'] ? 'removeFriend' : 'addFriend'; ?>.php">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="friendCode" value="<?php echo e($owner['code']); ?>">
                                 <?php if ($ctx['isFriend']) : ?>
-                                    <button type="submit" class="round-btn round-btn--sm profile__action" title="Retirer de mes amis" aria-label="Retirer de mes amis" data-confirm="Retirer <?php echo e($owner['nom']); ?> de vos amis ?"><?php echo icon('user-xmark'); ?></button>
+                                    <button type="submit" class="btn btn--ghost btn--sm profile__unfriend" data-confirm="Retirer <?php echo e($owner['nom']); ?> de vos amis ?"><?php echo icon('user-xmark'); ?> Retirer de mes amis</button>
                                 <?php else : ?>
-                                    <button type="submit" class="round-btn round-btn--sm round-btn--primary profile__action" title="Ajouter à mes amis" aria-label="Ajouter à mes amis"><?php echo icon('user-plus'); ?></button>
+                                    <button type="submit" class="btn btn--primary btn--sm"><?php echo icon('user-plus'); ?> Ajouter à mes amis</button>
                                 <?php endif; ?>
                             </form>
                         <?php endif; ?>
                     </div>
-                    <p class="profile__name"><?php echo e($owner['nom']); ?></p>
-                    <p class="profile__meta"><?php echo icon('gift'); ?> <span data-count-total><?php echo (int) $objectCount; ?></span> idée<?php echo 1 < $objectCount ? 's' : ''; ?></p>
                 </div>
             <?php endif; ?>
 

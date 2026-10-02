@@ -38,9 +38,28 @@ function current_user()
 
     if (!$user) {
         unset($_SESSION['kdo_user_id']);
+    } else {
+        auth_touch($user);
     }
 
     return $user;
+}
+
+/**
+ * Dernière visite (colonne liste_user.last_seen_at, sql/2026-10-02-derniere-visite.sql) :
+ * au plus une écriture toutes les 10 minutes. Sans la colonne, rien n'est fait.
+ */
+function auth_touch($user)
+{
+    if (!array_key_exists('last_seen_at', $user)) {
+        return;
+    }
+
+    if ('' !== (string) $user['last_seen_at'] && strtotime($user['last_seen_at']) > time() - 600) {
+        return;
+    }
+
+    db_update('liste_user', array('last_seen_at' => db_now()), array('id' => (int) $user['id']));
 }
 
 function is_logged_in()

@@ -17,6 +17,7 @@ if ((int) $object['gifted_by'] !== (int) $me['id']) {
 }
 
 db_update('liste_noel', array('gifted_by' => null), array('id' => (int) $object['id']));
+notify_gift($me['id'], $object['id'], NOTIF_GIFT, false);
 
 $object = object_full(object_find($object['id']));
 $ctx = array('me' => $me, 'canGift' => true);

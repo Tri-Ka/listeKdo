@@ -7,8 +7,9 @@ const $ = (selector) => document.querySelector(selector);
 const form = $('[data-view="form"]');
 const fields = form.elements;
 
-let site = 'http://datcharrye.free.fr/listeKdo/';
+let site = DEFAULT_SITE;
 let account = null;
+let images = [];
 
 function show(view) {
     document.querySelectorAll('[data-view]').forEach((element) => {
@@ -19,16 +20,16 @@ function show(view) {
 function warn(message, isError = false) {
     const warning = $('[data-warning]');
     warning.hidden = !message;
-    warning.textContent = message || '';
+    warning.querySelector('span').textContent = message || '';
     warning.classList.toggle('is-error', isError);
 }
 
 /* ---------- Site et compte ---------- */
 
 async function loadSettings() {
-    const stored = await chrome.storage.local.get('site');
-    if (stored.site) site = stored.site;
+    site = await currentSite();
     $('[data-site]').value = site;
+    $('[data-version]').textContent = `v${chrome.runtime.getManifest().version}`;
 }
 
 $('[data-site]').addEventListener('change', async (event) => {
@@ -45,6 +46,33 @@ async function fetchAccount() {
     const data = await response.json().catch(() => null);
     return data?.ok ? data : null;
 }
+
+/* ---------- Mise à jour ---------- */
+
+async function showUpdate() {
+    const latest = await checkUpdate(site);
+    showUpdateBadge(latest);
+    if (!latest) return;
+
+    $('[data-update-version]').textContent = latest;
+    $('[data-current-version]').textContent = chrome.runtime.getManifest().version;
+    $('[data-update]').hidden = false;
+}
+
+$('[data-update-download]').addEventListener('click', async () => {
+    const id = await chrome.downloads.download({ url: `${site}download/liste-kdo-extension.zip?t=${Date.now()}`, filename: 'liste-kdo-extension.zip' });
+    $('[data-update-steps]').hidden = false;
+    // Ouvre le dossier de téléchargement sur le fichier, une fois celui-ci terminé.
+    chrome.downloads.onChanged.addListener(function opened(delta) {
+        if (delta.id === id && delta.state?.current === 'complete') {
+            chrome.downloads.show(id);
+            chrome.downloads.onChanged.removeListener(opened);
+        }
+    });
+});
+
+// Une extension non empaquetée se recharge depuis son dossier : les nouveaux fichiers sont pris en compte.
+$('[data-update-reload]').addEventListener('click', () => chrome.runtime.reload());
 
 /* ---------- Page en cours ---------- */
 
@@ -81,18 +109,26 @@ function formatPrice(price, currency) {
 
 function selectImage(url) {
     fields.image.value = url || '';
+    const index = images.indexOf(url);
+    const count = $('[data-count]');
+    count.hidden = images.length < 2;
+    count.textContent = `${index + 1} / ${images.length}`;
     const preview = $('[data-preview]');
     preview.hidden = !url;
     $('[data-no-image]').hidden = Boolean(url);
     if (url) preview.src = url;
     document.querySelectorAll('[data-thumbs] button').forEach((button) => {
-        button.setAttribute('aria-pressed', button.dataset.url === url);
+        const selected = button.dataset.url === url;
+        button.setAttribute('aria-pressed', selected);
+        if (selected) button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     });
 }
 
-function renderGallery(images) {
+function renderGallery(list) {
+    images = list;
     const thumbs = $('[data-thumbs]');
     thumbs.replaceChildren();
+    document.querySelectorAll('.gallery__nav').forEach((button) => { button.hidden = images.length < 2; });
 
     if (images.length > 1) {
         for (const url of images) {
@@ -103,8 +139,13 @@ function renderGallery(images) {
             const image = document.createElement('img');
             image.src = url;
             image.alt = '';
-            // Image cassée : on retire la vignette.
-            image.addEventListener('error', () => button.remove());
+            // Image cassée : on retire la vignette et l'image de la liste.
+            image.addEventListener('error', () => {
+                button.remove();
+                const wasSelected = fields.image.value === url;
+                images = images.filter((other) => other !== url);
+                selectImage(wasSelected ? images[0] || '' : fields.image.value);
+            });
             button.append(image);
             button.addEventListener('click', () => selectImage(url));
             thumbs.append(button);
@@ -114,13 +155,21 @@ function renderGallery(images) {
     selectImage(images[0] || '');
 }
 
+// Flèches sur l'image principale : image précédente / suivante, en boucle.
+document.querySelectorAll('.gallery__nav').forEach((button) => {
+    button.addEventListener('click', () => {
+        const index = images.indexOf(fields.image.value);
+        selectImage(images[(index + Number(button.dataset.step) + images.length) % images.length]);
+    });
+});
+
 /* ---------- Envoi ---------- */
 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const submit = $('[data-submit]');
     submit.disabled = true;
-    submit.textContent = 'Ajout en cours…';
+    $('[data-submit-label]').textContent = 'Ajout en cours…';
     warn('');
 
     try {
@@ -146,14 +195,20 @@ form.addEventListener('submit', async (event) => {
             chrome.tabs.create({ url: `${site}index.php?user=${encodeURIComponent(fields.owner.value)}#card-${data.id}` });
             window.close();
         };
+        const doneImage = $('[data-done-image]');
+        doneImage.hidden = !fields.image.value;
+        if (fields.image.value) doneImage.src = fields.image.value;
+        $('[data-done-name]').textContent = fields.nom.value.trim();
         show('done');
     } catch (error) {
         warn(error.message, true);
     } finally {
         submit.disabled = false;
-        submit.textContent = 'Ajouter à ma liste';
+        $('[data-submit-label]').textContent = 'Ajouter à ma liste';
     }
 });
+
+$('[data-close-popup]').addEventListener('click', () => window.close());
 
 $('[data-open-site]').addEventListener('click', () => {
     chrome.tabs.create({ url: site });
@@ -164,6 +219,7 @@ $('[data-open-site]').addEventListener('click', () => {
 
 (async () => {
     await loadSettings();
+    showUpdate();
 
     const tab = await currentTab();
     const [accountData, product] = await Promise.all([
@@ -179,6 +235,8 @@ $('[data-open-site]').addEventListener('click', () => {
 
     account = accountData;
     $('[data-user]').textContent = `Connecté : ${account.user.nom}`;
+    // Mêmes couleurs que la liste de l'utilisateur sur le site.
+    if (account.user.theme) document.body.dataset.theme = account.user.theme;
 
     // Choix de la liste : la sienne ou celle d'un enfant géré (mémorisé pour la prochaine fois).
     const lists = account.lists || [{ code: account.user.code, nom: 'Ma liste' }];
@@ -189,8 +247,9 @@ $('[data-open-site]').addEventListener('click', () => {
     select.addEventListener('change', () => chrome.storage.local.set({ lastList: select.value }));
     $('[data-list-field]').hidden = lists.length < 2;
     $('[data-price-field]').hidden = !account.prices;
+    $('[data-name-row]').classList.toggle('has-price', Boolean(account.prices));
     const avatar = $('[data-avatar]');
-    avatar.src = /^https?:/.test(account.user.avatar) ? account.user.avatar : site + account.user.avatar;
+    avatar.src = /^(https?|data):/.test(account.user.avatar) ? account.user.avatar : site + account.user.avatar;
     avatar.hidden = false;
 
     if (product) {

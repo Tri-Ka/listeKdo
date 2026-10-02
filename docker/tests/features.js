@@ -42,10 +42,22 @@ async function addIdea(page, name, price) {
     await owner.click('.profile__action');
     await owner.fill('#profile-dialog input[name=event_date]', inTwelveDays);
     await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    check(await owner.locator('#profile-dialog input[name=theme]:checked').getAttribute('value') === 'birthday', 'profil : type de liste actuel coché');
     const days = await owner.locator('[data-unit="d"]').innerText();
     const seconds = await owner.locator('[data-unit="s"]').innerText();
     await owner.waitForTimeout(1200);
     check(days === '11' && seconds !== await owner.locator('[data-unit="s"]').innerText(), 'compte à rebours : 11 jours + heures, secondes qui défilent');
+
+    /* ---- Type de liste depuis « Mon profil » ---- */
+    await owner.click('.profile__action');
+    await owner.click('#profile-dialog .theme-field__option--naissance');
+    await owner.screenshot({ path: `${__dirname}/out/features-profile-theme.png` });
+    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    check(await owner.locator('body').getAttribute('data-theme') === 'naissance', 'profil : type de liste changé (naissance)');
+    await owner.click('.profile__action');
+    await owner.click('#profile-dialog .theme-field__option--birthday');
+    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    check(await owner.locator('body').getAttribute('data-theme') === 'birthday', 'profil : retour en anniversaire');
 
     /* ---- Rappel d'événement chez les amis (Mallory est amie d'Etienne) ---- */
     await friend.goto(B);
@@ -103,7 +115,7 @@ async function addIdea(page, name, price) {
     await owner.click('.user-menu summary');
     await owner.click('[data-open="child-new-dialog"]');
     await owner.fill('#child-new-dialog input[name=nom]', 'Léo test');
-    await owner.selectOption('#child-new-dialog select[name=theme]', 'birthday');
+    await owner.check('#child-new-dialog input[name=theme][value=birthday]');
     await Promise.all([owner.waitForNavigation(), owner.click('#child-new-dialog button[type=submit]')]);
     check(await text(owner.locator('.profile__name')) === 'Léo test', 'liste d\'enfant créée');
     const childUrl = owner.url().split('#')[0];

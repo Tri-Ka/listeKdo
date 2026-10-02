@@ -24,7 +24,7 @@ if (user_find_by_name($name)) {
 
 $secret = secret_enabled() ? secret_from_request('../index.php') : null;
 
-$userId = user_create($name, $password, null);
+$userId = user_create($name, $password, null, valid_theme(input('theme'), 'noel'));
 if (!$userId) {
     fail("Le compte n'a pas pu être créé.");
 }

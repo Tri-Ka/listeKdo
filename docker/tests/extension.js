@@ -39,7 +39,17 @@ async function openPopup(context, id) {
     popup.on('pageerror', (e) => errors.push(e.message));
     await popup.waitForSelector('[data-view="login"]:not([hidden])');
     check(true, 'non connecté : invitation à se connecter');
+    check(await popup.locator('[data-update]').isHidden(), 'pas de bannière de mise à jour (même version que le site)');
     await popup.close();
+
+    // Version plus récente sur le site : bannière de mise à jour.
+    await context.route('**/download/extension-version.txt*', (route) => route.fulfill({ body: '9.9.9\n' }));
+    popup = await openPopup(context, id);
+    await popup.waitForSelector('[data-update]:not([hidden])');
+    check(await popup.textContent('[data-update-version]') === '9.9.9', 'bannière : nouvelle version 9.9.9');
+    await popup.screenshot({ path: `${__dirname}/out/extension-update.png` });
+    await popup.close();
+    await context.unroute('**/download/extension-version.txt*');
 
     // Connexion sur le site, dans le même navigateur.
     const site = await context.newPage();

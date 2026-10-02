@@ -17,7 +17,7 @@ mkdir -p out && touch out/.start
 status=0
 docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     -v "$PWD/../../extension-chrome":/ext:ro mcr.microsoft.com/playwright:v1.63.0-noble \
-    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node extension.js' || status=$?
+    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node extension.js' || status=$?
 
 # Nettoyage : comptes de test et images envoyées pendant le test.
 for id in $(sql "SELECT id FROM liste_user WHERE nom LIKE 'Test1%';" | tail -n +2); do rm -rf "../../listeKdo/uploads/$id"; done

@@ -42,4 +42,4 @@ COPY php.ini /usr/local/etc/php/php.ini
 COPY apache-site.conf /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 80
-CMD ["/bin/bash", "-c", "source /etc/apache2/envvars && exec apache2 -D FOREGROUND"]
+CMD ["/bin/bash", "-c", "rm -f /var/run/apache2/*.pid; source /etc/apache2/envvars && exec apache2 -D FOREGROUND"]

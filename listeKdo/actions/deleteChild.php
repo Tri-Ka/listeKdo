@@ -18,5 +18,6 @@ foreach (db_all('SELECT * FROM liste_noel WHERE user_id = ?', array((int) $child
 db_query('DELETE FROM user_friend WHERE user_id = ? OR friend_code = ?', array((int) $child['id'], $child['code']));
 db_query('DELETE FROM liste_manager WHERE child_id = ?', array((int) $child['id']));
 db_query('DELETE FROM liste_user WHERE id = ?', array((int) $child['id']));
+upload_purge_orphan_images();
 
 succeed(array(), list_url($me['code']), 'La liste de ' . $child['nom'] . ' a été supprimée.');

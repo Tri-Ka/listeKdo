@@ -22,7 +22,7 @@
                             <?php $object = $gift['object']; ?>
                             <li>
                                 <a class="my-gifts__item" href="index.php?user=<?php echo e(rawurlencode($owner['code'])); ?>#idea-<?php echo (int) $object['id']; ?>">
-                                    <img src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.jpg'); ?>" alt="" loading="lazy" data-fallback="img/idea-default.jpg">
+                                    <img src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.svg'); ?>" alt="" loading="lazy" data-fallback="img/idea-default.svg">
                                     <span class="my-gifts__name">
                                         <?php echo e($object['nom']); ?>
                                         <?php if ('item' === $gift['kind']) : ?>

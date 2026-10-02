@@ -138,3 +138,63 @@ function upload_fix_orientation($image, $source)
 
     return $rotated;
 }
+
+/**
+ * Supprime les images d'idées (uploads/img/) que plus aucune idée n'utilise.
+ * Appelé à chaque suppression d'idée : on balaie tout le dossier pour rattraper aussi l'existant.
+ *
+ * Les anciens noms de fichiers n'ont pas le même encodage en base et sur le disque
+ * (accents ré-encodés, antislashs des magic quotes…). On compare donc une clé réduite
+ * aux lettres et chiffres ASCII : en cas de doute, le fichier est gardé.
+ * Les fichiers de moins d'un jour sont gardés, au cas où une idée serait en cours d'enregistrement.
+ * Retourne le nombre de fichiers supprimés, ou false si la base n'a pas pu être lue.
+ */
+function upload_purge_orphan_images()
+{
+    $result = db_query('SELECT file, image_url FROM liste_noel');
+    if (!$result) {
+        return false;
+    }
+
+    $used = array();
+    while ($row = mysql_fetch_assoc($result)) {
+        if ('' !== (string) $row['file']) {
+            $used[upload_loose_name($row['file'])] = true;
+        }
+        if ('uploads/img/' === substr((string) $row['image_url'], 0, 12)) {
+            $used[upload_loose_name(substr($row['image_url'], 12))] = true;
+        }
+    }
+
+    $directory = KDO_ROOT . '/uploads/img';
+    $handle = @opendir($directory);
+    if (!$handle) {
+        return 0;
+    }
+
+    $limit = time() - 86400;
+    $deleted = 0;
+    while (false !== ($name = readdir($handle))) {
+        $path = $directory . '/' . $name;
+        $key = upload_loose_name($name);
+
+        if ('.' === substr($name, 0, 1) || '' === $key || isset($used[$key]) || !is_file($path) || filemtime($path) > $limit) {
+            continue;
+        }
+
+        if (@unlink($path)) {
+            $deleted++;
+        }
+    }
+    closedir($handle);
+
+    return $deleted;
+}
+
+/**
+ * Nom de fichier réduit à ses lettres et chiffres ASCII, en minuscules.
+ */
+function upload_loose_name($name)
+{
+    return preg_replace('/[^a-z0-9]/', '', strtolower($name));
+}

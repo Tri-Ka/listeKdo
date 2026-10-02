@@ -45,6 +45,7 @@
                     <span>Photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
+                <?php echo render('partials/theme_field', array('current' => 'noel')); ?>
                 <label class="field">
                     <span>Mot de passe *</span>
                     <input type="password" name="password" required minlength="4" autocomplete="new-password">
@@ -116,12 +117,13 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
+                <?php echo render('partials/theme_field', array('current' => $me['theme'])); ?>
                 <?php if (secret_enabled()) : ?>
                     <?php echo render('partials/secret_fields', array('current' => $me['secret_question'], 'required' => false)); ?>
                 <?php endif; ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
-                        <span>Ma date de naissance <small>(compte à rebours de mon anniversaire ; Noël tombe toujours le 25/12)</small></span>
+                        <span>Date de l'événement <small>(ma date de naissance pour un anniversaire, la date du mariage ou de la naissance prévue ; Noël tombe toujours le 25/12)</small></span>
                         <input type="date" name="event_date" value="<?php echo e($me['event_date'] && '0000-00-00' !== $me['event_date'] ? $me['event_date'] : ''); ?>">
                     </label>
                 <?php endif; ?>
@@ -255,7 +257,10 @@
             <li>Connectez-vous à ce site dans Chrome : l'extension utilise votre compte.</li>
         </ol>
 
-        <p class="extension__note">Fonctionne avec Chrome, Edge, Brave et Opera, sur ordinateur.</p>
+        <p class="extension__note">
+            Fonctionne avec Chrome, Edge, Brave et Opera, sur ordinateur.
+            Quand une nouvelle version sort, une flèche apparaît sur l'icône cadeau : ouvrez l'extension pour la télécharger.
+        </p>
     </div>
 </dialog>
 
@@ -277,14 +282,7 @@
                     <span>Photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
-                <label class="field">
-                    <span>Type de liste</span>
-                    <select name="theme">
-                        <?php foreach (themes() as $key => $info) : ?>
-                            <option value="<?php echo e($key); ?>"<?php echo 'birthday' === $key ? ' selected' : ''; ?>><?php echo e($info['label']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
+                <?php echo render('partials/theme_field', array('current' => 'birthday')); ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
                         <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>
@@ -319,6 +317,7 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
+                <?php echo render('partials/theme_field', array('current' => $child['theme'])); ?>
                 <?php if (event_dates_enabled()) : ?>
                     <label class="field">
                         <span>Date de naissance <small>(ou date prévue pour une liste de naissance)</small></span>

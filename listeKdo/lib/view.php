@@ -20,19 +20,54 @@ function icon($name, $class = '')
 
 function avatar_url($user)
 {
-    if (!$user) {
-        return 'img/avatar-default.png';
-    }
-
-    if ('' !== (string) $user['pictureFile']) {
+    if ($user && '' !== (string) $user['pictureFile']) {
         return 'uploads/' . (int) $user['id'] . '/' . $user['pictureFile'];
     }
 
-    if ('' !== (string) $user['pictureFileUrl']) {
+    if ($user && '' !== (string) $user['pictureFileUrl']) {
         return safe_url($user['pictureFileUrl']);
     }
 
-    return 'img/avatar-default.png';
+    return avatar_default_url($user);
+}
+
+/**
+ * Avatar par défaut : l'initiale du prénom sur un dégradé, en SVG intégré (data: URI).
+ * La couleur est tirée du prénom : toujours la même pour une personne.
+ */
+function avatar_default_url($user)
+{
+    $palettes = array(
+        array('#ff9a8b', '#ff6a88'),
+        array('#f6d365', '#fda085'),
+        array('#84fab0', '#3cba92'),
+        array('#8fd3f4', '#4a90e2'),
+        array('#c3a6ff', '#7b5cf0'),
+        array('#ffb6d9', '#e05297'),
+        array('#ffd86f', '#fc6262'),
+        array('#7ee8fa', '#38b2ac'),
+        array('#fbc2eb', '#a18cd1'),
+        array('#ffe29f', '#ffa99f'),
+    );
+
+    $name = $user ? trim((string) $user['nom']) : '';
+    $initial = '?';
+    if ('' !== $name && preg_match('/^./su', $name, $match)) {
+        $initial = strtoupper($match[0]);
+    }
+
+    $colors = $palettes[abs(crc32(strtolower($name))) % count($palettes)];
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+        . '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+        . '<stop offset="0" stop-color="' . $colors[0] . '"/><stop offset="1" stop-color="' . $colors[1] . '"/>'
+        . '</linearGradient></defs>'
+        . '<rect width="100" height="100" fill="url(#g)"/>'
+        . '<circle cx="82" cy="18" r="10" fill="#fff" opacity=".25"/>'
+        . '<circle cx="14" cy="88" r="16" fill="#fff" opacity=".15"/>'
+        . '<text x="50" y="50" dy=".35em" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-size="46" font-weight="800" fill="#fff">'
+        . htmlspecialchars($initial, ENT_QUOTES, 'UTF-8') . '</text></svg>';
+
+    return 'data:image/svg+xml;charset=utf-8,' . rawurlencode($svg);
 }
 
 function avatar($user, $class = 'avatar', $lazy = true, $tip = null)
@@ -40,9 +75,10 @@ function avatar($user, $class = 'avatar', $lazy = true, $tip = null)
     $name = $user ? $user['nom'] : '';
 
     // data-tip : le nom s'affiche au survol (infobulle gérée par js/app.js).
+    // data-fallback : avatar à l'initiale si la photo envoyée est introuvable.
     return '<img class="' . e($class) . '" src="' . e(avatar_url($user)) . '" alt="' . e($name) . '"'
         . ('' !== $name ? ' data-tip="' . e(null !== $tip ? $tip : $name) . '"' : '')
-        . ($lazy ? ' loading="lazy"' : '') . ' decoding="async" width="40" height="40" data-fallback="img/avatar-default.png">';
+        . ($lazy ? ' loading="lazy"' : '') . ' decoding="async" width="40" height="40" data-fallback="' . e(avatar_default_url($user)) . '">';
 }
 
 function theme_of($user)
@@ -276,8 +312,8 @@ function event_label($user)
         return '';
     }
 
-    $names = array('birthday' => 'Anniversaire', 'noel' => 'Noël', 'naissance' => 'Naissance prévue');
-    $name = isset($names[$user['theme']]) ? $names[$user['theme']] : 'Le grand jour';
+    $theme = theme_of($user);
+    $name = $theme['soon'];
 
     if (0 === $days) {
         return "C'est aujourd'hui !";
@@ -321,11 +357,11 @@ function valid_date($value)
 }
 
 /**
- * Nom de l'événement d'une liste : « Anniversaire », « Noël », « Naissance ».
+ * Nom de l'événement d'une liste : « Anniversaire », « Noël », « Naissance », « Mariage ».
  */
 function event_name($user)
 {
-    $names = array('birthday' => 'Anniversaire', 'noel' => 'Noël', 'naissance' => 'Naissance');
+    $theme = theme_of($user);
 
-    return isset($names[$user['theme']]) ? $names[$user['theme']] : 'Le grand jour';
+    return $theme['event'];
 }

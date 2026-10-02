@@ -1,6 +1,6 @@
 <?php
 /*
- * Modifie la liste d'un enfant géré : prénom, photo, date, petit mot.
+ * Modifie la liste d'un enfant géré : prénom, photo, type de liste, date, petit mot.
  */
 require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
@@ -18,7 +18,7 @@ if ('' === $name) {
     fail('Le prénom ne peut pas être vide.', $back);
 }
 
-$changes = array('nom' => $name);
+$changes = array('nom' => $name, 'theme' => valid_theme(input('theme'), $child['theme']));
 
 if (event_dates_enabled() && isset($_POST['event_date'])) {
     $changes['event_date'] = valid_date(input('event_date'));

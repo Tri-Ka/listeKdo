@@ -11,8 +11,7 @@ if (!children_enabled()) {
 }
 
 $name = input('nom');
-$themes = themes();
-$theme = isset($themes[input('theme')]) ? input('theme') : 'birthday';
+$theme = valid_theme(input('theme'), 'birthday');
 
 if ('' === $name || strlen($name) > 100) {
     fail('Indiquez le prénom de l\'enfant.', list_url($me['code']));

@@ -23,6 +23,7 @@ if (0 < count(object_items($object['id']))) {
 
 if ('leave' === input('do')) {
     participation_remove($object['id'], $me['id']);
+    notify_gift($me['id'], $object['id'], NOTIF_PARTICIPATION, false);
     $message = 'Vous ne participez plus à ce cadeau.';
 } else {
     $amountText = input('amount');
@@ -31,6 +32,7 @@ if ('leave' === input('do')) {
         fail('Montant invalide (ex. 30 ou 29,90).', $back);
     }
     participation_set($object['id'], $me['id'], $amount);
+    notify_gift($me['id'], $object['id'], NOTIF_PARTICIPATION, true);
     $message = 'Vous participez à ce cadeau !';
 }
 

@@ -28,6 +28,10 @@ if ('1' === input('gift')) {
     db_update('liste_item', array('gifted_by' => null), array('id' => (int) $item['id']));
 }
 
+// Une notification par collection : elle reste tant que l'ami y réserve au moins un élément.
+$stillGifting = db_one('SELECT id FROM liste_item WHERE product_id = ? AND gifted_by = ?', array((int) $object['id'], (int) $me['id']));
+notify_gift($me['id'], $object['id'], NOTIF_GIFT, (bool) $stillGifting);
+
 $object = object_full($object);
 $ctx = array('me' => $me, 'owner' => $owner, 'isOwner' => false, 'canGift' => true);
 

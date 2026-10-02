@@ -10,7 +10,7 @@ $me = $ctx['me'];
 
     <div class="modal__body">
         <div class="detail__media">
-            <img class="detail__image" src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.jpg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.jpg">
+            <img class="detail__image" src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.svg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.svg">
         </div>
 
         <?php if (null !== $object['price']) : ?>

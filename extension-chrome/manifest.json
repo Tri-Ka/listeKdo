@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Liste de Kdo",
-    "version": "1.1.0",
+    "version": "1.2.1",
     "description": "Ajoute le produit de la page en cours à votre liste de cadeaux.",
     "action": {
         "default_title": "Ajouter à ma liste de Kdo",
@@ -19,7 +19,10 @@
         "48": "icons/48.png",
         "128": "icons/128.png"
     },
-    "permissions": ["activeTab", "scripting", "storage"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
     "host_permissions": [
         "http://datcharrye.free.fr/*",
         "http://localhost:8090/*"

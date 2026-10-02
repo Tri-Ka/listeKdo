@@ -207,9 +207,11 @@ async function login(p, name) {
   await s.setInputFiles('#signup-dialog input[name=pictureFile]', `${__dirname}/fixtures/photo.jpg`);
   await s.fill('#signup-dialog input[name=password]', 'secret1');
   await s.fill('#signup-dialog input[name="re-password"]', 'secret1');
+  await s.click('#signup-dialog .theme-field__option--naissance');
   await s.screenshot({ path: `${__dirname}/out/e2e-signup-mob.png` });
   await Promise.all([s.waitForNavigation(), s.click('#signup-dialog button[type=submit]')]);
   check(await s.locator('.user-menu__avatar').getAttribute('data-tip') === uname, 'inscription + connexion');
+  check(await s.locator('body').getAttribute('data-theme') === 'naissance', 'inscription : type de liste choisi');
   const av = await s.locator('.profile__avatar > img').evaluate(i => [i.getAttribute('src'), i.naturalWidth]);
   check(/^uploads\/\d+\/[0-9a-f]{24}\.jpg$/.test(av[0]) && av[1] <= 600, 'avatar envoyé et réduit : ' + av);
   await s.screenshot({ path: `${__dirname}/out/e2e-newuser-mob.png` });

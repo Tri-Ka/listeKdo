@@ -39,8 +39,8 @@ foreach ($object['participants'] as $participant) {
     <form method="post" action="actions/objectNotGifted.php" data-ajax="gift">
         <?php echo csrf_field(); ?>
         <input type="hidden" name="id" value="<?php echo $id; ?>">
-        <button type="submit" class="gifted-pill gifted-pill--mine" title="Cliquer pour ne plus l'offrir" data-confirm="Vous ne l'offrez plus ?"><?php echo icon('circle-check'); ?> Vous l'offrez</button>
+        <button type="submit" class="gifted-pill gifted-pill--mine" title="Cliquer pour ne plus l'offrir" data-confirm="Vous ne l'offrez plus ?"><?php echo avatar($me, 'gifted-pill__avatar', true, ''); ?> Vous l'offrez</button>
     </form>
 <?php else : ?>
-    <span class="gifted-pill" title="Offert par <?php echo e($giver['nom']); ?>"><?php echo icon('circle-check'); ?> Offert par <?php echo e($giver['nom']); ?></span>
+    <span class="gifted-pill" title="Offert par <?php echo e($giver['nom']); ?>"><?php echo avatar($giver, 'gifted-pill__avatar', true, ''); ?> Offert par <?php echo e($giver['nom']); ?></span>
 <?php endif; ?>

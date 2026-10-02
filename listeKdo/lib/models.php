@@ -5,7 +5,7 @@
  *   liste_noel    idées cadeaux (« objets »)
  *   comment       commentaires sur une idée
  *   reaction      réactions (type 1 à 6) sur une idée
- *   notification  type 1 = commentaire, 2 = nouvelle idée, 3 = réaction
+ *   notification  type 1 = commentaire, 2 = nouvelle idée, 3 = réaction, 4 = rappel, 5 = réservation, 6 = participation
  *   user_friend   amitiés (user_id -> friend_code)
  */
 
@@ -14,10 +14,19 @@ define('NOTIF_NEW_IDEA', 2);
 define('NOTIF_REACTION', 3);
 // Rappel d'événement d'un ami. author_id = l'ami, product_id = palier en jours (30, 7 ou 1), pas une idée.
 define('NOTIF_EVENT', 4);
+// Un ami réserve une idée (ou un élément de collection) / participe à un cadeau à plusieurs.
+// Jamais montrées au propriétaire de la liste : il ne doit pas savoir qui offre quoi.
+define('NOTIF_GIFT', 5);
+define('NOTIF_PARTICIPATION', 6);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
- * Les décorations sont dans img/deco/<thème>/.
+ * Les décorations sont dans img/deco/<thème>/ (découpées dans img/elements*.png).
+ *   event     : nom de l'événement (« Anniversaire dans 12 jours », compte à rebours)
+ *   soon      : idem quand la date est unique et à venir (« Naissance prévue dans… »)
+ *   date      : 'christmas' (25/12), 'yearly' (chaque année, depuis la date saisie) ou 'once' (date unique)
+ *   reminder  : rappel aux amis (« Coline fête son anniversaire dans une semaine »), avec son emoji
+ *   color     : couleur de la barre du navigateur (<meta name="theme-color">)
  */
 function themes()
 {
@@ -28,9 +37,15 @@ function themes()
             'heading' => 'Anniversaire de %s',
             'subtitle' => "Une liste d'idées cadeaux pour faire briller les yeux de %s ✨",
             'note' => "Rendez l'anniversaire de %s encore plus magique !",
-            'left' => array('gifts', 'hat'),
+            'left' => array('gifts', 'star'),
             'right' => array('balloons', 'bunting'),
             'footer' => 'cake',
+            'event' => 'Anniversaire',
+            'soon' => 'Anniversaire',
+            'date' => 'yearly',
+            'reminder' => 'fête son anniversaire',
+            'emoji' => '🎂',
+            'color' => '#fff3dc',
         ),
         'noel' => array(
             'label' => 'Noël',
@@ -38,21 +53,59 @@ function themes()
             'heading' => 'Noël de %s',
             'subtitle' => 'Les idées cadeaux de %s pour un Noël magique 🎄',
             'note' => 'Aidez le Père Noël à gâter %s !',
-            'left' => array('holly', 'ornament', 'candy'),
-            'right' => array('scene', 'snowflake'),
-            'footer' => 'holly',
+            'left' => array('ornament', 'candy', 'star'),
+            'right' => array('gifts', 'gingerbread', 'snowflake'),
+            'footer' => 'stocking',
+            'event' => 'Noël',
+            'soon' => 'Noël',
+            'date' => 'christmas',
+            'reminder' => 'attend Noël',
+            'emoji' => '🎄',
+            'color' => '#fdeeea',
         ),
         'naissance' => array(
             'label' => 'Naissance',
             'title' => 'Liste de naissance',
             'heading' => 'Naissance chez %s',
-            'subtitle' => "Une liste toute douce pour accueillir bébé 💙",
+            'subtitle' => "Une liste toute douce pour accueillir bébé 🤍",
             'note' => "Merci de préparer avec nous l'arrivée de bébé !",
-            'left' => array('moon', 'cloud', 'bottle'),
-            'right' => array('mobile', 'teddy', 'heart'),
-            'footer' => 'baby',
+            'left' => array('mobile', 'bottle', 'heart'),
+            'right' => array('teddy', 'rattle', 'pacifier'),
+            'footer' => 'shoes',
+            'event' => 'Naissance',
+            'soon' => 'Naissance prévue',
+            'date' => 'once',
+            'reminder' => 'attend bébé',
+            'emoji' => '👶',
+            'color' => '#f1ecf8',
+        ),
+        'mariage' => array(
+            'label' => 'Mariage',
+            'title' => 'Liste de mariage',
+            'heading' => 'Mariage de %s',
+            'subtitle' => 'Les idées cadeaux de %s pour célébrer le grand jour 💍',
+            'note' => 'Merci de partager ce jour de bonheur avec %s !',
+            'left' => array('bouquet', 'hearts'),
+            'right' => array('balloons', 'dove', 'glasses'),
+            'footer' => 'rings',
+            'event' => 'Mariage',
+            'soon' => 'Mariage',
+            'date' => 'once',
+            'reminder' => 'se marie',
+            'emoji' => '💍',
+            'color' => '#f8f1e6',
         ),
     );
+}
+
+/**
+ * Thème envoyé par un formulaire s'il existe, sinon $default.
+ */
+function valid_theme($theme, $default)
+{
+    $themes = themes();
+
+    return isset($themes[$theme]) ? $theme : $default;
 }
 
 function reaction_types()
@@ -106,13 +159,13 @@ function users_by_ids($ids)
     return db_index_by(db_all('SELECT * FROM liste_user WHERE id IN (?)', array($ids)), 'id');
 }
 
-function user_create($name, $password, $pictureFile)
+function user_create($name, $password, $pictureFile, $theme)
 {
     return db_insert('liste_user', array(
         'nom' => $name,
         'code' => random_token(),
         'password' => password_make($password),
-        'theme' => 'noel',
+        'theme' => $theme,
         'pictureFile' => $pictureFile,
     ));
 }
@@ -404,14 +457,15 @@ function birth_date($user)
  * Prochaine date de l'événement d'une liste (timestamp à minuit), ou null.
  *   - Noël : toujours le 25 décembre ;
  *   - anniversaire : le prochain anniversaire, calculé depuis la date de naissance ;
- *   - naissance : la date de naissance prévue (date unique ; passée, plus de compte à rebours).
+ *   - naissance, mariage : la date prévue (date unique ; passée, plus de compte à rebours).
  */
 function event_next($user)
 {
-    $theme = isset($user['theme']) ? $user['theme'] : 'noel';
+    $themes = themes();
+    $mode = isset($user['theme']) && isset($themes[$user['theme']]) ? $themes[$user['theme']]['date'] : 'christmas';
     $today = mktime(0, 0, 0, (int) date('n'), (int) date('j'), (int) date('Y'));
 
-    if ('noel' === $theme) {
+    if ('christmas' === $mode) {
         $month = 12;
         $day = 25;
     } else {
@@ -421,7 +475,7 @@ function event_next($user)
         }
         list($year, $month, $day) = explode('-', $date);
 
-        if ('naissance' === $theme) {
+        if ('once' === $mode) {
             $target = mktime(0, 0, 0, (int) $month, (int) $day, (int) $year);
             return $target >= $today ? $target : null;
         }
@@ -912,6 +966,24 @@ function notify($authorId, $objectId, $type)
     ));
 }
 
+/**
+ * Notification de don (NOTIF_GIFT ou NOTIF_PARTICIPATION) : une seule par ami et par idée.
+ * $on = true la crée si besoin (en gardant sa date d'origine), false la supprime.
+ */
+function notify_gift($authorId, $objectId, $type, $on)
+{
+    $params = array((int) $objectId, (int) $authorId, (int) $type);
+
+    if (!$on) {
+        db_query('DELETE FROM notification WHERE product_id = ? AND author_id = ? AND type = ?', $params);
+        return;
+    }
+
+    if (!db_one('SELECT id FROM notification WHERE product_id = ? AND author_id = ? AND type = ?', $params)) {
+        notify($authorId, $objectId, $type);
+    }
+}
+
 /* ---------- Les cadeaux que j'offre ---------- */
 
 /**
@@ -992,7 +1064,9 @@ function my_gifts_count($grouped)
  * Notifications visibles par un utilisateur :
  *   - toute activité des autres sur ses propres idées ;
  *   - les nouvelles idées de ses amis ;
- *   - les commentaires de ses amis sur les idées de ses amis.
+ *   - les commentaires de ses amis sur les idées de ses amis ;
+ *   - les dons de ses amis (réservations, participations) sur les listes de ses autres amis.
+ * Les dons ne sont jamais montrés au propriétaire de la liste.
  * Retourne array(condition SQL, paramètres), pour la liste paginée et le compteur.
  */
 function notifications_where($user, $friends)
@@ -1003,8 +1077,9 @@ function notifications_where($user, $friends)
     }
 
     $userId = (int) $user['id'];
-    $where = 'n.author_id <> ? AND (p.user_id = ?';
-    $params = array($userId, $userId);
+    $giftTypes = array(NOTIF_GIFT, NOTIF_PARTICIPATION);
+    $where = 'n.author_id <> ? AND ((p.user_id = ? AND n.type NOT IN (?))';
+    $params = array($userId, $userId, $giftTypes);
 
     if (0 < count($friendIds)) {
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
@@ -1012,6 +1087,8 @@ function notifications_where($user, $friends)
         array_push($params, $friendIds, NOTIF_NEW_IDEA, $friendIds, NOTIF_COMMENT, $friendIds);
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         array_push($params, $friendIds, NOTIF_EVENT);
+        $where .= ' OR (n.author_id IN (?) AND n.type IN (?) AND p.user_id IN (?) AND p.user_id <> ?)';
+        array_push($params, $friendIds, $giftTypes, $friendIds, $userId);
     }
 
     return array($where . ')', $params);
@@ -1108,12 +1185,13 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
         'SELECT n.id, n.type, n.created_at, n.product_id,
                 a.id AS author_id, a.nom AS author_nom, a.pictureFile AS author_pictureFile, a.pictureFileUrl AS author_pictureFileUrl,
                 a.theme AS author_theme,
-                p.user_id AS owner_id, COALESCE(o.code, a.code) AS owner_code,
+                p.user_id AS owner_id, COALESCE(o.code, a.code) AS owner_code, o.nom AS owner_nom, p.nom AS product_nom, r.type AS reaction_type,
                 (' . $unread . ') AS is_unread
             FROM notification n
             INNER JOIN liste_user a ON a.id = n.author_id
             LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type <> ' . NOTIF_EVENT . '
             LEFT JOIN liste_user o ON o.id = p.user_id
+            LEFT JOIN reaction r ON n.type = ' . NOTIF_REACTION . ' AND r.product_id = n.product_id AND r.user_id = n.author_id
             ' . $join . '
             WHERE ' . $where . '
             ORDER BY n.created_at DESC, n.id DESC

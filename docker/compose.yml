@@ -7,6 +7,8 @@ services:
   php:
     build: .
     image: listekdo-php4
+    # Supprime le fichier PID laissé par un arrêt brutal (sinon Apache croit tourner déjà et s'arrête).
+    command: ["/bin/bash", "-c", "rm -f /var/run/apache2/*.pid; source /etc/apache2/envvars && exec apache2 -D FOREGROUND"]
     ports:
       - "127.0.0.1:8090:80"
     volumes:

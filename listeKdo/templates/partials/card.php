@@ -13,7 +13,7 @@ $received = $object['received'];
 
     <div class="card__media">
         <button type="button" class="card__image" data-open="object-<?php echo $id; ?>" aria-label="Voir le détail de <?php echo e($object['nom']); ?>">
-            <img src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.jpg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.jpg">
+            <img src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.svg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.svg">
         </button>
 
         <?php if ($received) : ?>

@@ -121,7 +121,7 @@ function metadata_fetch_page($url)
                 $GLOBALS['metadata_fetch_error'] = 'Ce site bloque l’accès automatisé à ses informations (protection anti-robots).';
                 return false;
             }
-            return array('html' => substr($body, 0, 1048576), 'url' => $url);
+            return array('html' => substr($body, 0, 3145728), 'url' => $url);
         }
 
         if ($status === 401 || $status === 403) {
@@ -141,7 +141,9 @@ function metadata_fetch_with_stream($url)
         'timeout' => 12,
         'header' => "User-Agent: ListeKdo metadata bot/1.0\r\nAccept: text/html\r\n"
     )));
-    $content = @file_get_contents($url, false, $context, 0, 1048576);
+    /* PHP 4 : pas de longueur maximale dans file_get_contents() (PHP 5.1+), on coupe ensuite. */
+    $content = @file_get_contents($url, false, $context);
+    if ($content !== false) $content = substr($content, 0, 3145728);
 
     return $content === false ? false : $content;
 }
@@ -185,7 +187,7 @@ function metadata_fetch_with_worker($url)
     }
 
     $GLOBALS['metadata_fetch_error'] = '';
-    return array('html' => substr($content, 0, 1048576), 'url' => $url);
+    return array('html' => substr($content, 0, 3145728), 'url' => $url);
 }
 
 function metadata_title_from_url($url)
@@ -239,7 +241,7 @@ function metadata_fetch_with_scraper_api($url)
     }
 
     $GLOBALS['metadata_fetch_error'] = '';
-    return array('html' => substr($content, 0, 1048576), 'url' => $url);
+    return array('html' => substr($content, 0, 3145728), 'url' => $url);
 }
 
 function metadata_scraperapi_request($url, $render)
@@ -365,6 +367,11 @@ function metadata_parse_page($html, $pageUrl)
     if ($product['image'] !== '') $image = $product['image'];
     $price = $product['price'];
     if ($price === '') $price = metadata_first_value($values, array('product:price:amount', 'og:price:amount'));
+    /* Microdonnées : <meta itemprop="price" content="59.99"> ou <span itemprop="price" content="59,99">. */
+    if ($price === '' && preg_match('/<[^>]+itemprop\s*=\s*["\']price["\'][^>]*>/i', $html, $match)) {
+        $attributes = metadata_attributes($match[0]);
+        if (isset($attributes['content']) && preg_match('/^\s*([0-9]+(?:[.,][0-9]+)?)/', $attributes['content'], $amount)) $price = $amount[1];
+    }
 
     /* Images proposées au choix : l'image retenue d'abord, puis les autres (Open Graph, produit, grandes images de la page). */
     $candidates = array_merge(array($image), $product['images'], metadata_meta_images($tags[0]), metadata_page_images($html));
@@ -439,8 +446,16 @@ function metadata_json_ld_product($html)
         }
         /* On lit à partir de la déclaration « Product », pour ne pas prendre le nom du site ou du fil d'Ariane. */
         $json = substr($json, $match[0][1]);
-        if (preg_match('/"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $json, $m)) $product['name'] = metadata_json_string($m[1]);
-        if (preg_match('/"description"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $json, $m)) $product['description'] = metadata_json_string($m[1]);
+        /* Nom et description du produit lui-même : on retire d'abord les sous-objets (marque, avis, offres…),
+         * sinon « name » serait par exemple celui de la marque. Le premier « } » restant ferme le produit. */
+        $own = $json;
+        for ($i = 0; $i < 8 && preg_match('/\{[^{}]*\}/', $own); $i++) {
+            $own = preg_replace('/\{[^{}]*\}/', '', $own);
+        }
+        $end = strpos($own, '}');
+        if ($end !== false) $own = substr($own, 0, $end);
+        if (preg_match('/"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $own, $m)) $product['name'] = metadata_json_string($m[1]);
+        if (preg_match('/"description"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/', $own, $m)) $product['description'] = metadata_json_string($m[1]);
         if (preg_match('/"image"\s*:\s*(?:\[\s*)?(?:\{[^}]*?"(?:url|contentUrl)"\s*:\s*)?"([^"]+)"/', $json, $m)) $product['image'] = metadata_json_string($m[1]);
         /* Liste d'images : "image": ["a.jpg", "b.jpg"] ou [{"url": "a.jpg"}, …]. */
         if (preg_match('/"image"\s*:\s*\[(.*?)\]/s', $json, $m) && preg_match_all('/"(https?:[^"]+|\/[^"]+\.(?:jpe?g|png|webp)[^"]*|[^"\/]+\.(?:jpe?g|png|webp))"/i', $m[1], $all)) {

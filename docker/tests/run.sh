@@ -12,6 +12,9 @@ saved=$(sql "SELECT CONCAT('UPDATE liste_user SET password=', QUOTE(password), '
 trap 'sql "$saved"' EXIT
 # Une question secrète factice, pour que la fenêtre d'invitation ne s'ouvre pas pendant les tests.
 sql "UPDATE liste_user SET password = MD5('test'), secret_question = 'test', secret_answer = 'test' WHERE id IN (1, 141);"
+# Rappels d'événement d'Etienne et Mallory recréés à neuf : sinon un ancien rappel peut être repoussé
+# au-delà des 10 premières notifications par celles des tests précédents.
+sql "DELETE FROM notification WHERE type = 4 AND author_id IN (1, 141);"
 mkdir -p out && touch out/.start
 
 status=0

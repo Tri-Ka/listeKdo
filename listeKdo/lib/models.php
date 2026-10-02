@@ -270,6 +270,22 @@ function private_enabled()
     return db_has_column('liste_user', 'is_private');
 }
 
+/**
+ * La colonne liste_user.list_title existe-t-elle ? (migration sql/2026-10-02-titre-liste.sql)
+ */
+function list_title_enabled()
+{
+    return db_has_column('liste_user', 'list_title');
+}
+
+/**
+ * Titre choisi pour la liste, ou '' (titre par défaut du thème).
+ */
+function list_title($user)
+{
+    return $user && isset($user['list_title']) ? trim((string) $user['list_title']) : '';
+}
+
 function is_private_list($user)
 {
     return $user && private_enabled() && !empty($user['is_private']);
@@ -954,7 +970,9 @@ function object_participants($objectId)
 function participation_set($objectId, $userId, $amount)
 {
     return db_query(
-        'REPLACE INTO liste_participation (product_id, user_id, amount, created_at) VALUES (?, ?, ?, ?)',
+        /* Mise à jour du montant sans toucher à la date d'arrivée (elle désigne qui a lancé la cagnotte). */
+        'INSERT INTO liste_participation (product_id, user_id, amount, created_at) VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE amount = VALUES(amount)',
         array((int) $objectId, (int) $userId, $amount, db_now())
     );
 }
@@ -1067,7 +1085,7 @@ function notify($authorId, $objectId, $type)
  * Notification de don (NOTIF_GIFT ou NOTIF_PARTICIPATION) : une seule par ami et par idée.
  * $on = true la crée si besoin (en gardant sa date d'origine), false la supprime.
  */
-function notify_gift($authorId, $objectId, $type, $on)
+function notify_gift($authorId, $objectId, $type, $on, $refresh = false)
 {
     $params = array((int) $objectId, (int) $authorId, (int) $type);
 
@@ -1076,8 +1094,15 @@ function notify_gift($authorId, $objectId, $type, $on)
         return;
     }
 
-    if (!db_one('SELECT id FROM notification WHERE product_id = ? AND author_id = ? AND type = ?', $params)) {
+    $existing = db_one('SELECT id FROM notification WHERE product_id = ? AND author_id = ? AND type = ?', $params);
+    if (!$existing) {
         notify($authorId, $objectId, $type);
+    } elseif ($refresh) {
+        /* $refresh (la cotisation a changé) : la notification remonte en tête, de nouveau non lue pour tous. */
+        db_update('notification', array('created_at' => db_now()), array('id' => (int) $existing['id']));
+        if (notification_states_enabled()) {
+            db_query('DELETE FROM notification_state WHERE notification_id = ?', array((int) $existing['id']));
+        }
     }
 }
 
@@ -1186,6 +1211,14 @@ function notifications_where($user, $friends)
         array_push($params, $friendIds, NOTIF_EVENT);
         $where .= ' OR (n.author_id IN (?) AND n.type IN (?) AND p.user_id IN (?) AND p.user_id <> ?)';
         array_push($params, $friendIds, $giftTypes, $friendIds, $userId);
+        /* Cagnotte : visible de tous les amis du destinataire, même sans être ami avec le participant. */
+        $where .= ' OR (n.type = ? AND p.user_id IN (?) AND p.user_id <> ?)';
+        array_push($params, NOTIF_PARTICIPATION, $friendIds, $userId);
+    }
+    /* … et des autres participants de la même cagnotte. */
+    if (participations_enabled()) {
+        $where .= ' OR (n.type = ? AND p.user_id <> ? AND n.product_id IN (SELECT product_id FROM liste_participation WHERE user_id = ?))';
+        array_push($params, NOTIF_PARTICIPATION, $userId, $userId);
     }
 
     $where .= ')';
@@ -1318,6 +1351,44 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
         $row['new'] = (bool) $row['is_unread'];
         $row['mine'] = (int) $row['owner_id'] === (int) $user['id'];
         $notifications[] = $row;
+    }
+
+    return notifications_add_groups($notifications);
+}
+
+/**
+ * Cagnottes (NOTIF_PARTICIPATION) : état actuel, chargé en trois requêtes pour toute la page.
+ * Ajoute à chaque notification 'group' => array(count, total, price, started) ; started : l'auteur a lancé la cagnotte.
+ */
+function notifications_add_groups($notifications)
+{
+    $ids = array();
+    foreach ($notifications as $notification) {
+        if (NOTIF_PARTICIPATION == $notification['type']) $ids[] = (int) $notification['product_id'];
+    }
+    if (0 === count($ids) || !participations_enabled()) return $notifications;
+
+    $groups = array();
+    foreach (db_all('SELECT product_id, COUNT(*) AS count, SUM(amount) AS total FROM liste_participation WHERE product_id IN (?) GROUP BY product_id', array($ids)) as $row) {
+        $groups[$row['product_id']] = array('count' => (int) $row['count'], 'total' => (float) $row['total'], 'price' => null, 'first' => 0);
+    }
+    /* Le premier arrivé a lancé la cagnotte. */
+    foreach (db_all('SELECT product_id, user_id FROM liste_participation WHERE product_id IN (?) ORDER BY created_at DESC, user_id DESC', array($ids)) as $row) {
+        if (isset($groups[$row['product_id']])) $groups[$row['product_id']]['first'] = (int) $row['user_id'];
+    }
+    if (prices_enabled()) {
+        foreach (db_all('SELECT id, price FROM liste_noel WHERE id IN (?)', array($ids)) as $row) {
+            if (isset($groups[$row['id']]) && null !== $row['price']) $groups[$row['id']]['price'] = (float) $row['price'];
+        }
+    }
+
+    foreach ($notifications as $i => $notification) {
+        $id = $notification['product_id'];
+        if (NOTIF_PARTICIPATION == $notification['type'] && isset($groups[$id])) {
+            $group = $groups[$id];
+            $group['started'] = $group['first'] === (int) $notification['author_id'];
+            $notifications[$i]['group'] = $group;
+        }
     }
 
     return $notifications;

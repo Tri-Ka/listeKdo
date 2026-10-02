@@ -851,12 +851,18 @@ if (countdown) {
     const pad = (value) => String(value).padStart(2, '0');
 
     const tick = () => {
-        const left = Math.max(0, Math.floor((target - Date.now()) / 1000));
-        const today = left === 0 || new Date().toDateString() === target.toDateString();
+        // Décompte « calendaire » : jours entre demain et la date, plus le temps jusqu'à minuit ce soir.
+        // (Une simple différence de millisecondes compte une heure de trop ou de moins quand
+        // le passage à l'heure d'hiver ou d'été tombe entre aujourd'hui et la date.)
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const days = Math.round((Date.UTC(year, month - 1, day) - Date.UTC(midnight.getFullYear(), midnight.getMonth(), midnight.getDate())) / 86400000);
+        const today = days < 0 || now.toDateString() === target.toDateString();
         countdown.classList.toggle('is-today', today);
         if (today) return;
 
-        const next = { d: String(Math.floor(left / 86400)), h: pad(Math.floor((left % 86400) / 3600)), m: pad(Math.floor((left % 3600) / 60)), s: pad(left % 60) };
+        const left = Math.max(0, Math.min(86399, Math.floor((midnight - now) / 1000)));
+        const next = { d: String(days), h: pad(Math.floor(left / 3600)), m: pad(Math.floor((left % 3600) / 60)), s: pad(left % 60) };
         for (const [unit, value] of Object.entries(next)) {
             const element = values[unit];
             if (element.textContent === value) continue;

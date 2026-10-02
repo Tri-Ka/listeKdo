@@ -99,6 +99,11 @@ function theme_text($theme, $field, $owner)
 {
     static $secondary = array();
 
+    // Titre choisi dans « Paramètres de la liste » ; sinon, titre par défaut du thème.
+    if ($owner && 'heading' === $field && '' !== list_title($owner)) {
+        return list_title($owner);
+    }
+
     if ($owner) {
         $id = (int) $owner['id'];
         if (!isset($secondary[$id])) {

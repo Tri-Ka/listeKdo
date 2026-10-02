@@ -31,8 +31,11 @@ if ('leave' === input('do')) {
     if ('' !== $amountText && null === $amount) {
         fail('Montant invalide (ex. 30 ou 29,90).', $back);
     }
+    $before = db_one('SELECT amount FROM liste_participation WHERE product_id = ? AND user_id = ?', array((int) $object['id'], (int) $me['id']));
     participation_set($object['id'], $me['id'], $amount);
-    notify_gift($me['id'], $object['id'], NOTIF_PARTICIPATION, true);
+    // Arrivée dans la cagnotte ou montant changé : la notification remonte, non lue, pour les autres.
+    $changed = !$before || (string) $before['amount'] !== (string) (null === $amount ? '' : number_format($amount, 2, '.', ''));
+    notify_gift($me['id'], $object['id'], NOTIF_PARTICIPATION, true, $changed);
     $message = 'Vous participez à ce cadeau !';
 }
 

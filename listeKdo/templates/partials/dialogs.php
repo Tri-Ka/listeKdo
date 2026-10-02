@@ -117,25 +117,8 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
-                <?php echo render('partials/theme_field', array('current' => $me['theme'])); ?>
-                <?php if (private_enabled()) : ?>
-                    <label class="switch">
-                        <input type="hidden" name="is_private" value="0">
-                        <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($me['is_private']) ? ' checked' : ''; ?>>
-                        <span>
-                            <strong>Liste privée</strong>
-                            <small>Visible par vous seul : vos amis ne la voient plus, même avec le lien</small>
-                        </span>
-                    </label>
-                <?php endif; ?>
                 <?php if (secret_enabled()) : ?>
                     <?php echo render('partials/secret_fields', array('current' => $me['secret_question'], 'required' => false)); ?>
-                <?php endif; ?>
-                <?php if (event_dates_enabled()) : ?>
-                    <label class="field">
-                        <span>Date de l'événement <small>(ma date de naissance pour un anniversaire, la date du mariage ou de la naissance prévue ; Noël tombe toujours le 25/12)</small></span>
-                        <input type="date" name="event_date" value="<?php echo e($me['event_date'] && '0000-00-00' !== $me['event_date'] ? $me['event_date'] : ''); ?>">
-                    </label>
                 <?php endif; ?>
                 <?php if (array_key_exists('message', $me)) : ?>
                     <label class="field">
@@ -341,23 +324,6 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
-                <?php echo render('partials/theme_field', array('current' => $child['theme'])); ?>
-                <?php if (private_enabled()) : ?>
-                    <label class="switch">
-                        <input type="hidden" name="is_private" value="0">
-                        <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($child['is_private']) ? ' checked' : ''; ?>>
-                        <span>
-                            <strong>Liste privée</strong>
-                            <small>Visible seulement par ses gestionnaires, même avec le lien</small>
-                        </span>
-                    </label>
-                <?php endif; ?>
-                <?php if (event_dates_enabled()) : ?>
-                    <label class="field">
-                        <span>Date de l'événement <small>(date de naissance pour un anniversaire, date du mariage ou de la naissance prévue)</small></span>
-                        <input type="date" name="event_date" value="<?php echo e($child['event_date'] && '0000-00-00' !== $child['event_date'] ? $child['event_date'] : ''); ?>">
-                    </label>
-                <?php endif; ?>
                 <?php
                 $managers = child_managers($child['id']);
                 $managerIds = array();
@@ -452,7 +418,7 @@
             <?php echo csrf_field(); ?>
             <input type="hidden" name="back" value="<?php echo e($ctx['owner'] ? $ctx['owner']['code'] : $me['code']); ?>">
             <header class="modal__header">
-                <h2 id="secret-invite-title">Protégez votre compte 🔐</h2>
+                <h2 id="secret-invite-title">Protégez votre compte</h2>
                 <button type="button" class="modal__close" data-close aria-label="Plus tard"><?php echo icon('xmark'); ?></button>
             </header>
             <div class="modal__body form">

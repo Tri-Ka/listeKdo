@@ -81,6 +81,9 @@ if ($owner && !$ctx['canView']) {
 
     <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
     <?php echo render('partials/confirm'); ?>
+    <?php if ($owner && $ctx['canEdit']) : ?>
+        <?php echo render('partials/list_settings', array('owner' => $owner, 'ctx' => $ctx)); ?>
+    <?php endif; ?>
 
     <?php if ($me) : ?>
         <?php echo render('partials/my_gifts', array('myGifts' => $myGifts)); ?>

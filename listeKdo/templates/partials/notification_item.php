@@ -30,9 +30,22 @@
                     <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
                 <?php endif; ?>
             <?php elseif (NOTIF_PARTICIPATION == $notification['type']) : ?>
-                participe à un cadeau à plusieurs pour <strong><?php echo e($notification['owner_nom']); ?></strong> 🤝
-                <?php if ('' !== (string) $notification['product_nom']) : ?>
-                    <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
+                <?php
+                // État actuel de la cagnotte (notifications_add_groups) : lancée, avancée ou complète.
+                $group = isset($notification['group']) ? $notification['group'] : null;
+                $complete = $group && null !== $group['price'] && $group['total'] >= $group['price'];
+                $progress = array();
+                if ('' !== (string) $notification['product_nom']) $progress[] = legacy_text($notification['product_nom']);
+                if ($group) {
+                    $progress[] = $group['count'] . ' participant' . (1 < $group['count'] ? 's' : '');
+                    if (null !== $group['price']) $progress[] = format_price($group['total']) . ' / ' . format_price($group['price']);
+                }
+                ?>
+                <?php echo $group && $group['started'] ? 'a lancé une cagnotte' : 'a participé à la cagnotte'; ?>
+                pour <strong><?php echo e($notification['owner_nom']); ?></strong>
+                <?php echo $complete ? ' : elle est complète 🎉' : ' 🤝'; ?>
+                <?php if (0 < count($progress)) : ?>
+                    <small class="notification__hint"><?php echo e(implode(' · ', $progress)); ?></small>
                 <?php endif; ?>
             <?php else : ?>
                 <?php $reactions = reaction_types(); $reaction = (int) $notification['reaction_type']; ?>

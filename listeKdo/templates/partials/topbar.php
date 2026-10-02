@@ -17,7 +17,7 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
         <span class="topbar__text">
             <?php if ($owner) : ?>
                 <small class="topbar__kicker"><?php echo e($theme['title']); ?></small>
-                <span class="topbar__title"><?php echo e($owner['nom']); ?></span>
+                <span class="topbar__title"><?php echo e('' !== list_title($owner) ? list_title($owner) : $owner['nom']); ?></span>
             <?php else : ?>
                 <small class="topbar__kicker">Bienvenue sur</small>
                 <span class="topbar__title">Liste de Kdo</span>
@@ -61,6 +61,14 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
             <a class="btn btn--light my-list" href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>" aria-label="Revenir à ma liste">
                 <?php echo icon('gift'); ?> <span class="btn__label">Ma liste</span>
             </a>
+        <?php endif; ?>
+
+        <?php if ($owner && $ctx['canView'] && !$ctx['private']) : ?>
+            <button type="button" class="round-btn topbar__share" data-open="share-dialog" aria-label="Partager la liste" data-tip="Partager la liste"><?php echo icon('share-nodes'); ?></button>
+        <?php endif; ?>
+        <?php if ($owner && $ctx['canEdit']) : ?>
+            <?php // Paramètres de la liste : titre, type, date, privée (templates/partials/list_settings.php). ?>
+            <button type="button" class="round-btn topbar__settings" data-open="list-settings-dialog" aria-label="Paramètres de la liste" data-tip="Paramètres de la liste"><?php echo icon('gear'); ?></button>
         <?php endif; ?>
 
         <?php if ($me && 0 < count($friends)) : ?>

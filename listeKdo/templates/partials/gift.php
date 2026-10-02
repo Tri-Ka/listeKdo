@@ -17,11 +17,20 @@ foreach ($object['participants'] as $participant) {
         <span class="collection-pill"><?php echo icon('gift'); ?> <?php echo (int) $object['items_gifted']; ?> / <?php echo (int) $object['items_total']; ?> réservés</span>
     <?php endif; ?>
 <?php elseif ($object['is_group']) : ?>
-    <button type="button" class="collection-pill<?php echo $joined ? ' collection-pill--mine' : ''; ?>" data-open="object-<?php echo $id; ?>" data-focus="amount">
+    <?php
+    // Version courte (le pied de la vignette est étroit) ; le détail est dans l'info-bulle et la fiche.
+    $count = count($object['participants']);
+    $people = $count . ' participant' . (1 < $count ? 's' : '');
+    $progress = null !== $object['price'] ? min(100, round($object['group_total'] * 100 / $object['price'])) : null;
+    $tip = null !== $object['price'] ? $people . ' · ' . format_price($object['group_total']) . ' sur ' . format_price($object['price']) : $people;
+    ?>
+    <button type="button" class="collection-pill group-pill<?php echo $joined ? ' collection-pill--mine' : ''; ?>" data-open="object-<?php echo $id; ?>" data-focus="amount"
+        data-tip="<?php echo e($tip); ?>" aria-label="<?php echo e($tip); ?>"<?php echo null !== $progress ? ' style="--progress: ' . (int) $progress . '%"' : ''; ?>>
         <?php echo icon('users'); ?>
-        <?php echo count($object['participants']); ?> participant<?php echo 1 < count($object['participants']) ? 's' : ''; ?>
-        <?php if (null !== $object['price']) : ?>
-            · <?php echo e(format_price($object['group_total'])); ?> / <?php echo e(format_price($object['price'])); ?>
+        <?php if (null !== $progress) : ?>
+            <?php echo $count; ?> · <?php echo e(str_replace(' €', '', format_price($object['group_total']))); ?> / <?php echo e(format_price($object['price'])); ?>
+        <?php else : ?>
+            <?php echo e($people); ?>
         <?php endif; ?>
     </button>
 <?php elseif (null === $object['gifted_by']) : ?>

@@ -39,29 +39,34 @@ async function addIdea(page, name, price) {
     /* ---- Date de l'événement ---- */
     const inTwelveDays = new Date(Date.now() + 12 * 86400000).toISOString().slice(0, 10);
     await owner.goto(`${B}?user=${ETIENNE}`);
-    await owner.click('.profile__action');
-    await owner.fill('#profile-dialog input[name=event_date]', inTwelveDays);
+    await owner.click('.topbar__settings');
+    await owner.fill('#list-settings-dialog input[name=event_date]', inTwelveDays);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    check(await owner.locator('#list-settings-dialog input[name=theme]:checked').getAttribute('value') === 'birthday', 'paramètres de la liste : type de liste actuel coché');
     // Etienne a une question secrète personnalisée (« test ») : modifier le profil ne doit pas en redemander la réponse.
+    await owner.click('.profile__action');
     await owner.setInputFiles('#profile-dialog input[name=pictureFile]', 'fixtures/photo.jpg');
     await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
     check(await owner.locator('.toast--success').count() === 1 && await owner.locator('.toast--error').count() === 0,
         'profil (photo) enregistré sans redemander la question secrète personnalisée');
-    check(await owner.locator('#profile-dialog input[name=theme]:checked').getAttribute('value') === 'birthday', 'profil : type de liste actuel coché');
     const days = await owner.locator('[data-unit="d"]').innerText();
     const seconds = await owner.locator('[data-unit="s"]').innerText();
     await owner.waitForTimeout(1200);
     check(days === '11' && seconds !== await owner.locator('[data-unit="s"]').innerText(), 'compte à rebours : 11 jours + heures, secondes qui défilent');
 
-    /* ---- Type de liste depuis « Mon profil » ---- */
-    await owner.click('.profile__action');
-    await owner.click('#profile-dialog .theme-field__option--naissance');
-    await owner.screenshot({ path: `${__dirname}/out/features-profile-theme.png` });
-    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
-    check(await owner.locator('body').getAttribute('data-theme') === 'naissance', 'profil : type de liste changé (naissance)');
-    await owner.click('.profile__action');
-    await owner.click('#profile-dialog .theme-field__option--birthday');
-    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
-    check(await owner.locator('body').getAttribute('data-theme') === 'birthday', 'profil : retour en anniversaire');
+    /* ---- Paramètres de la liste : type de liste et titre ---- */
+    await owner.click('.topbar__settings');
+    await owner.click('#list-settings-dialog .theme-field__option--naissance');
+    await owner.fill('#list-settings-dialog input[name=list_title]', 'Les 40 ans de test');
+    await owner.screenshot({ path: `${__dirname}/out/features-list-settings.png` });
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    check(await owner.locator('body').getAttribute('data-theme') === 'naissance', 'paramètres : type de liste changé (naissance)');
+    check(await owner.title() === 'Les 40 ans de test' && (await text(owner.locator('.topbar__title'))) === 'Les 40 ans de test', 'paramètres : titre de la liste affiché');
+    await owner.click('.topbar__settings');
+    await owner.click('#list-settings-dialog .theme-field__option--birthday');
+    await owner.fill('#list-settings-dialog input[name=list_title]', '');
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    check(await owner.locator('body').getAttribute('data-theme') === 'birthday' && (await owner.title()).startsWith('Anniversaire de'), 'paramètres : retour en anniversaire, titre par défaut');
 
     /* ---- Rappel d'événement chez les amis (Mallory est amie d'Etienne) ---- */
     await friend.goto(B);
@@ -92,7 +97,11 @@ async function addIdea(page, name, price) {
     await friend.waitForSelector(`#object-${bigId} .group__list li`);
     check((await text(friend.locator(`#object-${bigId} .group__total`))).includes('20 € sur 45,50 €'), 'participation : 20 € sur 45,50 €');
     await friend.keyboard.press('Escape');
-    check((await text(friend.locator(`#idea-${bigId} .collection-pill`))).includes('1 participant · 20 € / 45,50 €'), 'vignette : 1 participant · 20 € / 45,50 €');
+    const groupPill = friend.locator(`#idea-${bigId} .group-pill`);
+    check((await text(groupPill)) === '1 · 20 / 45,50 €' && await groupPill.getAttribute('data-tip') === '1 participant · 20 € sur 45,50 €',
+        'vignette : « 1 · 20 / 45,50 € » (détail dans l\'info-bulle)');
+    check(await groupPill.evaluate((el) => el.scrollWidth <= el.closest('.card').clientWidth && el.closest('.card__actions').offsetHeight < 80), 'vignette : la pastille tient sur une ligne');
+    await friend.locator(`#idea-${bigId}`).screenshot({ path: `${__dirname}/out/features-group-pill.png` });
     await owner.reload();
     check(await owner.locator(`#idea-${bigId} .collection-pill, #object-${bigId} .group`).count() === 0, 'propriétaire : ne voit pas le cadeau à plusieurs');
     await friend.locator(`#idea-${bigId} .collection-pill`).click();
@@ -159,9 +168,9 @@ async function addIdea(page, name, price) {
         await owner.click('#confirm-dialog [data-confirm-ok]');
         await owner.waitForSelector(`#idea-${id}`, { state: 'detached' });
     }
-    await owner.click('.profile__action');
-    await owner.fill('#profile-dialog input[name=event_date]', '');
-    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    await owner.click('.topbar__settings');
+    await owner.fill('#list-settings-dialog input[name=event_date]', '');
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
 
     check(owner.errors.length + friend.errors.length === 0, 'aucune erreur JS ' + [...owner.errors, ...friend.errors].join(' | '));
     await browser.close();

@@ -3373,6 +3373,17 @@ button.collection-pill {
     color: #157a42;
 }
 
+/* Cadeau à plusieurs : la pastille se remplit avec les participations (--progress). */
+.group-pill {
+    padding: 0 12px;
+    gap: 6px;
+    background: linear-gradient(90deg, color-mix(in srgb, currentColor 16%, transparent) var(--progress, 0%), transparent 0), var(--brand-soft);
+}
+
+.group-pill.collection-pill--mine {
+    background: linear-gradient(90deg, color-mix(in srgb, currentColor 16%, transparent) var(--progress, 0%), transparent 0), var(--success-soft);
+}
+
 .gift-only-block {
     display: none;
 }
@@ -4693,4 +4704,84 @@ button.collection-pill {
     z-index: -1;
     background: #ffd23f;
     clip-path: polygon(50% 0, 61% 26%, 90% 10%, 78% 40%, 100% 52%, 76% 63%, 88% 92%, 59% 76%, 46% 100%, 37% 74%, 8% 88%, 22% 60%, 0 46%, 25% 37%, 12% 10%, 40% 24%);
+}
+
+/* ---------- En-tête épuré : partage et thème dans des fenêtres (templates/partials/hero.php) ---------- */
+
+/* Partage dans la fenêtre : plus de carte, la fenêtre suffit. */
+.share-dialog .share {
+    display: grid;
+    gap: 16px;
+    padding-top: 4px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.share-dialog .share__label {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.share-dialog .share__row {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.share-dialog .share__link {
+    flex: none;
+}
+
+.share-dialog .share__buttons {
+    justify-content: center;
+}
+
+
+
+
+
+/* En-tête (ordinateur) : trois colonnes, la photo à gauche et une colonne vide de même largeur à droite,
+ * pour que le titre reste parfaitement centré. Plus étroit (tablette, mobile) : la photo passe au-dessus du titre. */
+@media (max-width: 1100px) {
+    .hero__head {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+@media (min-width: 1101px) {
+    .hero__head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 400px minmax(0, 1fr);
+        align-items: center;
+        gap: 90px;
+    }
+
+    .hero__head > .profile {
+        grid-column: 1;
+        justify-self: end;
+    }
+
+    .hero__head > .hero__titles {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    .profile__avatar > img {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+/* Colonne centrale un peu plus large pour loger photo + titre + colonne vide (les décors gardent leurs côtés). */
+@media (min-width: 1101px) {
+    .hero {
+        grid-template-columns: 1fr minmax(0, 820px) 1fr;
+    }
+}
+/* Partager / paramètres de la liste dans la barre du haut : même couleur que la cloche. */
+.topbar__share,
+.topbar__settings {
+    color: var(--brand);
 }

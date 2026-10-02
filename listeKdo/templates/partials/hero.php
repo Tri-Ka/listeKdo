@@ -52,10 +52,13 @@ $themes = themes();
                 <?php if (null !== $next) : ?>
                     <?php
                     // Valeurs initiales (le JS les met à jour chaque seconde, à l'heure du visiteur).
-                    $left = max(0, $next - time());
+                    // Comme en JS : jours entiers jusqu'à la date + temps jusqu'à minuit (changement d'heure compris).
+                    $midnight = mktime(0, 0, 0, (int) date('n'), (int) date('j') + 1, (int) date('Y'));
+                    $days = max(0, event_days($owner) - 1);
+                    $left = max(0, min(86399, $midnight - time()));
                     $units = array(
-                        'd' => array(floor($left / 86400), 'jours'),
-                        'h' => array(floor($left % 86400 / 3600), 'heures'),
+                        'd' => array($days, 'jours'),
+                        'h' => array(floor($left / 3600), 'heures'),
                         'm' => array(floor($left % 3600 / 60), 'min'),
                         's' => array($left % 60, 'sec'),
                     );
@@ -75,37 +78,9 @@ $themes = themes();
                     </div>
                 <?php endif; ?>
 
-                <?php if ($ctx['canEdit']) : ?>
-                    <form class="theme-picker" method="post" action="actions/changeTheme.php" aria-label="Thème de la liste">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="owner" value="<?php echo e($owner['code']); ?>">
-                        <?php foreach ($themes as $key => $info) : ?>
-                            <button type="submit" name="theme" value="<?php echo e($key); ?>" class="theme-picker__option theme-picker__option--<?php echo e($key); ?>"
-                                aria-pressed="<?php echo $key === $theme['key'] ? 'true' : 'false'; ?>"><?php echo e($info['label']); ?></button>
-                        <?php endforeach; ?>
-                    </form>
-                <?php endif; ?>
             </div>
         </div>
 
-        <?php if ($owner && !$ctx['private']) : ?>
-            <?php $url = share_url($owner); ?>
-            <div class="share" data-share data-share-code="<?php echo e($owner['code']); ?>">
-                <p class="share__label">Partager cette liste avec vos amis</p>
-                <div class="share__row">
-                    <div class="share__link">
-                        <input type="text" readonly value="<?php echo e($url); ?>" aria-label="Lien de la liste" data-share-url>
-                        <button type="button" class="btn btn--primary btn--sm" data-copy><?php echo icon('link'); ?> Copier</button>
-                    </div>
-                    <div class="share__buttons">
-                        <a class="round-btn share--whatsapp" href="https://wa.me/?text=<?php echo e(rawurlencode(theme_text($theme, 'heading', $owner) . ' : ' . $url)); ?>" target="_blank" rel="noopener" title="WhatsApp" aria-label="Partager sur WhatsApp"><?php echo icon('whatsapp'); ?></a>
-                        <a class="round-btn share--facebook" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo e(rawurlencode($url)); ?>" target="_blank" rel="noopener" title="Facebook" aria-label="Partager sur Facebook"><?php echo icon('facebook-f'); ?></a>
-                        <a class="round-btn share--x" href="https://x.com/intent/post?url=<?php echo e(rawurlencode($url)); ?>&amp;text=<?php echo e(rawurlencode(theme_text($theme, 'heading', $owner))); ?>" target="_blank" rel="noopener" title="X" aria-label="Partager sur X"><?php echo icon('x-twitter'); ?></a>
-                        <button type="button" class="round-btn" data-native-share hidden title="Plus d'options" aria-label="Plus d'options de partage"><?php echo icon('ellipsis'); ?></button>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
         <?php if ($owner && 0 < count($ctx['ownerChildren'])) : ?>
             <nav class="hero__children" aria-label="Listes gérées par <?php echo e($owner['nom']); ?>">
                 <span>Voir aussi :</span>
@@ -123,6 +98,31 @@ $themes = themes();
             <?php echo deco($theme, $name); ?>
         <?php endforeach; ?>
     </div>
+
+        <?php if ($owner && !$ctx['private']) : ?>
+            <?php $url = share_url($owner); ?>
+            <dialog class="modal modal--small share-dialog" id="share-dialog" aria-labelledby="share-title">
+                <header class="modal__header">
+                    <h2 id="share-title">Partager la liste</h2>
+                    <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
+                </header>
+                <div class="modal__body share" data-share data-share-code="<?php echo e($owner['code']); ?>">
+                <p class="share__label">Envoyez ce lien à vos proches : ils verront la liste sans avoir besoin de compte.</p>
+                <div class="share__row">
+                    <div class="share__link">
+                        <input type="text" readonly value="<?php echo e($url); ?>" aria-label="Lien de la liste" data-share-url>
+                        <button type="button" class="btn btn--primary btn--sm" data-copy><?php echo icon('link'); ?> Copier</button>
+                    </div>
+                    <div class="share__buttons">
+                        <a class="round-btn share--whatsapp" href="https://wa.me/?text=<?php echo e(rawurlencode(theme_text($theme, 'heading', $owner) . ' : ' . $url)); ?>" target="_blank" rel="noopener" title="WhatsApp" aria-label="Partager sur WhatsApp"><?php echo icon('whatsapp'); ?></a>
+                        <a class="round-btn share--facebook" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo e(rawurlencode($url)); ?>" target="_blank" rel="noopener" title="Facebook" aria-label="Partager sur Facebook"><?php echo icon('facebook-f'); ?></a>
+                        <a class="round-btn share--x" href="https://x.com/intent/post?url=<?php echo e(rawurlencode($url)); ?>&amp;text=<?php echo e(rawurlencode(theme_text($theme, 'heading', $owner))); ?>" target="_blank" rel="noopener" title="X" aria-label="Partager sur X"><?php echo icon('x-twitter'); ?></a>
+                        <button type="button" class="round-btn" data-native-share hidden title="Plus d'options" aria-label="Plus d'options de partage"><?php echo icon('ellipsis'); ?></button>
+                    </div>
+                </div>
+                </div>
+            </dialog>
+        <?php endif; ?>
 
     <?php echo render('partials/waves', array('id' => 'hero-waves', 'class' => 'waves--hero')); ?>
 </section>

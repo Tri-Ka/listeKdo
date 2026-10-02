@@ -198,10 +198,14 @@ async function login(p, name) {
   await o.reload();
   check(await o.locator(`#idea-${newId}`).count() === 0, 'idée supprimée');
 
-  await Promise.all([o.waitForNavigation(), o.click('.theme-picker [value="noel"]')]);
+  await o.click('.topbar__settings');
+  await o.click('#list-settings-dialog .theme-field__option--noel');
+  await Promise.all([o.waitForNavigation(), o.click('#list-settings-dialog button[type=submit]')]);
   await o.waitForLoadState('networkidle');
   check(await o.locator('body').getAttribute('data-theme') === 'noel', 'changement de thème');
-  await Promise.all([o.waitForNavigation(), o.click('.theme-picker [value="birthday"]')]);
+  await o.click('.topbar__settings');
+  await o.click('#list-settings-dialog .theme-field__option--birthday');
+  await Promise.all([o.waitForNavigation(), o.click('#list-settings-dialog button[type=submit]')]);
   await o.waitForLoadState('networkidle');
   check(o.errors.length === 0, 'aucune erreur JS (propriétaire) ' + o.errors.join(' | '));
 

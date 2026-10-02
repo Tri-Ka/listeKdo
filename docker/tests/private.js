@@ -23,9 +23,9 @@ async function session(browser, name) {
 
 async function setPrivate(page, on) {
     await page.goto(`${B}?user=${ETIENNE}`);
-    await page.click('.profile__action');
-    await page.locator('#profile-dialog input[name=is_private][type=checkbox]').setChecked(on);
-    await Promise.all([page.waitForNavigation(), page.click('#profile-dialog button[type=submit]')]);
+    await page.click('.topbar__settings');
+    await page.locator('#list-settings-dialog input[name=is_private][type=checkbox]').setChecked(on);
+    await Promise.all([page.waitForNavigation(), page.click('#list-settings-dialog button[type=submit]')]);
 }
 
 (async () => {
@@ -90,7 +90,7 @@ async function setPrivate(page, on) {
     await Promise.all([owner.waitForNavigation(), owner.click('#child-new-dialog button[type=submit]')]);
     const childUrl = owner.url().split('#')[0];
     check(await owner.locator('.profile__private').count() === 1 && await owner.locator('.card--add').count() === 1, 'liste secondaire privée : le gestionnaire la voit et la modifie');
-    check(await owner.locator('#child-dialog input[name=is_private][type=checkbox]').isChecked(), 'liste secondaire : case cochée dans sa fiche');
+    check(await owner.locator('#list-settings-dialog input[name=is_private][type=checkbox]').isChecked(), 'liste secondaire : case cochée dans sa fiche');
     // Gestionnaire : « Je l'ai reçu » retire « Je l'offre » sans recharger, « Remettre dans la liste » le remet.
     await owner.click('.card--add');
     await owner.fill('#object-form-dialog input[name=nom]', 'Idée reçue test');

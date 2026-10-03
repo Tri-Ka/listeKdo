@@ -51,15 +51,25 @@ function current_user()
  */
 function auth_touch($user)
 {
+    // Historique léger : une ligne par personne et par jour, sans URL, IP ni
+    // appareil. Il permet au tableau de bord de compter les visiteurs uniques.
+    if (visit_history_enabled()) {
+        db_query('INSERT IGNORE INTO user_visit (user_id, visited_on) VALUES (?, CURDATE())', array((int) $user['id']));
+    }
+
     if (!array_key_exists('last_seen_at', $user)) {
         return;
     }
 
-    if ('' !== (string) $user['last_seen_at'] && strtotime($user['last_seen_at']) > time() - 600) {
-        return;
-    }
+    if ('' !== (string) $user['last_seen_at'] && strtotime($user['last_seen_at']) > time() - 600) return;
 
     db_update('liste_user', array('last_seen_at' => db_now()), array('id' => (int) $user['id']));
+}
+
+/** Migration sql/2026-10-04-statistiques-visites.sql : visiteurs uniques journaliers. */
+function visit_history_enabled()
+{
+    return db_has_table('user_visit');
 }
 
 function is_logged_in()

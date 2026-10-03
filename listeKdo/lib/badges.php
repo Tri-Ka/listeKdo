@@ -50,6 +50,7 @@ function badge_metrics()
         'has_title' => 'Titre de liste (1 = oui)',
         'profile_complete' => 'Profil complet (0 à 5 : photo, question, petit mot, date, titre)',
         'years' => 'Années depuis sa première idée',
+        'visits' => 'Jours de visite',
         'activity' => 'Activité totale (idées + commentaires + réactions + cadeaux)',
         'ideas_described' => 'Idées avec une description',
         'ideas_gifted' => 'Ses idées réservées par les autres',
@@ -85,7 +86,8 @@ function badge_kinds()
 }
 
 /**
- * Badges par défaut. code, type, niveau, indicateur, seuil, emoji, nom, description, secret.
+ * Badges par défaut. code, type, niveau, indicateur, seuil, emoji, nom, description, secret, gemmes.
+ * Le montant des gemmes est facultatif : zéro conserve le barème automatique du niveau.
  * Les trophées sont plus rares ; un badge « secret » reste caché (« ??? ») tant qu'il n'est pas obtenu.
  */
 function badge_fixtures()
@@ -139,6 +141,14 @@ function badge_fixtures()
         array('profile-title', 'badge', 'bronze', 'has_title', 1, '🏷️', 'Titre sur mesure', 'Donner un titre à sa liste.', 0),
         array('loyal-1', 'badge', 'silver', 'years', 1, '🎂', 'Fidèle', 'Utiliser le site depuis plus d\'un an.', 0),
         array('loyal-5', 'badge', 'gold', 'years', 5, '🏅', 'Vétéran', 'Utiliser le site depuis plus de 5 ans.', 0),
+
+        // Visites (jours distincts, après l'installation de statistiques-visites.sql)
+        // Les récompenses sont explicites afin que la fidélité soit visible dans l'administration :
+        // 5, 15 et 40 gemmes pour les badges, puis 200 pour le trophée.
+        array('visit-1', 'badge', 'bronze', 'visits', 1, '👋', 'Première visite', 'Se connecter un premier jour.', 0, 5),
+        array('visit-7', 'badge', 'silver', 'visits', 7, '🗓️', 'Rendez-vous pris', 'Se connecter 7 jours différents.', 0, 15),
+        array('visit-30', 'badge', 'gold', 'visits', 30, '📆', 'Habitué des lieux', 'Se connecter 30 jours différents.', 0, 40),
+        array('trophy-visit-100', 'trophy', 'legend', 'visits', 100, '🏆', 'Centenaire des visites', 'Se connecter 100 jours différents.', 0, 200),
 
         // Encore plus
         array('described-10', 'badge', 'bronze', 'ideas_described', 10, '🖋️', 'Plume précise', '10 idées avec une description.', 0),
@@ -196,7 +206,8 @@ function badge_fixtures()
     foreach ($rows as $i => $row) {
         $badges[] = array(
             'code' => $row[0], 'kind' => $row[1], 'tier' => $row[2], 'metric' => $row[3], 'threshold' => $row[4],
-            'emoji' => $row[5], 'name' => $row[6], 'description' => $row[7], 'secret' => $row[8], 'active' => 1, 'position' => ($i + 1) * 10,
+            'emoji' => $row[5], 'name' => $row[6], 'description' => $row[7], 'secret' => $row[8],
+            'gems' => isset($row[9]) ? $row[9] : 0, 'active' => 1, 'position' => ($i + 1) * 10,
         );
     }
 
@@ -328,6 +339,11 @@ function badge_metric_values($user)
 
     $first = db_one('SELECT MIN(created_at) AS first FROM liste_noel WHERE user_id = ?', array($id));
     $values['years'] = $first && $first['first'] ? max(0, (int) floor((time() - strtotime($first['first'])) / (365.25 * 86400))) : 0;
+
+    // L'historique ne contient qu'une ligne par personne et par journée. Sans sa migration,
+    // l'indicateur reste à zéro et les badges de visite ne peuvent pas être obtenus.
+    $values['visits'] = visit_history_enabled()
+        ? badge_count('SELECT COUNT(*) AS n FROM user_visit WHERE user_id = ?', array($id)) : 0;
 
     $values['activity'] = $values['ideas'] + $values['comments'] + $values['reactions_given'] + $values['gifts'];
 

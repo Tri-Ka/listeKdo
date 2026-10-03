@@ -176,8 +176,34 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
             </section>
         <?php endforeach; ?>
 
+        <?php if (referral_enabled()) : ?>
+            <?php
+            $rewards = referral_rewards();
+            $code = referral_code($me);
+            $link = site_base_url() . '?parrain=' . $code;
+            $refs = referral_counts($me['id']);
+            ?>
+            <section class="referral" data-referral>
+                <div class="referral__intro">
+                    <strong>Parrainez vos proches : +<?php echo (int) $rewards['sponsor']; ?> <?php echo gem_icon(); ?> par filleul</strong>
+                    <span>Ils s'inscrivent avec votre code<?php echo 0 < $rewards['welcome'] ? ' (et reçoivent ' . (int) $rewards['welcome'] . ' gemmes)' : ''; ?>. Vous gagnez vos gemmes dès qu'ils ajoutent leur première idée.</span>
+                </div>
+                <div class="referral__code">
+                    <span class="referral__value"><?php echo e($code); ?></span>
+                    <input type="hidden" value="<?php echo e($link); ?>" data-referral-link>
+                    <button type="button" class="btn btn--light btn--sm" data-referral-copy><?php echo icon('link'); ?> Copier le lien</button>
+                    <a class="btn btn--light btn--sm" href="https://wa.me/?text=<?php echo e(rawurlencode('Viens créer ta liste de cadeaux avec moi ! Mon code de parrainage : ' . $code . ' — ' . $link)); ?>" target="_blank" rel="noopener"><?php echo icon('whatsapp'); ?> WhatsApp</a>
+                </div>
+                <span class="referral__stats">
+                    <?php echo (int) $refs['active']; ?> filleul<?php echo 1 < $refs['active'] ? 's' : ''; ?> actif<?php echo 1 < $refs['active'] ? 's' : ''; ?>
+                    <?php if ($refs['total'] > $refs['active']) : ?> · <?php echo (int) ($refs['total'] - $refs['active']); ?> en attente de leur première idée<?php endif; ?>
+                    <?php if (0 < $gems['referral']) : ?> · <?php echo (int) $gems['referral']; ?> <?php echo gem_icon(); ?> gagnées<?php endif; ?>
+                </span>
+            </section>
+        <?php endif; ?>
+
         <div class="shop__earn">
-            <p><strong>Comment gagner des gemmes ?</strong> Vos badges vous en ont rapporté <?php echo (int) $gems['badges']; ?>, vos actions <?php echo (int) $gems['actions']; ?>.</p>
+            <p><strong>Comment gagner des gemmes ?</strong> Vos badges vous en ont rapporté <?php echo (int) $gems['badges']; ?>, vos actions <?php echo (int) $gems['actions']; ?><?php echo 0 < $gems['referral'] ? ', le parrainage ' . (int) $gems['referral'] : ''; ?>.</p>
             <ul class="shop__rates">
                 <?php foreach (gem_action_rates() as $key => $rate) : ?>
                     <?php if (0 < $rate) : ?>

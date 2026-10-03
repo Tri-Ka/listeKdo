@@ -6,7 +6,8 @@ $myGifts = isset($myGifts) && is_array($myGifts) ? $myGifts : array();
 $owner = $ctx['canView'] ? $ctx['owner'] : null;
 ?>
 <header class="topbar">
-    <a class="topbar__brand" href="<?php echo $owner ? 'index.php?user=' . e(rawurlencode($owner['code'])) : 'index.php'; ?>">
+    <?php // Sur mobile, la carte de la liste ouvre « Mes amis » (js/app.js) : c'est l'accès aux autres listes. ?>
+    <a class="topbar__brand" href="<?php echo $owner ? 'index.php?user=' . e(rawurlencode($owner['code'])) : 'index.php'; ?>"<?php echo $me && 0 < count($friends) ? ' data-mobile-friends' : ''; ?>>
         <span class="topbar__logo"><?php echo icon('gift'); ?></span>
         <?php if ($owner) : ?>
             <span class="topbar__owner">
@@ -103,9 +104,6 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
                     <?php endif; ?>
                     <?php if ($owner && $ctx['canEdit']) : ?>
                         <button type="button" class="user-menu__mobile" data-open="list-settings-dialog"><?php echo icon('gear'); ?> Paramètres de la liste</button>
-                    <?php endif; ?>
-                    <?php if (0 < count($friends)) : ?>
-                        <button type="button" class="user-menu__mobile" data-open="friends-dialog"><?php echo icon('users'); ?> Mes amis</button>
                     <?php endif; ?>
                     <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>"><?php echo icon('list'); ?> Ma liste</a>
                     <?php foreach ($children as $child) : ?>

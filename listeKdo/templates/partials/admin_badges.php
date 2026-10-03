@@ -32,6 +32,17 @@ $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'descri
                     <input type="number" name="rate[<?php echo e($key); ?>]" value="<?php echo (int) $rates[$key]; ?>" min="0" max="1000" title="Par défaut : <?php echo (int) $info[1]; ?>">
                 </label>
             <?php endforeach; ?>
+            <?php if (referral_enabled()) : ?>
+                <?php $rewards = referral_rewards(); ?>
+                <label class="badge-admin__field">
+                    <span>Parrain (filleul actif)</span>
+                    <input type="number" name="referral[sponsor]" value="<?php echo (int) $rewards['sponsor']; ?>" min="0" max="100000" title="Par défaut : 200">
+                </label>
+                <label class="badge-admin__field">
+                    <span>Bienvenue (filleul)</span>
+                    <input type="number" name="referral[welcome]" value="<?php echo (int) $rewards['welcome']; ?>" min="0" max="100000" title="Par défaut : 50">
+                </label>
+            <?php endif; ?>
             <?php if (settings_enabled()) : ?>
                 <button type="submit" class="btn btn--primary btn--sm">Enregistrer</button>
             <?php endif; ?>
@@ -39,6 +50,25 @@ $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'descri
         <?php if (!settings_enabled()) : ?>
             <p class="gem-rates__warning"><?php echo icon('triangle-exclamation'); ?> Valeurs par défaut en place : pour pouvoir les modifier, exécutez <code>sql/2026-10-03-gemmes-actions.sql</code> dans phpMyAdmin.</p>
         <?php endif; ?>
+    </form>
+<?php endif; ?>
+
+<?php if (skins_enabled()) : ?>
+    <form class="gem-rates" method="post" action="actions/adminGems.php">
+        <?php echo csrf_field(); ?>
+        <p class="gem-rates__title"><?php echo gem_icon(); ?> Prix des habillages <small>(en gemmes, pour chaque type de liste ; les achats déjà faits ne changent pas)</small></p>
+        <div class="gem-rates__fields">
+            <?php $rarities = skin_rarities(); ?>
+            <?php foreach (skins() as $key => $skin) : ?>
+                <label class="badge-admin__field">
+                    <span><?php echo e($skin['label']); ?> · <?php echo e($rarities[$skin['rarity']]); ?></span>
+                    <input type="number" name="price[<?php echo e($key); ?>]" value="<?php echo skin_price($key, $skin['price']); ?>" min="1" max="100000" title="Par défaut : <?php echo (int) $skin['price']; ?>">
+                </label>
+            <?php endforeach; ?>
+            <?php if (settings_enabled()) : ?>
+                <button type="submit" class="btn btn--primary btn--sm">Enregistrer</button>
+            <?php endif; ?>
+        </div>
     </form>
 <?php endif; ?>
 

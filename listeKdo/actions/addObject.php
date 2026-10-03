@@ -55,5 +55,13 @@ if ($isCollection) {
 
 notify($me['id'], $id, NOTIF_NEW_IDEA);
 
+// Parrainage : première idée d'un filleul, son parrain en est averti (ses gemmes sont comptées par gems_of()).
+if (referral_enabled() && !empty($me['referred_by'])) {
+    $ideas = db_one('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ?', array((int) $me['id']));
+    if ($ideas && 1 === (int) $ideas['n']) {
+        db_insert('notification', array('author_id' => (int) $me['id'], 'product_id' => 0, 'type' => NOTIF_REFERRAL, 'created_at' => db_now()));
+    }
+}
+
 // #new- : la page joue l'animation d'arrivée de la nouvelle idée (js/app.js : openFromHash).
 succeed(array('id' => $id), $back . '#new-' . $id, 'Idée ajoutée !');

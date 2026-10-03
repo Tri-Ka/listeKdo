@@ -1459,6 +1459,32 @@ document.addEventListener('change', (event) => {
     if (event.target.matches('input[name="theme"]')) syncSkinField(event.target.form);
 });
 
+// Parrainage (boutique) : copier le lien d'invitation.
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-referral-copy]');
+    if (!button) return;
+    const link = $('[data-referral-link]', button.closest('[data-referral]')).value;
+    try {
+        await navigator.clipboard.writeText(link);
+    } catch {
+        window.prompt('Copiez ce lien :', link);
+    }
+    toast('Lien de parrainage copié !', 'success');
+});
+
+// Inscription depuis un lien de parrainage (?parrain=CODE) : la fenêtre s'ouvre toute seule.
+if (new URLSearchParams(location.search).get('parrain') && $('#signup-dialog') && !$('.user-menu')) {
+    openDialog($('#signup-dialog'));
+}
+
+// Mobile : la carte de la liste (en haut à gauche) ouvre « Mes amis » au lieu de recharger la liste.
+document.addEventListener('click', (event) => {
+    const brand = event.target.closest('[data-mobile-friends]');
+    if (!brand || !matchMedia('(max-width: 700px)').matches || !$('#friends-dialog')) return;
+    event.preventDefault();
+    openDialog($('#friends-dialog'));
+});
+
 // Onglets de la vitrine des badges.
 document.addEventListener('click', (event) => {
     const tab = event.target.closest('[data-badge-tab]');

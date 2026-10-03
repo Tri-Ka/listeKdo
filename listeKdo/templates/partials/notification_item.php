@@ -1,6 +1,6 @@
 <?php $states = notification_states_enabled(); ?>
 <li class="notification<?php echo $notification['new'] ? ' notification--new' : ''; ?>" data-notification="<?php echo (int) $notification['id']; ?>">
-    <a href="index.php?user=<?php echo e(rawurlencode($notification['owner_code'])); ?><?php echo NOTIF_EVENT == $notification['type'] ? '' : (NOTIF_BADGE == $notification['type'] ? '#badges' : '#idea-' . (int) $notification['product_id']); ?>" data-notification-link>
+    <a href="index.php?user=<?php echo e(rawurlencode($notification['owner_code'])); ?><?php echo NOTIF_EVENT == $notification['type'] || NOTIF_REFERRAL == $notification['type'] ? '' : (NOTIF_BADGE == $notification['type'] ? '#badges' : '#idea-' . (int) $notification['product_id']); ?>" data-notification-link>
         <?php echo avatar($notification['author'], 'notification__avatar'); ?>
         <span class="notification__text">
             <?php if ($notification['self'] && NOTIF_BADGE == $notification['type']) : ?>
@@ -41,6 +41,10 @@
                     <?php echo $self ? 'Vous avez' : 'a'; ?> obtenu <?php echo $what; ?> <?php echo e($badge['emoji']); ?> <strong><?php echo e($badge['name']); ?></strong>
                 <?php endif; ?>
                 <small class="notification__hint"><?php echo $self ? 'Voir mes badges' : 'Voir ses badges'; ?></small>
+            <?php elseif (NOTIF_REFERRAL == $notification['type']) : ?>
+                <?php $rewards = referral_rewards(); ?>
+                (votre filleul) a ajouté sa première idée : <strong>+<?php echo (int) $rewards['sponsor']; ?> <?php echo gem_icon(); ?></strong>
+                <small class="notification__hint">Merci pour le parrainage !</small>
             <?php elseif (NOTIF_GIFT == $notification['type']) : ?>
                 a réservé un cadeau pour <strong><?php echo e($notification['owner_nom']); ?></strong> 🎁
                 <?php if ('' !== (string) $notification['product_nom']) : ?>

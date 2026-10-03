@@ -1,6 +1,7 @@
 <?php
 /*
- * Administration : gemmes gagnées par action (idée, commentaire, réaction…), enregistrées dans kdo_setting.
+ * Administration : gemmes gagnées par action (idée, commentaire, réaction…) et prix des habillages,
+ * enregistrés dans kdo_setting.
  */
 require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
@@ -18,4 +19,21 @@ foreach (gem_actions() as $key => $info) {
     }
 }
 
-succeed(array(), $back, 'Gemmes par action enregistrées.');
+// Parrainage
+if (isset($_POST['referral']) && is_array($_POST['referral'])) {
+    foreach (array('sponsor' => 'gems_referral', 'welcome' => 'gems_welcome') as $key => $name) {
+        if (isset($_POST['referral'][$key])) {
+            setting_save($name, max(0, min(100000, (int) $_POST['referral'][$key])));
+        }
+    }
+}
+
+// Prix des habillages (même formulaire ou formulaire « Prix des habillages »).
+$prices = isset($_POST['price']) && is_array($_POST['price']) ? $_POST['price'] : array();
+foreach (skins() as $key => $skin) {
+    if (isset($prices[$key])) {
+        setting_save('price_' . $key, max(1, min(100000, (int) $prices[$key])));
+    }
+}
+
+succeed(array(), $back, 0 < count($prices) ? 'Prix des habillages enregistrés.' : 'Gemmes par action enregistrées.');

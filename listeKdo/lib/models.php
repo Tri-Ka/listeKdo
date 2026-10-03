@@ -21,6 +21,8 @@ define('NOTIF_PARTICIPATION', 6);
 // Badges obtenus : author_id = la personne, product_id = le meilleur badge du lot (pas une idée).
 // Une seule notification par lot (le nombre de badges du lot se retrouve par la date, voir notifications_add_badges()).
 define('NOTIF_BADGE', 7);
+// Parrainage : author_id = le filleul, product_id = 0. Montrée seulement au parrain (« X a ajouté sa première idée : +200 »).
+define('NOTIF_REFERRAL', 8);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
@@ -816,7 +818,7 @@ function object_delete($object)
 {
     $id = (int) $object['id'];
 
-    db_query('DELETE FROM notification WHERE product_id = ? AND type NOT IN (?)', array($id, array(NOTIF_EVENT, NOTIF_BADGE)));
+    db_query('DELETE FROM notification WHERE product_id = ? AND type NOT IN (?)', array($id, array(NOTIF_EVENT, NOTIF_BADGE, NOTIF_REFERRAL)));
     db_query('DELETE FROM comment WHERE product_id = ?', array($id));
     db_query('DELETE FROM reaction WHERE product_id = ?', array($id));
     if (items_enabled()) {
@@ -1206,6 +1208,11 @@ function notifications_where($user, $friends)
     // Ses propres badges, puis les badges de ses amis (plus bas).
     $where = '((n.type = ? AND n.author_id = ?) OR n.author_id <> ?) AND ((n.type = ? AND n.author_id = ?) OR (p.user_id = ? AND n.type NOT IN (?))';
     $params = array(NOTIF_BADGE, $userId, $userId, NOTIF_BADGE, $userId, $userId, $giftTypes);
+    // Parrainage : seulement pour le parrain du filleul.
+    if (referral_enabled()) {
+        $where .= ' OR (n.type = ? AND n.author_id IN (SELECT id FROM liste_user WHERE referred_by = ?))';
+        array_push($params, NOTIF_REFERRAL, $userId);
+    }
 
     if (0 < count($friendIds)) {
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
@@ -1334,7 +1341,7 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
                 (' . $unread . ') AS is_unread
             FROM notification n
             INNER JOIN liste_user a ON a.id = n.author_id
-            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ')
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ', ' . NOTIF_REFERRAL . ')
             LEFT JOIN liste_user o ON o.id = p.user_id
             LEFT JOIN reaction r ON n.type = ' . NOTIF_REACTION . ' AND r.product_id = n.product_id AND r.user_id = n.author_id
             ' . $join . '
@@ -1460,7 +1467,7 @@ function notifications_new_count($user, $friends)
     $row = db_one(
         'SELECT COUNT(*) AS total
             FROM notification n
-            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ')
+            LEFT JOIN liste_noel p ON p.id = n.product_id AND n.type NOT IN (' . NOTIF_EVENT . ', ' . NOTIF_BADGE . ', ' . NOTIF_REFERRAL . ')
             ' . $join . '
             WHERE ' . $where . ' AND ' . $unread,
         array_merge($joinParams, $params, $unreadParams)

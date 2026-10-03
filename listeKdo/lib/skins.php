@@ -145,7 +145,7 @@ function gem_action_counts($userId)
  */
 function gems_of($userId)
 {
-    $gems = array('earned' => 0, 'badges' => 0, 'actions' => 0, 'spent' => 0, 'balance' => 0);
+    $gems = array('earned' => 0, 'badges' => 0, 'actions' => 0, 'referral' => 0, 'spent' => 0, 'balance' => 0);
     if (!skins_enabled()) {
         return $gems;
     }
@@ -155,7 +155,18 @@ function gems_of($userId)
     foreach (gem_action_counts($userId) as $key => $count) {
         $gems['actions'] += $count * $rates[$key];
     }
-    $gems['earned'] = $gems['badges'] + $gems['actions'];
+    // Parrainage : gemmes par filleul actif, et bonus de bienvenue si l'on a été parrainé.
+    $gems['referral'] = 0;
+    if (referral_enabled()) {
+        $rewards = referral_rewards();
+        $counts = referral_counts($userId);
+        $gems['referral'] = $counts['active'] * $rewards['sponsor'];
+        $me = db_one('SELECT referred_by FROM liste_user WHERE id = ?', array((int) $userId));
+        if ($me && $me['referred_by']) {
+            $gems['referral'] += $rewards['welcome'];
+        }
+    }
+    $gems['earned'] = $gems['badges'] + $gems['actions'] + $gems['referral'];
     $row = db_one('SELECT SUM(price) AS n FROM user_skin WHERE user_id = ?', array((int) $userId));
     $gems['spent'] = $row ? (int) $row['n'] : 0;
     $gems['balance'] = max(0, $gems['earned'] - $gems['spent']);
@@ -165,8 +176,8 @@ function gems_of($userId)
 
 /**
  * Habillages disponibles.
- *   price   en gemmes
- *   rarity  commun, rare, epique, legendaire (couleur de l'étiquette dans la boutique)
+ *   price   en gemmes, par défaut (modifiable dans Administration › Badges : réglage « price_<clé> »)
+ *   rarity  commun, rare, epique, heroique, prestige, legendaire (du moins au plus rare ; couleur dans la boutique)
  *   themes  types de liste couverts (dossiers img/skins/<clé>/<thème>/)
  *   colors  variables CSS appliquées à la liste (mêmes noms que les blocs [data-theme] de css/app.css)
  */
@@ -174,65 +185,85 @@ function skins()
 {
     return array(
         'pastel' => array(
-            'label' => 'Pastel', 'price' => 150, 'rarity' => 'commun',
+            'label' => 'Pastel', 'price' => 200, 'rarity' => 'commun',
             'description' => 'Rose poudré, bleu ciel et rubans de satin.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#c9677d', 'brand-strong' => '#a94f65', 'brand-soft' => '#fbe9ec', 'page' => '#fffaf7', 'hero-from' => '#fbe3e0', 'hero-to' => '#fffaf7', 'confetti-1' => '#f6c4cf', 'confetti-2' => '#b8d4ee', 'confetti-3' => '#f5dfa0'),
         ),
         'calligraphie' => array(
-            'label' => 'Calligraphie', 'price' => 150, 'rarity' => 'commun',
+            'label' => 'Calligraphie', 'price' => 200, 'rarity' => 'commun',
             'description' => 'Belles lettres, vert sapin et dorures.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#2f6b4f', 'brand-strong' => '#22533c', 'brand-soft' => '#e6f2ea', 'page' => '#fbfaf6', 'hero-from' => '#ecefe2', 'hero-to' => '#fbfaf6', 'confetti-1' => '#c9a227', 'confetti-2' => '#b33a3a', 'confetti-3' => '#2f6b4f'),
         ),
         'pirate' => array(
-            'label' => 'Pirate', 'price' => 200, 'rarity' => 'commun',
+            'label' => 'Pirate', 'price' => 500, 'rarity' => 'commun',
             'description' => "Coffre au trésor et carte de l'île.",
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#8a4b20', 'brand-strong' => '#6b3714', 'brand-soft' => '#f4e6cf', 'page' => '#fbf6ec', 'hero-from' => '#ecd9b5', 'hero-to' => '#fbf6ec', 'confetti-1' => '#c0392b', 'confetti-2' => '#d4a017', 'confetti-3' => '#2c5f7c'),
         ),
         'farwest' => array(
-            'label' => 'Far West', 'price' => 200, 'rarity' => 'commun',
+            'label' => 'Far West', 'price' => 500, 'rarity' => 'commun',
             'description' => 'Saloon, cactus et étoile de shérif.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#b5651d', 'brand-strong' => '#8f4d12', 'brand-soft' => '#f8e8d2', 'page' => '#fdf8f0', 'hero-from' => '#f0dcbc', 'hero-to' => '#fdf8f0', 'confetti-1' => '#c0392b', 'confetti-2' => '#d4a017', 'confetti-3' => '#6b8e23'),
         ),
         'elegance' => array(
-            'label' => 'Élégance', 'price' => 300, 'rarity' => 'rare',
+            'label' => 'Élégance', 'price' => 1000, 'rarity' => 'rare',
             'description' => 'Bleu nuit et or, façon carton d’invitation.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#1f3a68', 'brand-strong' => '#142a50', 'brand-soft' => '#f3ead6', 'page' => '#fbf8f2', 'hero-from' => '#efe4cc', 'hero-to' => '#fbf8f2', 'confetti-1' => '#d4af37', 'confetti-2' => '#1f3a68', 'confetti-3' => '#e8c9a0'),
         ),
         'steampunk' => array(
-            'label' => 'Steampunk', 'price' => 450, 'rarity' => 'epique',
+            'label' => 'Steampunk', 'price' => 1500, 'rarity' => 'epique',
             'description' => 'Engrenages, laiton et dirigeables.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#9a5b24', 'brand-strong' => '#7a4416', 'brand-soft' => '#f3e4cc', 'page' => '#faf4ea', 'hero-from' => '#e8d4b0', 'hero-to' => '#faf4ea', 'confetti-1' => '#c08a3e', 'confetti-2' => '#2f6b6b', 'confetti-3' => '#b23a2a'),
         ),
         'cosmique' => array(
-            'label' => 'Cosmique', 'price' => 450, 'rarity' => 'epique',
+            'label' => 'Cosmique', 'price' => 1500, 'rarity' => 'epique',
             'description' => 'Chrome, planètes et petits robots.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#3b6fd8', 'brand-strong' => '#2a56b5', 'brand-soft' => '#e6efff', 'page' => '#f6f9ff', 'hero-from' => '#dde9ff', 'hero-to' => '#f6f9ff', 'confetti-1' => '#f9a8d4', 'confetti-2' => '#93c5fd', 'confetti-3' => '#c4b5fd'),
         ),
         'neon' => array(
-            'label' => 'Néon', 'price' => 650, 'rarity' => 'legendaire',
+            'label' => 'Néon', 'price' => 2000, 'rarity' => 'heroique',
             'description' => 'Lumières fluo et ambiance arcade.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#c026d3', 'brand-strong' => '#a21caf', 'brand-soft' => '#f7e3ff', 'page' => '#f7f3ff', 'hero-from' => '#e4dbff', 'hero-to' => '#f7f3ff', 'confetti-1' => '#22d3ee', 'confetti-2' => '#f472b6', 'confetti-3' => '#a78bfa'),
         ),
         'zombie' => array(
-            'label' => 'Zombie', 'price' => 650, 'rarity' => 'legendaire',
+            'label' => 'Zombie', 'price' => 2000, 'rarity' => 'heroique',
             'description' => 'Slime, os et nounours recousu. Pour les fêtes qui ont du mordant.',
             'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
             'colors' => array('brand' => '#7c3aed', 'brand-strong' => '#6d28d9', 'brand-soft' => '#ecf8d8', 'page' => '#f5f8ef', 'hero-from' => '#dcedbd', 'hero-to' => '#f5f8ef', 'confetti-1' => '#84cc16', 'confetti-2' => '#a855f7', 'confetti-3' => '#22d3ee'),
+        ),
+        'gold' => array(
+            'label' => 'Or', 'price' => 5000, 'rarity' => 'prestige',
+            'description' => 'Ivoire et or massif : le grand luxe pour les plus fidèles.',
+            'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
+            'colors' => array('brand' => '#a87b1c', 'brand-strong' => '#8a6312', 'brand-soft' => '#f8efd9', 'page' => '#fdfaf3', 'hero-from' => '#f3e6c4', 'hero-to' => '#fdfaf3', 'confetti-1' => '#d4af37', 'confetti-2' => '#f5e6b8', 'confetti-3' => '#b8860b'),
+        ),
+        'diamant' => array(
+            'label' => 'Diamant', 'price' => 10000, 'rarity' => 'legendaire',
+            'description' => 'Couronnes, cristaux et diamants : l\'habillage ultime.',
+            'themes' => array('birthday', 'noel', 'naissance', 'mariage', 'wishlist'),
+            'colors' => array('brand' => '#6d4bd8', 'brand-strong' => '#5634bf', 'brand-soft' => '#efe9ff', 'page' => '#fbf9ff', 'hero-from' => '#ece5fb', 'hero-to' => '#fbf9ff', 'confetti-1' => '#d4af37', 'confetti-2' => '#a5d8ff', 'confetti-3' => '#f9a8d4'),
         ),
     );
 }
 
 function skin_rarities()
 {
-    return array('commun' => 'Commun', 'rare' => 'Rare', 'epique' => 'Épique', 'legendaire' => 'Légendaire');
+    return array('commun' => 'Commun', 'rare' => 'Rare', 'epique' => 'Épique', 'heroique' => 'Héroïque', 'prestige' => 'Prestige', 'legendaire' => 'Légendaire');
+}
+
+/**
+ * Prix d'un habillage : réglé dans l'administration, sinon celui de skins().
+ */
+function skin_price($key, $default)
+{
+    return max(1, (int) setting('price_' . $key, $default));
 }
 
 /**
@@ -242,6 +273,7 @@ function skin_items()
 {
     $items = array();
     foreach (skins() as $key => $skin) {
+        $skin['price'] = skin_price($key, $skin['price']);
         foreach ($skin['themes'] as $theme) {
             $item = $skin;
             $item['skin'] = $key;
@@ -344,4 +376,82 @@ function skin_choice($me, $key, $listTheme, $back)
     }
 
     return $key;
+}
+
+/* ---------- Parrainage ---------- */
+
+/**
+ * La colonne liste_user.referred_by existe-t-elle ? (migration sql/2026-10-04-parrainage.sql)
+ */
+function referral_enabled()
+{
+    return skins_enabled() && db_has_column('liste_user', 'referred_by');
+}
+
+/**
+ * Gemmes du parrainage (réglables dans l'administration) : array(parrain, filleul).
+ */
+function referral_rewards()
+{
+    return array(
+        'sponsor' => max(0, (int) setting('gems_referral', 200)),
+        'welcome' => max(0, (int) setting('gems_welcome', 50)),
+    );
+}
+
+/**
+ * Code de parrainage d'une personne : 6 caractères dérivés de son identifiant et de la clé du site
+ * (rien à stocker). Sans lettres ambiguës (0/O, 1/I).
+ */
+function referral_code($user)
+{
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    $hash = hmac_sha1('referral|' . (int) $user['id'], app_secret());
+    $code = '';
+    for ($i = 0; $i < 6; $i++) {
+        $code .= $alphabet[hexdec(substr($hash, $i * 2, 2)) % strlen($alphabet)];
+    }
+
+    return $code;
+}
+
+/**
+ * Parrain correspondant à un code saisi (majuscules, espaces ignorés), ou null.
+ * Les comptes sont peu nombreux : on compare au code de chacun.
+ */
+function referral_find($code)
+{
+    $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $code));
+    if (6 !== strlen($code)) {
+        return null;
+    }
+    foreach (db_all("SELECT * FROM liste_user WHERE password IS NOT NULL AND password <> ''") as $user) {
+        if (referral_code($user) === $code) {
+            return $user;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Filleuls d'une personne : array(total, actifs). Un filleul est actif dès qu'il a ajouté une idée.
+ */
+function referral_counts($userId)
+{
+    $counts = array('total' => 0, 'active' => 0);
+    if (!referral_enabled()) {
+        return $counts;
+    }
+    $row = db_one(
+        'SELECT COUNT(*) AS total, SUM(EXISTS (SELECT 1 FROM liste_noel n WHERE n.user_id = u.id)) AS active
+            FROM liste_user u WHERE u.referred_by = ?',
+        array((int) $userId)
+    );
+    if ($row) {
+        $counts['total'] = (int) $row['total'];
+        $counts['active'] = (int) $row['active'];
+    }
+
+    return $counts;
 }

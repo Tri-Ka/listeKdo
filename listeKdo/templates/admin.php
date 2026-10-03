@@ -15,6 +15,7 @@ $onBadges = null !== $badgesAdmin;
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
     <link rel="stylesheet" href="<?php echo e(asset('css/admin.css')); ?>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/6.1.0/echarts.min.js" crossorigin="anonymous"></script>
     <script type="module" src="<?php echo e(asset('js/admin.js')); ?>"></script>
 </head>
 
@@ -39,6 +40,8 @@ $onBadges = null !== $badgesAdmin;
             <li class="stat stat--ideas"><span class="stat__icon"><?php echo icon('list'); ?></span><strong><?php echo (int) $stats['ideas']; ?></strong><span>idées</span></li>
             <li class="stat stat--gifted"><span class="stat__icon"><?php echo icon('gift'); ?></span><strong><?php echo (int) $stats['gifted']; ?></strong><span>offertes</span></li>
         </ul>
+
+        <?php echo render('partials/admin_insights', array('insights' => $insights)); ?>
 
         <section class="panel">
             <div class="panel__head">

@@ -35,6 +35,7 @@ echo render('admin', array(
     'me' => $me,
     'table' => $table,
     'stats' => admin_stats(),
+    'insights' => admin_insights(),
     'parentOptions' => admin_parent_options(),
     'badgesAdmin' => $badgesAdmin,
     'flash' => flash_take(),

@@ -44,7 +44,7 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     await owner.goto(`${B}?user=${ETIENNE}`);
     const before = await balance(owner);
     check(before === start, 'admin : réglage remis, solde d\'origine');
-    check(before >= 150, 'gemmes gagnées avec les badges : ' + before);
+    check(before >= 200, 'gemmes gagnées avec les badges : ' + before);
 
     /* ---- Achat ---- */
     // Pastille de gemmes dans la barre du haut : même solde, ouvre la boutique.
@@ -62,7 +62,7 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     await pastel.locator('button[type=submit]').click();
     await Promise.all([owner.waitForNavigation(), owner.click('#confirm-dialog [data-confirm-ok]')]);
     check(await owner.locator('body').getAttribute('data-skin') === 'pastel', 'achat : la liste porte l\'habillage Pastel');
-    check(await balance(owner) === before - 150, 'achat : 150 gemmes dépensées');
+    check(await balance(owner) === before - 200, 'achat : 200 gemmes dépensées');
     check((await owner.locator('.hero__title img').getAttribute('src')).includes('img/skins/pastel/'), 'achat : titre de l\'habillage');
 
     /* ---- Vu par une amie ---- */
@@ -73,7 +73,7 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     await owner.click('.user-menu summary');
     await owner.click('.user-menu [data-open="shop-dialog"]');
     const zombie = owner.locator('[data-shop-section="birthday"] .shop-item', { hasText: 'Zombie' });
-    if (await balance(owner) < 650) {
+    if (await balance(owner) < 2000) {
         check(await zombie.locator('button[type=submit]').count() === 0 && (await zombie.innerText()).includes('encore'), 'habillage trop cher : pas de bouton, « encore N »');
     }
 

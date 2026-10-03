@@ -9,10 +9,16 @@ import os, shutil, json, sys
 THEME = sys.argv[1] if len(sys.argv) > 1 else 'mariage'  # type de liste : mariage, noel…
 SRC = os.environ.get('SRC', '../listeKdo/img/skins-sources')
 HINTS = {
-    'birthday': {'elegance': (296, 150)},
-    'naissance': {'elegance': (800, 150)},
+    'birthday': {'elegance': (296, 150), 'diamant': (840, 571)},
+    'naissance': {'elegance': (800, 150), 'diamant': (812, 513)},
+    'noel': {'diamant': (848, 514)},
+    'mariage': {'diamant': (793, 526)},
+    'wishlist': {'diamant': (776, 451)},
 }
 ORDER = ['pastel', 'elegance', 'calligraphie', 'steampunk', 'cosmique', 'neon', 'zombie', 'farwest', 'pirate']
+# SKINS=gold,… : ne découper que ces habillages (par défaut, tous ceux de ORDER).
+if os.environ.get('SKINS'):
+    ORDER = os.environ['SKINS'].split(',')
 
 def save(img, sl, mask, path, limit):
     arr = np.array(img)[sl].copy()

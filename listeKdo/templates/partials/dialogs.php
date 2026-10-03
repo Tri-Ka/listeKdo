@@ -41,6 +41,13 @@
                     <span>Ton nom *</span>
                     <input type="text" name="nom" required maxlength="100" autocomplete="username">
                 </label>
+                <?php if (referral_enabled()) : ?>
+                    <?php $rewards = referral_rewards(); $ref = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', input('parrain'))); ?>
+                    <label class="field">
+                        <span>Code de parrainage <small>(facultatif<?php echo 0 < $rewards['welcome'] ? ' : ' . (int) $rewards['welcome'] . ' gemmes offertes' : ''; ?>)</small></span>
+                        <input type="text" name="referral" maxlength="12" value="<?php echo e($ref); ?>" autocomplete="off" placeholder="Ex. : K7P2QX" style="text-transform: uppercase">
+                    </label>
+                <?php endif; ?>
                 <label class="field">
                     <span>Photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">

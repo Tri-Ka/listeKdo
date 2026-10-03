@@ -287,6 +287,159 @@ function admin_stats()
 }
 
 /**
+ * Données agrégées de la vue d'ensemble. Les graphiques restent entièrement
+ * côté serveur : pas de dépendance externe, ni de données personnelles envoyées
+ * à un service tiers.
+ */
+function admin_insights()
+{
+    $insights = array(
+        'activity' => array(),
+        'ideas' => array('total' => 0, 'gifted' => 0, 'received' => 0),
+        'counters' => array(),
+        'badges' => array('enabled' => false, 'defined' => 0, 'earned' => 0, 'holders' => 0, 'popular' => array()),
+        'presence' => array('enabled' => false, 'now' => 0, 'day' => 0, 'week' => 0, 'month' => 0),
+        'visits' => array('enabled' => false, 'days' => array()),
+        'referrals' => array('enabled' => false, 'total' => 0, 'active' => 0),
+        'gems' => array('enabled' => false, 'purchases' => 0, 'spent' => 0, 'skins' => array()),
+    );
+
+    // Les six derniers mois, mois courant compris. Une seule requête par série,
+    // puis les mois sans activité sont ajoutés pour éviter les trous visuels.
+    $months = array();
+    $monthNames = array('jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.');
+    $year = (int) date('Y');
+    $month = (int) date('n');
+    for ($i = 5; $i >= 0; $i--) {
+        $stamp = mktime(0, 0, 0, $month - $i, 1, $year);
+        $key = date('Y-m', $stamp);
+        $months[$key] = array('key' => $key, 'label' => $monthNames[(int) date('n', $stamp) - 1], 'ideas' => 0, 'badges' => 0, 'spent' => 0);
+    }
+
+    foreach (db_all("SELECT DATE_FORMAT(created_at, '%Y-%m') AS month_key, COUNT(*) AS n FROM liste_noel WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY month_key") as $row) {
+        if (isset($months[$row['month_key']])) {
+            $months[$row['month_key']]['ideas'] = (int) $row['n'];
+        }
+    }
+
+    // Une idée reçue peut aussi avoir été réservée avant : les catégories du
+    // graphique doivent rester exclusives pour former un anneau cohérent.
+    $giftedSql = received_enabled()
+        ? 'SUM(gifted_by IS NOT NULL AND received_at IS NULL) AS gifted'
+        : 'SUM(gifted_by IS NOT NULL) AS gifted';
+    $ideaRow = db_one('SELECT COUNT(*) AS total, ' . $giftedSql . (received_enabled() ? ', SUM(received_at IS NOT NULL) AS received' : '') . ' FROM liste_noel');
+    if ($ideaRow) {
+        $insights['ideas']['total'] = (int) $ideaRow['total'];
+        $insights['ideas']['gifted'] = (int) $ideaRow['gifted'];
+        $insights['ideas']['received'] = received_enabled() ? (int) $ideaRow['received'] : 0;
+    }
+
+    $counterQueries = array(
+        'friends' => array('Amis liés', 'user_friend'),
+        'comments' => array('Commentaires', 'comment'),
+        'reactions' => array('Réactions', 'reaction'),
+    );
+    if (db_has_column('liste_noel', 'favorite')) {
+        $counterQueries['favorites'] = array('Coups de cœur', 'liste_noel WHERE favorite = 1');
+    }
+    if (items_enabled()) {
+        $counterQueries['items'] = array('Éléments de collections', 'liste_item');
+    }
+    if (participations_enabled()) {
+        $counterQueries['participations'] = array('Participations', 'liste_participation');
+    }
+    foreach ($counterQueries as $key => $info) {
+        $row = db_one('SELECT COUNT(*) AS n FROM ' . $info[1]);
+        $insights['counters'][] = array('key' => $key, 'label' => $info[0], 'value' => $row ? (int) $row['n'] : 0);
+    }
+
+    if (last_seen_enabled()) {
+        $insights['presence']['enabled'] = true;
+        $row = db_one('SELECT
+            SUM(last_seen_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)) AS now_count,
+            SUM(last_seen_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)) AS day_count,
+            SUM(last_seen_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS week_count,
+            SUM(last_seen_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS month_count
+            FROM liste_user');
+        if ($row) {
+            $insights['presence']['now'] = (int) $row['now_count'];
+            $insights['presence']['day'] = (int) $row['day_count'];
+            $insights['presence']['week'] = (int) $row['week_count'];
+            $insights['presence']['month'] = (int) $row['month_count'];
+        }
+    }
+
+    if (visit_history_enabled()) {
+        $insights['visits']['enabled'] = true;
+        $days = array();
+        for ($i = 13; $i >= 0; $i--) {
+            $stamp = strtotime('-' . $i . ' days');
+            $key = date('Y-m-d', $stamp);
+            $days[$key] = array('label' => date('d/m', $stamp), 'value' => 0);
+        }
+        foreach (db_all('SELECT visited_on, COUNT(*) AS n FROM user_visit WHERE visited_on >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) GROUP BY visited_on') as $row) {
+            if (isset($days[$row['visited_on']])) $days[$row['visited_on']]['value'] = (int) $row['n'];
+        }
+        $insights['visits']['days'] = array_values($days);
+    }
+
+    if (badges_enabled()) {
+        $insights['badges']['enabled'] = true;
+        $row = db_one('SELECT COUNT(*) AS defined_count FROM badge');
+        $insights['badges']['defined'] = $row ? (int) $row['defined_count'] : 0;
+        $row = db_one('SELECT COUNT(*) AS earned_count, COUNT(DISTINCT user_id) AS holder_count FROM user_badge');
+        $insights['badges']['earned'] = $row ? (int) $row['earned_count'] : 0;
+        $insights['badges']['holders'] = $row ? (int) $row['holder_count'] : 0;
+        foreach (db_all("SELECT b.name, b.emoji, COUNT(ub.user_id) AS holders FROM badge b LEFT JOIN user_badge ub ON ub.badge_id = b.id WHERE b.active = 1 GROUP BY b.id, b.name, b.emoji ORDER BY holders DESC, b.position ASC LIMIT 5") as $row) {
+            $insights['badges']['popular'][] = array('name' => $row['name'], 'emoji' => $row['emoji'], 'holders' => (int) $row['holders']);
+        }
+        foreach (db_all("SELECT DATE_FORMAT(earned_at, '%Y-%m') AS month_key, COUNT(*) AS n FROM user_badge WHERE earned_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY month_key") as $row) {
+            if (isset($months[$row['month_key']])) $months[$row['month_key']]['badges'] = (int) $row['n'];
+        }
+    }
+
+    if (referral_enabled()) {
+        $insights['referrals']['enabled'] = true;
+        $row = db_one('SELECT COUNT(*) AS total, SUM(EXISTS (SELECT 1 FROM liste_noel n WHERE n.user_id = u.id)) AS active FROM liste_user u WHERE referred_by IS NOT NULL');
+        $insights['referrals']['total'] = $row ? (int) $row['total'] : 0;
+        $insights['referrals']['active'] = $row ? (int) $row['active'] : 0;
+    }
+
+    if (skins_enabled()) {
+        $insights['gems']['enabled'] = true;
+        $row = db_one('SELECT COUNT(*) AS purchases, SUM(price) AS spent FROM user_skin');
+        $insights['gems']['purchases'] = $row ? (int) $row['purchases'] : 0;
+        $insights['gems']['spent'] = $row ? (int) $row['spent'] : 0;
+        // Un article est un habillage pour un type de liste (ex. pastel/birthday).
+        // On conserve le prix réellement payé : il peut avoir changé depuis l'achat.
+        $items = skin_items();
+        $themes = themes();
+        foreach (db_all('SELECT skin, COUNT(*) AS purchases, SUM(price) AS spent FROM user_skin GROUP BY skin ORDER BY purchases DESC, skin ASC') as $row) {
+            $key = (string) $row['skin'];
+            if (isset($items[$key])) {
+                $item = $items[$key];
+                $label = $item['label'] . ' · ' . $themes[$item['theme']]['label'];
+            } else {
+                // Une ancienne entrée reste visible même si l'article a été retiré du catalogue.
+                $label = $key;
+            }
+            $insights['gems']['skins'][] = array(
+                'label' => $label,
+                'purchases' => (int) $row['purchases'],
+                'spent' => (int) $row['spent'],
+            );
+        }
+        foreach (db_all("SELECT DATE_FORMAT(bought_at, '%Y-%m') AS month_key, SUM(price) AS n FROM user_skin WHERE bought_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY month_key") as $row) {
+            if (isset($months[$row['month_key']])) $months[$row['month_key']]['spent'] = (int) $row['n'];
+        }
+    }
+
+    $insights['activity'] = array_values($months);
+
+    return $insights;
+}
+
+/**
  * Pages à afficher dans la pagination : 1 … 4 5 [6] 7 8 … 20 (0 = points de suspension).
  */
 function admin_page_numbers($page, $pages)

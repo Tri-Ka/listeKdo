@@ -24,6 +24,15 @@ if (user_find_by_name($name)) {
 
 $secret = secret_enabled() ? secret_from_request('../index.php') : null;
 
+// Parrainage : code facultatif, mais s'il est saisi il doit exister.
+$sponsor = null;
+if (referral_enabled() && '' !== input('referral')) {
+    $sponsor = referral_find(input('referral'));
+    if (!$sponsor) {
+        fail("Ce code de parrainage n'existe pas. Vérifiez-le, ou laissez le champ vide.");
+    }
+}
+
 $userId = user_create($name, $password, null, valid_theme(input('theme'), 'noel'));
 if (!$userId) {
     fail("Le compte n'a pas pu être créé.");
@@ -41,6 +50,12 @@ if (upload_present('pictureFile')) {
 
 if ($secret) {
     secret_set(array('id' => $userId), $secret[0], $secret[1]);
+}
+
+if ($sponsor) {
+    db_update('liste_user', array('referred_by' => (int) $sponsor['id']), array('id' => (int) $userId));
+    // Ils deviennent amis, pour que le filleul voie tout de suite la liste de son parrain.
+    db_insert('user_friend', array('user_id' => (int) $userId, 'friend_code' => $sponsor['code']));
 }
 
 $user = user_find($userId);

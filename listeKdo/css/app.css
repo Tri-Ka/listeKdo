@@ -5396,14 +5396,14 @@ button.collection-pill {
 
 .shop-item--rare { --rarity: #2563eb; }
 .shop-item--epique { --rarity: #9333ea; }
-.shop-item--legendaire { --rarity: #d97706; }
+.shop-item--heroique { --rarity: #d97706; }
 
 .shop-item--epique {
     box-shadow: 0 0 0 1px rgb(147 51 234 / .35), 0 10px 26px -12px rgb(147 51 234 / .55);
 }
 
-/* Légendaire : bordure dégradée qui tourne lentement. */
-.shop-item--legendaire::before {
+/* Héroïque : bordure dégradée qui tourne lentement. */
+.shop-item--heroique::before {
     content: "";
     position: absolute;
     inset: -2px;
@@ -5637,7 +5637,9 @@ button.collection-pill {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .shop-item--heroique::before,
     .shop-item--legendaire::before,
+    .shop-item--prestige::before,
     .gem-pill__icon.gem,
     .shop__wallet-gem.gem,
     .shop-item.is-affordable .shop-item__buy {
@@ -6609,4 +6611,175 @@ button.collection-pill {
     z-index: 1;
     margin: 0;
     pointer-events: none;
+}
+
+/* Rareté « Prestige » (habillage Or) : étiquette dorée et bordure or qui scintille. */
+.shop-item--prestige {
+    --rarity: #b8860b;
+}
+
+.shop-item--prestige .shop-item__rarity {
+    background: linear-gradient(135deg, #f5d77a, #b8860b 60%, #f5d77a);
+    color: #3b2a05;
+}
+
+.shop-item--prestige::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: 22px;
+    background: conic-gradient(from var(--spin, 0deg), #b8860b, #fff3c4, #d4af37, #8a6312, #fff3c4, #b8860b);
+    animation: shop-spin 5s linear infinite;
+}
+
+.shop-item--prestige .shop-item__buy {
+    background: linear-gradient(135deg, #8a6312, #d4af37);
+    color: #2b1d02;
+}
+
+/* Légendaire (habillage Diamant, le plus rare) : étiquette irisée, bordure arc-en-ciel et éclats qui scintillent. */
+.shop-item--legendaire {
+    --rarity: #7c3aed;
+    box-shadow: 0 0 0 1px rgb(124 58 237 / .3), 0 14px 34px -12px rgb(124 58 237 / .6);
+}
+
+.shop-item--legendaire .shop-item__rarity {
+    background: linear-gradient(110deg, #f9a8d4, #c4b5fd, #a5f3fc, #fde68a, #f9a8d4);
+    background-size: 200% 100%;
+    color: #3b0764;
+    animation: shop-iridescent 3s linear infinite;
+}
+
+.shop-item--legendaire::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    z-index: -1;
+    border-radius: 23px;
+    background: conic-gradient(from var(--spin, 0deg), #f9a8d4, #c4b5fd, #a5f3fc, #fde68a, #f9a8d4);
+    animation: shop-spin 4s linear infinite;
+}
+
+.shop-item--legendaire .shop-item__preview::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 18% 30%, #fff 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 80% 22%, #fff 0 2px, transparent 3px),
+        radial-gradient(circle at 70% 78%, #fff 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 30% 75%, #fff 0 1px, transparent 2px);
+    animation: shop-twinkle 2.2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.shop-item--legendaire .shop-item__buy {
+    background: linear-gradient(110deg, #7c3aed, #db2777, #7c3aed);
+    background-size: 200% 100%;
+    animation: shop-iridescent 4s linear infinite;
+}
+
+@keyframes shop-iridescent {
+    to { background-position: -200% 0; }
+}
+
+@keyframes shop-twinkle {
+    50% { opacity: .2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-item--legendaire .shop-item__rarity,
+    .shop-item--legendaire .shop-item__preview::after,
+    .shop-item--legendaire .shop-item__buy {
+        animation: none;
+    }
+}
+
+/* ---------- Parrainage (boutique) ---------- */
+
+.referral {
+    display: grid;
+    gap: 10px;
+    margin: 22px 0 0;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 92% 20%, rgb(255 255 255 / .5) 0 2px, transparent 3px),
+        linear-gradient(135deg, #ecfdf5, #e0f2fe);
+    box-shadow: inset 0 0 0 1px rgb(16 185 129 / .25);
+}
+
+.referral__intro {
+    display: grid;
+    gap: 2px;
+}
+
+.referral__intro span,
+.referral__stats {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.referral__code {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.referral__value {
+    padding: 6px 16px;
+    border: 2px dashed #10b981;
+    border-radius: 12px;
+    background: #fff;
+    color: #047857;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: .18em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Mobile : la carte de la liste (en haut à gauche) ouvre « Mes amis » ; petit chevron pour le signaler. */
+@media (max-width: 700px) {
+    .topbar__brand[data-mobile-friends] {
+        position: relative;
+        padding-right: 30px;
+    }
+
+    .topbar__brand[data-mobile-friends]::after {
+        content: "";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid var(--brand);
+        border-bottom: 2px solid var(--brand);
+        transform: translateY(-70%) rotate(45deg);
+    }
+}
+
+/* Carte de la liste sur mobile : le chevron « amis » prend la place, le J-xx passe en pastille sur la photo
+   (comme sur les petits écrans) pour ne pas écraser le nom ni la photo. */
+@media (max-width: 700px) {
+    .topbar__brand[data-mobile-friends] {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+
+    body .topbar__brand[data-mobile-friends] .topbar__owner ~ .topbar__days {
+        position: absolute;
+        left: 0;
+        bottom: -4px;
+        margin: 0;
+        padding: 1px 5px;
+        border: 2px solid #fff;
+        font-size: 9px;
+        line-height: 1.3;
+    }
+
+    .topbar__brand[data-mobile-friends] .topbar__owner-avatar {
+        flex: none;
+    }
 }

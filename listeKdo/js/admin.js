@@ -425,3 +425,92 @@ managersList.addEventListener('click', async (event) => {
 managersDialog.addEventListener('close', () => {
     if (managersChanged) load(location.href, { push: false });
 });
+
+/* ---------- Graphiques ECharts ---------- */
+
+const charts = [];
+
+function chartOptions(type, data) {
+    const commonText = { color: '#626a85', fontFamily: 'Outfit, system-ui, sans-serif' };
+
+    if (type === 'trend') {
+        return {
+            animationDuration: 650,
+            tooltip: { trigger: 'axis' },
+            grid: { top: 12, right: 8, bottom: 24, left: 32 },
+            xAxis: { type: 'category', boundaryGap: false, data: data.labels, axisLine: { lineStyle: { color: '#e6e8f0' } }, axisTick: { show: false }, axisLabel: commonText },
+            yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
+            series: [{ type: 'line', data: data.values, smooth: true, symbolSize: 7, lineStyle: { width: 3, color: '#7b5ce0' }, itemStyle: { color: '#7b5ce0' }, areaStyle: { color: 'rgba(123, 92, 224, .12)' } }],
+        };
+    }
+
+    if (type === 'activity') {
+        return {
+            animationDuration: 650,
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { top: 12, right: 4, bottom: 24, left: 32 },
+            xAxis: { type: 'category', data: data.labels, axisLine: { lineStyle: { color: '#e6e8f0' } }, axisTick: { show: false }, axisLabel: commonText },
+            yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
+            series: [{ type: 'bar', data: data.values, barMaxWidth: 30, itemStyle: { color: '#596fe5', borderRadius: [7, 7, 2, 2] } }],
+        };
+    }
+
+    if (type === 'skins') {
+        return {
+            animationDuration: 650,
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { top: 12, right: 12, bottom: 78, left: 32 },
+            xAxis: {
+                type: 'category', data: data.labels,
+                axisLine: { lineStyle: { color: '#e6e8f0' } }, axisTick: { show: false },
+                axisLabel: { ...commonText, interval: 0, rotate: 40, width: 82, overflow: 'truncate' },
+            },
+            yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
+            series: [{ type: 'bar', data: data.values, barMaxWidth: 34, itemStyle: { color: '#7b5ce0', borderRadius: [7, 7, 2, 2] } }],
+        };
+    }
+
+    if (type === 'ideas') {
+        const colors = ['#dfe4f4', '#64c69b', '#f0a82c'];
+        return {
+            animationDuration: 650,
+            color: colors,
+            tooltip: { trigger: 'item', formatter: '{b} : <b>{c}</b> ({d}%)' },
+            legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: commonText },
+            series: [{ type: 'pie', radius: ['48%', '72%'], center: ['50%', '43%'], avoidLabelOverlap: true, label: { show: false }, labelLine: { show: false }, data: data.labels.map((name, index) => ({ name, value: data.values[index] })) }],
+        };
+    }
+
+    return {
+        animationDuration: 650,
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { top: 4, right: 26, bottom: 2, left: 108 },
+        xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
+        yAxis: { type: 'category', data: data.labels, inverse: true, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { ...commonText, width: 96, overflow: 'truncate' } },
+        series: [{ type: 'bar', data: data.values, barMaxWidth: 15, label: { show: true, position: 'right', color: '#626a85' }, itemStyle: { color: '#7b5ce0', borderRadius: [0, 6, 6, 0] } }],
+    };
+}
+
+if (window.echarts) {
+    $$('[data-chart]').forEach((wrapper) => {
+        const canvas = $('.chart-canvas', wrapper);
+        const fallback = $('.chart-wrap__fallback', wrapper);
+        try {
+            const data = JSON.parse(wrapper.dataset.chartValues || '{}');
+            canvas.hidden = false;
+            fallback.hidden = true;
+            const chart = window.echarts.init(canvas, null, { renderer: 'svg' });
+            chart.setOption(chartOptions(wrapper.dataset.chart, data));
+            charts.push(chart);
+        } catch {
+            canvas.hidden = true;
+            fallback.hidden = false;
+        }
+    });
+}
+
+let chartResizeTimer = null;
+window.addEventListener('resize', () => {
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(() => charts.forEach((chart) => chart.resize()), 100);
+});

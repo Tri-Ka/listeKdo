@@ -11,60 +11,102 @@ $withGems = skins_enabled();
 ?>
 <?php if (0 < count($showcase)) : ?>
     <?php
-    $groups = array('trophy' => array(), 'badge' => array());
+    // Onglets : obtenus, à débloquer (seulement pour ceux qui gèrent la liste), trophées.
+    $earnedList = array();
+    $lockedList = array();
+    $trophies = array();
+    $badgeGems = 0;
+    $next = null;
     foreach ($showcase as $badge) {
-        // Badge secret pas encore obtenu : caché aux autres, et en « ??? » pour soi.
-        if ($badge['secret'] && !$badge['earned'] && !$ctx['canEdit']) {
-            continue;
-        }
-        // Les visiteurs ne voient que ce qui est obtenu.
+        // Badge secret pas encore obtenu : caché aux autres, en « ??? » pour soi.
         if (!$badge['earned'] && !$ctx['canEdit']) {
             continue;
         }
-        $groups['trophy' === $badge['kind'] ? 'trophy' : 'badge'][] = $badge;
+        if ($badge['earned']) {
+            $earnedList[] = $badge;
+            $badgeGems += badge_gems($badge);
+        } else {
+            $lockedList[] = $badge;
+            // Le plus proche d'être débloqué (hors secrets).
+            if (!$badge['secret'] && null !== $badge['value']) {
+                $ratio = $badge['value'] / max(1, (int) $badge['threshold']);
+                if (null === $next || $ratio > $next['ratio']) {
+                    $next = array('ratio' => $ratio, 'badge' => $badge);
+                }
+            }
+        }
+        if ('trophy' === $badge['kind']) {
+            $trophies[] = $badge;
+        }
     }
+    // À débloquer : les plus avancés d'abord.
+    usort($lockedList, 'badge_compare_progress');
+    $tabs = array('earned' => array('Obtenus', $earnedList));
+    if ($ctx['canEdit']) {
+        $tabs['locked'] = array('À débloquer', $lockedList);
+    }
+    $tabs['trophy'] = array('Trophées', $trophies);
+    $open = 0 < count($earnedList) || !$ctx['canEdit'] ? 'earned' : 'locked';
+    $percent = (int) round(100 * count($earnedList) / max(1, $ctx['canEdit'] ? count($showcase) : count($earnedList)));
     ?>
     <dialog class="modal badges-dialog" id="badges-dialog" aria-labelledby="badges-title">
-        <header class="modal__header">
-            <h2 id="badges-title"><?php echo $mine ? 'Mes badges' : 'Badges de ' . e($owner['nom']); ?></h2>
-            <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
+        <header class="badges-hero">
+            <button type="button" class="modal__close badges-hero__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
+            <div class="badges-hero__intro">
+                <?php echo avatar($owner, 'badges-hero__avatar', false, ''); ?>
+                <div>
+                    <h2 id="badges-title"><?php echo $mine ? 'Mes badges' : 'Badges de ' . e($owner['nom']); ?></h2>
+                    <p><?php echo $mine ? 'Chaque action sur le site vous rapproche d\'un nouveau badge.' : 'Les badges et trophées obtenus par ' . e($owner['nom']) . '.'; ?></p>
+                </div>
+            </div>
+            <div class="badges-hero__score">
+                <span class="badges-hero__count"><strong><?php echo count($earnedList); ?></strong><?php if ($ctx['canEdit']) : ?><span>/ <?php echo count($showcase); ?></span><?php endif; ?></span>
+                <span class="badges-hero__label">badge<?php echo 1 < count($earnedList) ? 's' : ''; ?> obtenu<?php echo 1 < count($earnedList) ? 's' : ''; ?></span>
+            </div>
+            <?php if ($ctx['canEdit']) : ?>
+                <div class="badges-hero__progress">
+                    <span class="badges-hero__bar" style="--done: <?php echo $percent; ?>%"></span>
+                    <?php if ($next) : ?>
+                        <span class="badges-hero__next">
+                            Presque : <?php echo e($next['badge']['emoji']); ?> <strong><?php echo e($next['badge']['name']); ?></strong>
+                            (<?php echo (int) $next['badge']['value']; ?>/<?php echo (int) $next['badge']['threshold']; ?>)
+                        </span>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($mine && isset($shop) && $shop) : ?>
+                <button type="button" class="badges-hero__shop" data-open="shop-dialog">
+                    <?php echo gem_icon('badges-hero__gem'); ?>
+                    <span>
+                        <small><?php echo (int) $badgeGems; ?> gemmes gagnées avec les badges</small>
+                        Dépenser mes <?php echo (int) $shop['gems']['balance']; ?> gemmes
+                    </span>
+                    <?php echo icon('chevron-right'); ?>
+                </button>
+            <?php endif; ?>
         </header>
-        <div class="modal__body">
-            <p class="badges__summary">
-                <strong><?php echo (int) $badges['count']; ?></strong> obtenu<?php echo 1 < $badges['count'] ? 's' : ''; ?>
-                <?php if ($ctx['canEdit']) : ?>sur <?php echo count($showcase); ?><?php endif; ?>
-                <?php if ($mine && isset($shop) && $shop) : ?>
-                    · <button type="button" class="link-btn" data-open="shop-dialog"><?php echo gem_icon(); ?> <?php echo (int) $shop['gems']['balance']; ?> gemmes à dépenser</button>
-                <?php endif; ?>
-            </p>
-            <?php foreach (array('trophy' => 'Trophées', 'badge' => 'Badges') as $kind => $label) : ?>
-                <?php if (0 < count($groups[$kind])) : ?>
-                    <h3 class="badges__heading"><?php echo $label; ?></h3>
-                    <ul class="trophy-grid">
-                        <?php foreach ($groups[$kind] as $badge) : ?>
-                            <?php $hidden = $badge['secret'] && !$badge['earned']; ?>
-                            <?php
-                            $percent = !$badge['earned'] && null !== $badge['value'] ? (int) round(100 * $badge['value'] / max(1, (int) $badge['threshold'])) : 0;
-                            $showProgress = !$badge['earned'] && !$hidden && null !== $badge['value'];
-                            ?>
-                            <li class="trophy-tile medal--<?php echo e($badge['tier']); ?><?php echo $badge['earned'] ? ' is-earned' : ' is-locked'; ?>"<?php echo $showProgress ? ' style="--progress: ' . $percent . '%"' : ''; ?>>
-                                <span class="trophy-tile__medal<?php echo $showProgress ? ' has-progress' : ''; ?>" aria-hidden="true">
-                                    <span class="trophy-tile__icon"><?php echo $hidden ? '❔' : e($badge['emoji']); ?></span>
-                                </span>
-                                <strong class="trophy-tile__name"><?php echo $hidden ? 'Badge secret' : e($badge['name']); ?></strong>
-                                <small class="trophy-tile__desc"><?php echo $hidden ? 'À vous de le découvrir…' : e($badge['description']); ?></small>
-                                <?php if ($badge['earned']) : ?>
-                                    <span class="trophy-tile__chip"><?php echo isset($tiers[$badge['tier']]) ? e($tiers[$badge['tier']]) : ''; ?> · <?php echo e(date('d/m/Y', strtotime($badge['earned']))); ?></span>
-                                <?php elseif ($showProgress) : ?>
-                                    <span class="trophy-tile__count"><?php echo (int) $badge['value']; ?> / <?php echo (int) $badge['threshold']; ?></span>
-                                <?php endif; ?>
-                                <?php if ($withGems && !$hidden) : ?>
-                                    <span class="trophy-tile__gems<?php echo $badge['earned'] ? '' : ' is-pending'; ?>">+<?php echo badge_gems($badge); ?> <?php echo gem_icon(); ?></span>
-                                <?php endif; ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+
+        <nav class="shop__tabs badges-tabs" aria-label="Badges">
+            <?php foreach ($tabs as $key => $tab) : ?>
+                <button type="button" class="shop__tab" data-badge-tab="<?php echo e($key); ?>" aria-pressed="<?php echo $key === $open ? 'true' : 'false'; ?>">
+                    <?php echo e($tab[0]); ?> <span><?php echo count($tab[1]); ?></span>
+                </button>
+            <?php endforeach; ?>
+        </nav>
+
+        <div class="modal__body badges-body">
+            <?php foreach ($tabs as $key => $tab) : ?>
+                <section data-badge-section="<?php echo e($key); ?>"<?php echo $key !== $open ? ' hidden' : ''; ?>>
+                    <?php if (0 === count($tab[1])) : ?>
+                        <p class="badges-empty"><?php echo 'earned' === $key ? 'Pas encore de badge : ajoutez une idée, réagissez, offrez… ils arrivent vite !' : 'Rien ici pour le moment.'; ?></p>
+                    <?php else : ?>
+                        <ul class="trophy-grid">
+                            <?php foreach ($tab[1] as $badge) : ?>
+                                <?php echo render('partials/badge_tile', array('badge' => $badge, 'tiers' => $tiers, 'withGems' => $withGems)); ?>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </section>
             <?php endforeach; ?>
         </div>
     </dialog>

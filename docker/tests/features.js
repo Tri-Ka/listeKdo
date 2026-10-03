@@ -100,7 +100,7 @@ async function addIdea(page, name, price) {
     const groupPill = friend.locator(`#idea-${bigId} .group-pill`);
     check((await text(groupPill)) === '1 · 20 / 45,50 €' && await groupPill.getAttribute('data-tip') === '1 participant · 20 € sur 45,50 €',
         'vignette : « 1 · 20 / 45,50 € » (détail dans l\'info-bulle)');
-    check(await groupPill.evaluate((el) => el.scrollWidth <= el.closest('.card').clientWidth && el.closest('.card__actions').offsetHeight < 80), 'vignette : la pastille tient sur une ligne');
+    check(await groupPill.evaluate((el) => el.scrollWidth <= el.closest('.card').clientWidth && el.offsetHeight < 56), 'vignette : la pastille tient sur une ligne');
     await friend.locator(`#idea-${bigId}`).screenshot({ path: `${__dirname}/out/features-group-pill.png` });
     await owner.reload();
     check(await owner.locator(`#idea-${bigId} .collection-pill, #object-${bigId} .group`).count() === 0, 'propriétaire : ne voit pas le cadeau à plusieurs');

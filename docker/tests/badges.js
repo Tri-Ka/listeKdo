@@ -34,6 +34,7 @@ async function session(browser, name) {
 
     const name = 'Test1badge' + Date.now();
     const blank = admin.locator('.badge-admin__row--new');
+    await blank.locator('summary').click();
     await blank.locator('input[name=emoji]').fill('🧪');
     await blank.locator('input[name=name]').fill(name);
     await blank.locator('input[name=description]').fill('Badge créé par le test.');
@@ -54,19 +55,20 @@ async function session(browser, name) {
     /* ---- Vitrine de sa liste ---- */
     await admin.click('.profile__badges');
     const mine = admin.locator('#badges-dialog');
-    check(await mine.locator('.trophy-tile.is-earned', { hasText: name }).count() === 1, 'vitrine : le trophée de test est obtenu');
+    check(await mine.locator('[data-badge-section="earned"] .trophy-tile.is-earned', { hasText: name }).count() === 1, 'vitrine : le trophée de test est obtenu');
     check(await mine.locator('.trophy-tile__medal.has-progress').count() > 0, 'vitrine (propriétaire) : progression des badges à débloquer');
 
     /* ---- Vue d'un ami : seulement les badges obtenus ---- */
     await friend.goto(`${B}?user=${ETIENNE}`);
     await friend.click('.profile__badges');
     const theirs = friend.locator('#badges-dialog');
-    check(await theirs.locator('.trophy-tile.is-earned', { hasText: name }).count() === 1, 'ami : voit le trophée obtenu');
+    check(await theirs.locator('[data-badge-section="earned"] .trophy-tile.is-earned', { hasText: name }).count() === 1, 'ami : voit le trophée obtenu');
     check(await theirs.locator('.trophy-tile.is-locked').count() === 0 && await theirs.locator('.trophy-tile__medal.has-progress').count() === 0, 'ami : ni badges verrouillés ni progression');
 
     /* ---- Désactivation ---- */
     await admin.goto(B + 'admin.php?tab=badges');
     const row = admin.locator('.badge-admin__row', { has: admin.locator(`input[name=name][value="${name}"]`) });
+    await row.locator('summary').click();
     await row.locator('input[name=active]').uncheck();
     await Promise.all([admin.waitForNavigation(), row.locator('button[type=submit]').click()]);
     await admin.goto(`${B}?user=${ETIENNE}`);

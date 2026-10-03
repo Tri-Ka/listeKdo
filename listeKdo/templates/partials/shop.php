@@ -176,7 +176,18 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
             </section>
         <?php endforeach; ?>
 
-        <p class="shop__earn">Besoin de gemmes ? Chaque badge en rapporte : <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>#badges">voir mes badges</a>.</p>
+        <div class="shop__earn">
+            <p><strong>Comment gagner des gemmes ?</strong> Vos badges vous en ont rapporté <?php echo (int) $gems['badges']; ?>, vos actions <?php echo (int) $gems['actions']; ?>.</p>
+            <ul class="shop__rates">
+                <?php foreach (gem_action_rates() as $key => $rate) : ?>
+                    <?php if (0 < $rate) : ?>
+                        <?php $actions = gem_actions(); ?>
+                        <li><?php echo e($actions[$key][0]); ?> <b>+<?php echo (int) $rate; ?> <?php echo gem_icon(); ?></b></li>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <li><a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>#badges">Chaque badge</a> <b>+5 à +200 <?php echo gem_icon(); ?></b></li>
+            </ul>
+        </div>
     </div>
 </dialog>
 

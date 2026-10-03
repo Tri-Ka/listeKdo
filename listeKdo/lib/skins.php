@@ -2,8 +2,9 @@
 /*
  * Gemmes et boutique d'habillages (« skins »).
  *
- *   Gemmes   gagnées avec les badges (badge.gems, ou valeur automatique selon le type et le niveau),
- *            dépensées dans la boutique. Solde = gemmes des badges obtenus - prix des habillages achetés.
+ *   Gemmes   gagnées avec les badges (badge.gems, ou valeur automatique selon le type et le niveau) et avec
+ *            chaque action (idée, commentaire, réaction… : gem_actions(), réglable dans l'administration),
+ *            dépensées dans la boutique. Solde = gemmes des badges + des actions - prix des achats.
  *   Skins    un habillage change le titre, les décorations et les couleurs d'une liste
  *            (img/skins/<skin>/<thème>/ : title.png, d1.png…). Il s'achète pour UN type de liste :
  *            l'article « neon/birthday » (skin_items()). Une liste porte un article de son type ; si son type
@@ -57,16 +58,104 @@ function badge_gems_sql()
 }
 
 /**
- * Gemmes gagnées (tous les badges obtenus, même désactivés depuis), dépensées, et solde.
+ * Actions qui rapportent des gemmes : clé => array(libellé, gemmes par défaut).
+ * La valeur choisie dans l'administration est enregistrée dans kdo_setting (« gems_<clé> »).
+ */
+function gem_actions()
+{
+    return array(
+        'ideas' => array('Idée ajoutée', 2),
+        'comments' => array('Commentaire écrit', 1),
+        'reactions' => array('Réaction donnée', 1),
+        'gifts' => array('Cadeau réservé (idée ou élément)', 3),
+        'groups' => array('Participation à une cagnotte', 3),
+        'friends' => array('Ami ajouté', 1),
+    );
+}
+
+/**
+ * La table des réglages existe-t-elle ? (migration sql/2026-10-03-gemmes-actions.sql)
+ */
+function settings_enabled()
+{
+    return db_has_table('kdo_setting');
+}
+
+/**
+ * Réglage du site, ou $default s'il n'est pas défini (réglages chargés une fois par page).
+ */
+function setting($name, $default)
+{
+    static $settings = null;
+    if (null === $settings) {
+        $settings = array();
+        if (settings_enabled()) {
+            foreach (db_all('SELECT name, value FROM kdo_setting') as $row) {
+                $settings[$row['name']] = $row['value'];
+            }
+        }
+    }
+
+    return isset($settings[$name]) ? $settings[$name] : $default;
+}
+
+function setting_save($name, $value)
+{
+    return db_query('REPLACE INTO kdo_setting (name, value) VALUES (?, ?)', array($name, (string) $value));
+}
+
+/**
+ * Gemmes par action, réglées (ou par défaut) : clé => gemmes.
+ */
+function gem_action_rates()
+{
+    $rates = array();
+    foreach (gem_actions() as $key => $info) {
+        $rates[$key] = max(0, (int) setting('gems_' . $key, $info[1]));
+    }
+
+    return $rates;
+}
+
+/**
+ * Nombre de chaque action faite par une personne (une seule requête). Les éléments supprimés ne comptent plus.
+ */
+function gem_action_counts($userId)
+{
+    $id = (int) $userId;
+    $sql = 'SELECT
+        (SELECT COUNT(*) FROM liste_noel WHERE user_id = ' . $id . ') AS ideas,
+        (SELECT COUNT(*) FROM comment WHERE user_id = ' . $id . ') AS comments,
+        (SELECT COUNT(*) FROM reaction WHERE user_id = ' . $id . ') AS reactions,
+        (SELECT COUNT(*) FROM liste_noel WHERE gifted_by = ' . $id . ')'
+        . (items_enabled() ? ' + (SELECT COUNT(*) FROM liste_item WHERE gifted_by = ' . $id . ')' : '') . ' AS gifts,
+        ' . (participations_enabled() ? '(SELECT COUNT(*) FROM liste_participation WHERE user_id = ' . $id . ')' : '0') . ' AS groups,
+        (SELECT COUNT(DISTINCT u.id) FROM user_friend f INNER JOIN liste_user u ON u.code = f.friend_code WHERE f.user_id = ' . $id . ') AS friends';
+    $row = db_one($sql);
+    $counts = array();
+    foreach (array_keys(gem_actions()) as $key) {
+        $counts[$key] = $row ? (int) $row[$key] : 0;
+    }
+
+    return $counts;
+}
+
+/**
+ * Gemmes gagnées (badges obtenus, même désactivés depuis, et actions), dépensées, et solde.
  */
 function gems_of($userId)
 {
-    $gems = array('earned' => 0, 'spent' => 0, 'balance' => 0);
+    $gems = array('earned' => 0, 'badges' => 0, 'actions' => 0, 'spent' => 0, 'balance' => 0);
     if (!skins_enabled()) {
         return $gems;
     }
     $row = db_one('SELECT SUM(' . badge_gems_sql() . ') AS n FROM user_badge ub INNER JOIN badge b ON b.id = ub.badge_id WHERE ub.user_id = ?', array((int) $userId));
-    $gems['earned'] = $row ? (int) $row['n'] : 0;
+    $gems['badges'] = $row ? (int) $row['n'] : 0;
+    $rates = gem_action_rates();
+    foreach (gem_action_counts($userId) as $key => $count) {
+        $gems['actions'] += $count * $rates[$key];
+    }
+    $gems['earned'] = $gems['badges'] + $gems['actions'];
     $row = db_one('SELECT SUM(price) AS n FROM user_skin WHERE user_id = ?', array((int) $userId));
     $gems['spent'] = $row ? (int) $row['n'] : 0;
     $gems['balance'] = max(0, $gems['earned'] - $gems['spent']);

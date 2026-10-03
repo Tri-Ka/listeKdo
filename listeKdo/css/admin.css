@@ -975,54 +975,146 @@ a.dt__page:hover {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
 }
 
-/* ---------- Onglet Badges (templates/partials/admin_badges.php) ---------- */
+/* ---------- Onglet Badges (templates/partials/admin_badges.php) : liste compacte, formulaire dépliable ---------- */
 
 .badge-admin {
     display: grid;
-    gap: 8px;
+    gap: 6px;
+    margin: 0;
     padding: 0 16px 16px;
+    list-style: none;
 }
 
 .badge-admin__row {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.2fr) 64px 96px 108px 58px auto auto;
-    align-items: end;
-    gap: 10px;
-    padding: 10px 12px;
     border-radius: 14px;
-    background: var(--surface-muted);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.badge-admin__row.is-inactive {
+.badge-admin__row[open] {
+    box-shadow: inset 0 0 0 2px var(--brand), 0 10px 24px -14px rgb(29 36 64 / .4);
+}
+
+.badge-admin__row.is-inactive .badge-admin__summary {
     opacity: .55;
 }
 
 .badge-admin__row--new {
-    margin-top: 12px;
+    margin-top: 8px;
     background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent);
 }
 
-.badge-admin__new-title {
-    grid-column: 1 / -1;
-    margin: 0;
+.badge-admin__summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.badge-admin__summary::-webkit-details-marker {
+    display: none;
+}
+
+.badge-admin__medal {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--medal-bg, var(--surface-muted));
+    font-size: 20px;
+}
+
+.badge-admin__medal--add {
+    background: var(--brand);
+    color: #fff;
+    font-size: 16px;
+}
+
+.badge-admin__info {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+}
+
+.badge-admin__info strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge-admin__info small {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge-admin__chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.badge-admin__chip {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--medal-bg, var(--surface-muted));
+    color: var(--medal-ink, var(--text-muted));
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge-admin__chip--gems {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-admin__chip--off {
+    background: #fdecec;
+    color: var(--danger);
+}
+
+.badge-admin__holders {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 46px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge-admin__toggle {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--text);
+    font-size: 12px;
     font-weight: 700;
 }
 
-.badge-admin__emoji {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: var(--medal-bg);
+.badge-admin__row[open] .badge-admin__toggle {
+    background: var(--brand);
+    color: #fff;
 }
 
-.badge-admin__emoji input {
-    width: 40px;
-    border: 0;
-    background: transparent;
-    font-size: 22px;
-    text-align: center;
+.badge-admin__form {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: end;
+    gap: 10px 12px;
+    padding: 4px 14px 14px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
 }
 
 .badge-admin__field {
@@ -1032,6 +1124,18 @@ a.dt__page:hover {
     font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
+}
+
+.badge-admin__field--emoji {
+    grid-column: span 1;
+}
+
+.badge-admin__field--wide {
+    grid-column: span 2;
+}
+
+.badge-admin__field--full {
+    grid-column: span 3;
 }
 
 .badge-admin__field input {
@@ -1052,41 +1156,70 @@ a.dt__page:hover {
 }
 
 .badge-admin__checks {
-    display: grid;
-    gap: 2px;
-    font-size: 12px;
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
     white-space: nowrap;
 }
 
-.badge-admin__actions {
-    display: flex;
-    align-items: center;
+.badge-admin__save {
+    justify-self: end;
+    grid-column: -2 / -1;
+}
+
+@media (max-width: 800px) {
+    .badge-admin__chips {
+        display: none;
+    }
+
+    .badge-admin__form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .badge-admin__field--wide,
+    .badge-admin__field--full {
+        grid-column: 1 / -1;
+    }
+
+    .badge-admin__save {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+    }
+}
+
+/* Gemmes par action (onglet Badges) */
+.gem-rates {
+    margin: 0 16px 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #f0f9ff;
+}
+
+.gem-rates__title {
+    margin: 0 0 8px;
+    font-weight: 700;
+}
+
+.gem-rates__title small {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.gem-rates__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    align-items: end;
     gap: 10px;
 }
 
-.badge-admin__holders {
-    display: inline-flex;
+.gem-rates__warning {
+    display: flex;
     align-items: center;
-    gap: 4px;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-@media (max-width: 1200px) {
-    .badge-admin__row {
-        grid-template-columns: 52px 1fr 1fr;
-    }
-
-    .badge-admin__field--desc {
-        grid-column: 2 / -1;
-    }
-}
-
-.gem {
-    display: inline-block;
-    width: 1.1em;
-    height: 1.1em;
-    vertical-align: -.2em;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 13px;
 }

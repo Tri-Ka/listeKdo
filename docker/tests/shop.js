@@ -28,8 +28,22 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     const owner = await session(browser, 'Etienne');
     const friend = await session(browser, 'Mallory');
 
+    /* ---- Gemmes par action, réglées dans l'administration (Etienne est admin) ---- */
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    const start = await balance(owner);
+    await owner.goto(B + 'admin.php?tab=badges');
+    const ideasRate = Number(await owner.inputValue('input[name="rate[ideas]"]'));
+    await owner.fill('input[name="rate[ideas]"]', String(ideasRate + 10));
+    await Promise.all([owner.waitForNavigation(), owner.click('.gem-rates button[type=submit]')]);
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    check(await balance(owner) > start, 'admin : gemmes par idée augmentées, le solde augmente (' + start + ' -> ' + await balance(owner) + ')');
+    await owner.goto(B + 'admin.php?tab=badges');
+    await owner.fill('input[name="rate[ideas]"]', String(ideasRate));
+    await Promise.all([owner.waitForNavigation(), owner.click('.gem-rates button[type=submit]')]);
+
     await owner.goto(`${B}?user=${ETIENNE}`);
     const before = await balance(owner);
+    check(before === start, 'admin : réglage remis, solde d\'origine');
     check(before >= 150, 'gemmes gagnées avec les badges : ' + before);
 
     /* ---- Achat ---- */
@@ -67,8 +81,8 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     await Promise.all([owner.waitForNavigation(), owner.locator('[data-shop-section="birthday"] .shop-item', { hasText: 'Classique' }).locator('button[type=submit]').click()]);
     check(await owner.locator('body').getAttribute('data-skin') === null, 'retour à l\'habillage classique');
     await owner.click('.topbar__settings');
-    check(await owner.locator('#list-settings-dialog select[name=skin] option').count() === 2, 'paramètres : seuls les articles de ce type de liste sont proposés');
-    await owner.selectOption('#list-settings-dialog select[name=skin]', 'pastel/birthday');
+    check(await owner.locator('#list-settings-dialog .skin-field__option:visible').count() === 2, 'paramètres : seuls les habillages de ce type de liste sont proposés (classique + Pastel)');
+    await owner.locator('#list-settings-dialog .skin-field__option', { has: owner.locator('input[value="pastel/birthday"]') }).click();
     await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
     check(await owner.locator('body').getAttribute('data-skin') === 'pastel', 'paramètres de la liste : habillage choisi');
 

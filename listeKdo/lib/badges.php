@@ -458,3 +458,15 @@ function badges_count($owner)
 
     return $row ? (int) $row['n'] : 0;
 }
+
+/* Tri « à débloquer » : les plus avancés d'abord (les secrets à la fin). */
+function badge_compare_progress($a, $b)
+{
+    $ra = $a['secret'] || null === $a['value'] ? -1 : $a['value'] / max(1, (int) $a['threshold']);
+    $rb = $b['secret'] || null === $b['value'] ? -1 : $b['value'] / max(1, (int) $b['threshold']);
+    if ($ra == $rb) {
+        return 0;
+    }
+
+    return $ra > $rb ? -1 : 1;
+}

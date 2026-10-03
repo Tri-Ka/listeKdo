@@ -36,7 +36,9 @@ $values = array(
     'secret' => '1' === input('secret') ? 1 : 0,
 );
 if (skins_enabled()) {
-    $values['gems'] = max(0, min(10000, input_int('gems')));
+    // Valeur par défaut du type et du niveau : on garde « automatique » (0), qui suivra un changement de niveau.
+    $gems = max(0, min(10000, input_int('gems')));
+    $values['gems'] = $gems === badge_default_gems($values['kind'], $values['tier']) ? 0 : $gems;
 }
 
 if ('' === $values['name'] || '' === $values['emoji']) {

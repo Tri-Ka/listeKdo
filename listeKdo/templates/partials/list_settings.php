@@ -29,27 +29,40 @@ $theme = theme_of($owner);
             <?php echo render('partials/theme_field', array('current' => $owner['theme'])); ?>
             <?php if (isset($shop) && $shop) : ?>
                 <?php
+                // Habillages achetés, tous types confondus : js/app.js n'affiche que ceux du type coché au-dessus.
                 $currentSkin = isset($owner['skin']) ? (string) $owner['skin'] : '';
-                // Articles achetés pour ce type de liste (changer le type plus haut demande d'enregistrer d'abord).
-                $choices = array();
+                $allThemes = themes();
+                $owned = array();
                 foreach (skin_items() as $key => $item) {
-                    if (isset($shop['owned'][$key]) && $item['theme'] === $owner['theme']) {
-                        $choices[$key] = $item['label'];
+                    if (isset($shop['owned'][$key])) {
+                        $owned[$key] = $item;
                     }
                 }
                 ?>
-                <label class="field">
-                    <span>Habillage <small>(achetés dans la boutique pour ce type de liste)</small></span>
-                    <select name="skin">
-                        <option value="">Classique</option>
-                        <?php foreach ($choices as $key => $label) : ?>
-                            <option value="<?php echo e($key); ?>"<?php echo $key === $currentSkin ? ' selected' : ''; ?>><?php echo e($label); ?></option>
+                <fieldset class="field skin-field" data-skin-field>
+                    <legend>Habillage <small>(achetés dans la boutique, pour le type de liste choisi)</small></legend>
+                    <div class="skin-field__track">
+                        <?php foreach ($allThemes as $t => $info) : ?>
+                            <label class="skin-field__option skin-field__option--classic" data-skin-theme="<?php echo e($t); ?>"<?php echo $t !== $owner['theme'] ? ' hidden' : ''; ?>>
+                                <input type="radio" name="skin" value=""<?php echo $t === $owner['theme'] && '' === $currentSkin ? ' checked' : ''; ?><?php echo $t !== $owner['theme'] ? ' disabled' : ''; ?>>
+                                <span class="skin-field__preview"><img src="<?php echo e(asset('img/deco/' . $t . '/title.png')); ?>" alt="" loading="lazy"></span>
+                                <span class="skin-field__name">Classique</span>
+                            </label>
                         <?php endforeach; ?>
-                    </select>
-                    <?php if (0 === count($choices)) : ?>
-                        <small class="field__hint">Aucun habillage pour ce type de liste : <button type="button" class="link-btn" data-open="shop-dialog">ouvrir la boutique</button>.</small>
-                    <?php endif; ?>
-                </label>
+                        <?php foreach ($owned as $key => $item) : ?>
+                            <?php $mineTheme = $item['theme'] === $owner['theme']; ?>
+                            <label class="skin-field__option" data-skin-theme="<?php echo e($item['theme']); ?>"<?php echo $mineTheme ? '' : ' hidden'; ?> style="--preview-bg: <?php echo e($item['colors']['hero-from']); ?>; --ring: <?php echo e($item['colors']['brand']); ?>">
+                                <input type="radio" name="skin" value="<?php echo e($key); ?>"<?php echo $key === $currentSkin ? ' checked' : ''; ?><?php echo $mineTheme ? '' : ' disabled'; ?>>
+                                <span class="skin-field__preview"><img src="<?php echo e(asset('img/skins/' . $item['skin'] . '/' . $item['theme'] . '/title.png')); ?>" alt="" loading="lazy"></span>
+                                <span class="skin-field__name"><?php echo e($item['label']); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                        <button type="button" class="skin-field__shop" data-open="shop-dialog">
+                            <?php echo gem_icon('skin-field__gem'); ?>
+                            <span>Plus d'habillages</span>
+                        </button>
+                    </div>
+                </fieldset>
             <?php endif; ?>
             <?php if (event_dates_enabled()) : ?>
                 <label class="field">

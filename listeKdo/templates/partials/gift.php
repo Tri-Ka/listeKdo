@@ -36,12 +36,12 @@ foreach ($object['participants'] as $participant) {
 <?php elseif (null === $object['gifted_by']) : ?>
     <?php if ($groups) : ?>
         <?php // Choix « seul » ou « à plusieurs » dans une petite fenêtre (#gift-choice-dialog). ?>
-        <button type="button" class="btn btn--primary gift-btn" data-gift-choice="<?php echo $id; ?>" data-gift-name="<?php echo e($object['nom']); ?>"><?php echo icon('gift'); ?> Je l'offre <?php echo icon('chevron-right', 'gift-btn__chevron'); ?></button>
+        <button type="button" class="btn btn--primary gift-btn" data-tip="Je l'offre" data-gift-choice="<?php echo $id; ?>" data-gift-name="<?php echo e($object['nom']); ?>"><?php echo icon('gift'); ?> <span class="gift-btn__label">Je l'offre</span> <?php echo icon('chevron-right', 'gift-btn__chevron'); ?></button>
     <?php else : ?>
         <form method="post" action="actions/objectGifted.php" data-ajax="gift">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="id" value="<?php echo $id; ?>">
-            <button type="submit" class="btn btn--primary gift-btn"><?php echo icon('gift'); ?> Je l'offre <?php echo icon('chevron-right', 'gift-btn__chevron'); ?></button>
+            <button type="submit" class="btn btn--primary gift-btn" data-tip="Je l'offre"><?php echo icon('gift'); ?> <span class="gift-btn__label">Je l'offre</span> <?php echo icon('chevron-right', 'gift-btn__chevron'); ?></button>
         </form>
     <?php endif; ?>
 <?php elseif ((int) $object['gifted_by'] === (int) $me['id']) : ?>

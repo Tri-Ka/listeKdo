@@ -68,6 +68,11 @@ $badges = array(
 
 // Boutique : gemmes de la personne connectée et habillages qu'elle possède.
 $shop = $me && skins_enabled() ? array('gems' => gems_of($me['id']), 'owned' => skins_owned($me['id'])) : null;
+// Solde vu à la page précédente : s'il a augmenté, la pastille l'anime (js/app.js).
+if ($shop) {
+    $shop['from'] = isset($_SESSION['kdo_gems_seen']) ? (int) $_SESSION['kdo_gems_seen'] : $shop['gems']['balance'];
+    $_SESSION['kdo_gems_seen'] = $shop['gems']['balance'];
+}
 
 echo render('page', array(
     'ctx' => $ctx,

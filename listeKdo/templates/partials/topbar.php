@@ -65,7 +65,7 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
 
         <?php if (isset($shop) && $shop) : ?>
             <?php // Gemmes et accès à la boutique. ?>
-            <button type="button" class="gem-pill" data-open="shop-dialog" aria-label="Boutique : <?php echo (int) $shop['gems']['balance']; ?> gemmes" data-tip="Boutique">
+            <button type="button" class="gem-pill" data-open="shop-dialog" data-gems="<?php echo (int) $shop['gems']['balance']; ?>" data-gems-from="<?php echo (int) $shop['from']; ?>" data-gems-sound="<?php echo e(asset('sound/gem.mp3')); ?>" aria-label="Boutique : <?php echo (int) $shop['gems']['balance']; ?> gemmes" data-tip="Boutique">
                 <?php echo gem_icon('gem-pill__icon'); ?>
                 <span class="gem-pill__value"><?php echo (int) $shop['gems']['balance']; ?></span>
             </button>

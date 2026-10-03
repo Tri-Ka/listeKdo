@@ -363,6 +363,7 @@ document.addEventListener('submit', async (event) => {
 
     try {
         handler(form, await post(form.getAttribute('action'), new FormData(form, button)));
+        refreshGems();
     } catch (error) {
         toast(error.message, 'error');
     } finally {
@@ -1429,6 +1430,7 @@ document.addEventListener('submit', async (event) => {
         refreshFilters();
         layoutGrid();
         toast('Idée supprimée.', 'success');
+        refreshGems();
     } catch (error) {
         if (card) card.style.visibility = '';
         toast(error.message, 'error');
@@ -1436,6 +1438,34 @@ document.addEventListener('submit', async (event) => {
 });
 
 /* ---------- Boutique : un onglet par type de liste ---------- */
+
+// Paramètres de la liste : seuls les habillages du type de liste coché sont proposés (et envoyés).
+function syncSkinField(form) {
+    const field = form && $('[data-skin-field]', form);
+    const theme = form && $('input[name="theme"]:checked', form)?.value;
+    if (!field || !theme) return;
+    let checked = false;
+    $$('[data-skin-theme]', field).forEach((option) => {
+        const visible = option.dataset.skinTheme === theme;
+        const input = $('input', option);
+        option.hidden = !visible;
+        input.disabled = !visible;
+        if (!visible) input.checked = false;
+        if (visible && input.checked) checked = true;
+    });
+    if (!checked) $(`[data-skin-theme="${theme}"].skin-field__option--classic input`, field).checked = true;
+}
+document.addEventListener('change', (event) => {
+    if (event.target.matches('input[name="theme"]')) syncSkinField(event.target.form);
+});
+
+// Onglets de la vitrine des badges.
+document.addEventListener('click', (event) => {
+    const tab = event.target.closest('[data-badge-tab]');
+    if (!tab) return;
+    $$('[data-badge-tab]').forEach((other) => other.setAttribute('aria-pressed', String(other === tab)));
+    $$('[data-badge-section]').forEach((section) => { section.hidden = section.dataset.badgeSection !== tab.dataset.badgeTab; });
+});
 
 document.addEventListener('click', (event) => {
     const tab = event.target.closest('[data-shop-tab]');
@@ -1483,6 +1513,134 @@ $('[data-preview-buy]', skinPreview || document)?.addEventListener('click', () =
     skinPreview.close();
     previewSource?.click();
 });
+
+/* ---------- Gemmes gagnées : la pastille s'anime ---------- */
+
+const gemPill = $('.gem-pill');
+
+function showGems(from, to) {
+    if (!gemPill || to === from) return;
+    const value = $('.gem-pill__value', gemPill);
+    const counters = [value, ...$$('.user-menu__count--gems')];
+    gemPill.dataset.gems = to;
+    gemPill.setAttribute('aria-label', `Boutique : ${to} gemmes`);
+    if (to < from || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        counters.forEach((el) => { el.textContent = to; });
+        return;
+    }
+
+    // Le solde défile jusqu'à sa nouvelle valeur.
+    const start = performance.now();
+    const tick = (now) => {
+        const t = Math.min(1, (now - start) / 900);
+        const current = Math.round(from + (to - from) * (1 - (1 - t) ** 3));
+        counters.forEach((el) => { el.textContent = current; });
+        if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
+    gemPill.classList.remove('is-gaining');
+    void gemPill.offsetWidth;
+    gemPill.classList.add('is-gaining');
+    playGemSound(to - from);
+
+    // L'animation se joue dans la couche supérieure du navigateur (popover), au-dessus d'une fenêtre ouverte
+    // et de son fond flouté. Si une fenêtre est ouverte, une copie nette de la pastille s'affiche aussi.
+    const layer = document.createElement('div');
+    layer.className = 'gem-layer';
+    layer.setAttribute('popover', 'manual');
+    document.body.append(layer);
+    try {
+        layer.showPopover();
+    } catch {
+        // Navigateur sans popover : l'animation reste sous la fenêtre éventuelle.
+    }
+
+    const box = gemPill.getBoundingClientRect();
+    const gemSrc = $('img.gem', gemPill)?.src;
+    if ($('dialog[open]')) {
+        const copy = gemPill.cloneNode(true);
+        copy.removeAttribute('data-open');
+        copy.classList.add('gem-pill--copy', 'is-gaining');
+        Object.assign(copy.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${box.height}px` });
+        layer.append(copy);
+        counters.push($('.gem-pill__value', copy));
+        copy.animate([{ opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .85 }, { opacity: 0 }], { duration: 2000, fill: 'forwards' });
+    }
+
+    // « +N » qui s'envole, et quelques gemmes qui jaillissent de la pastille.
+    const label = document.createElement('span');
+    label.className = 'gem-gain';
+    label.innerHTML = `+${to - from} <img src="${gemSrc}" alt="">`;
+    label.style.left = `${box.left + box.width / 2}px`;
+    label.style.top = `${box.bottom + 6}px`;
+    layer.append(label);
+    label.animate(
+        [{ transform: 'translate(-50%, 0) scale(.6)', opacity: 0 }, { transform: 'translate(-50%, 8px) scale(1.1)', opacity: 1, offset: .25 }, { transform: 'translate(-50%, 40px) scale(1)', opacity: 0 }],
+        { duration: 1600, easing: 'ease-out', fill: 'forwards' },
+    );
+
+    for (let i = 0; i < 8; i++) {
+        const gem = document.createElement('img');
+        gem.src = gemSrc;
+        gem.alt = '';
+        gem.className = 'gem-spark';
+        gem.style.left = `${box.left + box.width / 2}px`;
+        gem.style.top = `${box.top + box.height / 2}px`;
+        layer.append(gem);
+        const angle = (Math.PI * 2 * i) / 8 + Math.random() * .5;
+        const distance = 34 + Math.random() * 30;
+        gem.animate(
+            [
+                { transform: 'translate(-50%, -50%) scale(.4) rotate(0deg)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(1) rotate(${Math.random() * 180}deg)`, opacity: 1, offset: .6 },
+                { transform: `translate(calc(-50% + ${Math.cos(angle) * distance * 1.3}px), calc(-50% + ${Math.sin(angle) * distance * 1.3 + 20}px)) scale(.5)`, opacity: 0 },
+            ],
+            { duration: 900 + Math.random() * 300, easing: 'cubic-bezier(.2, .7, .4, 1)', fill: 'forwards' },
+        );
+    }
+    setTimeout(() => layer.remove(), 2200);
+}
+
+// Petit bruit de pièce, une fois par gemme gagnée (12 au plus), à faible volume.
+// Le navigateur peut le refuser tant que la page n'a reçu aucun clic : on l'ignore alors.
+function playGemSound(count) {
+    const src = gemPill?.dataset.gemsSound;
+    if (!src) return;
+    for (let i = 0; i < Math.min(count, 12); i++) {
+        setTimeout(() => {
+            const sound = new Audio(src);
+            sound.volume = 0.25;
+            sound.play().catch(() => {});
+        }, i * 90);
+    }
+}
+
+// Au chargement : gemmes gagnées depuis la page précédente (pas sous les tests automatisés).
+if (gemPill && !navigator.webdriver) {
+    const from = Number(gemPill.dataset.gemsFrom);
+    const to = Number(gemPill.dataset.gems);
+    if (to > from) {
+        $('.gem-pill__value', gemPill).textContent = from;
+        setTimeout(() => showGems(from, to), 700);
+    }
+}
+
+// Après une action en arrière-plan : on redemande le solde.
+let gemsCheck = null;
+async function refreshGems() {
+    if (!gemPill) return;
+    clearTimeout(gemsCheck);
+    gemsCheck = setTimeout(async () => {
+        try {
+            const response = await fetch('actions/gems.php', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await response.json();
+            if (data.ok) showGems(Number(gemPill.dataset.gems), data.balance);
+        } catch {
+            // Sans réponse, la pastille sera à jour au prochain chargement.
+        }
+    }, 400);
+}
 
 /* ---------- Badges (templates/partials/badges.php) ---------- */
 

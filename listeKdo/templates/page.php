@@ -11,7 +11,7 @@ if ($owner && !$ctx['canView']) {
     <title><?php echo e($pageTitle); ?></title>
     <meta name="description" content="<?php echo e($pageTitle); ?>">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <meta name="theme-color" content="<?php echo e($theme['color']); ?>">
+    <meta name="theme-color" content="<?php echo e(!empty($theme['colors']) ? $theme['colors']['hero-from'] : $theme['color']); ?>">
     <meta property="og:title" content="<?php echo e($pageTitle); ?>">
     <meta property="og:type" content="website">
     <meta property="og:image" content="http://datcharrye.free.fr/listeKdo/img/<?php echo $owner ? e($theme['key']) . '/' : ''; ?>metaOg.jpg">
@@ -26,8 +26,8 @@ if ($owner && !$ctx['canView']) {
     <script type="module" src="<?php echo e(asset('js/app.js')); ?>"></script>
 </head>
 
-<body data-theme="<?php echo $owner ? e($theme['key']) : 'home'; ?>">
-    <?php echo render('partials/topbar', array('ctx' => $ctx, 'friends' => $friends, 'newNotifications' => $newNotifications, 'theme' => $theme, 'myGifts' => $myGifts)); ?>
+<body data-theme="<?php echo $owner ? e($theme['key']) : 'home'; ?>"<?php echo $owner && $theme['skin'] ? ' data-skin="' . e($theme['skin']) . '" style="' . e(skin_style($theme)) . '"' : ''; ?>>
+    <?php echo render('partials/topbar', array('ctx' => $ctx, 'friends' => $friends, 'newNotifications' => $newNotifications, 'theme' => $theme, 'myGifts' => $myGifts, 'shop' => $shop)); ?>
 
     <?php if ($me) : ?>
         <?php echo render('partials/notifications', array('notifications' => $notifications, 'newNotifications' => $newNotifications)); ?>
@@ -81,9 +81,12 @@ if ($owner && !$ctx['canView']) {
 
     <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
     <?php echo render('partials/confirm'); ?>
-    <?php echo render('partials/badges', array('ctx' => $ctx, 'owner' => $owner, 'badges' => $badges)); ?>
+    <?php echo render('partials/badges', array('ctx' => $ctx, 'owner' => $owner, 'badges' => $badges, 'shop' => $shop)); ?>
+    <?php if ($shop) : ?>
+        <?php echo render('partials/shop', array('me' => $me, 'shop' => $shop)); ?>
+    <?php endif; ?>
     <?php if ($owner && $ctx['canEdit']) : ?>
-        <?php echo render('partials/list_settings', array('owner' => $owner, 'ctx' => $ctx)); ?>
+        <?php echo render('partials/list_settings', array('owner' => $owner, 'ctx' => $ctx, 'shop' => $shop)); ?>
     <?php endif; ?>
 
     <?php if ($me) : ?>

@@ -63,6 +63,14 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
             </a>
         <?php endif; ?>
 
+        <?php if (isset($shop) && $shop) : ?>
+            <?php // Gemmes et accès à la boutique. ?>
+            <button type="button" class="gem-pill" data-open="shop-dialog" aria-label="Boutique : <?php echo (int) $shop['gems']['balance']; ?> gemmes" data-tip="Boutique">
+                <?php echo gem_icon('gem-pill__icon'); ?>
+                <span class="gem-pill__value"><?php echo (int) $shop['gems']['balance']; ?></span>
+            </button>
+        <?php endif; ?>
+
         <?php if ($owner && $ctx['canView'] && !$ctx['private']) : ?>
             <button type="button" class="round-btn topbar__share" data-open="share-dialog" aria-label="Partager la liste" data-tip="Partager la liste"><?php echo icon('share-nodes'); ?></button>
         <?php endif; ?>
@@ -89,6 +97,16 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
                 </summary>
                 <div class="user-menu__panel">
                     <p class="user-menu__name"><?php echo e($me['nom']); ?></p>
+                    <?php // Petits écrans : actions retirées de la barre du haut, regroupées ici. ?>
+                    <?php if ($owner && $ctx['canView'] && !$ctx['private']) : ?>
+                        <button type="button" class="user-menu__mobile" data-open="share-dialog"><?php echo icon('share-nodes'); ?> Partager la liste</button>
+                    <?php endif; ?>
+                    <?php if ($owner && $ctx['canEdit']) : ?>
+                        <button type="button" class="user-menu__mobile" data-open="list-settings-dialog"><?php echo icon('gear'); ?> Paramètres de la liste</button>
+                    <?php endif; ?>
+                    <?php if (0 < count($friends)) : ?>
+                        <button type="button" class="user-menu__mobile" data-open="friends-dialog"><?php echo icon('users'); ?> Mes amis</button>
+                    <?php endif; ?>
                     <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>"><?php echo icon('list'); ?> Ma liste</a>
                     <?php foreach ($children as $child) : ?>
                         <a href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>"><?php echo icon('layer-group'); ?> <?php echo e($child['nom']); ?></a>
@@ -99,6 +117,10 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
                     <?php $giftCount = my_gifts_count($myGifts); ?>
                     <button type="button" data-open="my-gifts-dialog"><?php echo icon('gift'); ?> Les cadeaux que j'offre
                         <?php if (0 < $giftCount) : ?><span class="user-menu__count"><?php echo (int) $giftCount; ?></span><?php endif; ?></button>
+                    <?php if (isset($shop) && $shop) : ?>
+                        <button type="button" data-open="shop-dialog"><?php echo gem_icon('user-menu__gem'); ?> Boutique
+                            <span class="user-menu__count user-menu__count--gems"><?php echo (int) $shop['gems']['balance']; ?></span></button>
+                    <?php endif; ?>
                     <button type="button" data-open="profile-dialog"><?php echo icon('user'); ?> Mon profil</button>
                     <button type="button" data-open="extension-dialog"><?php echo icon('puzzle-piece'); ?> Extension Chrome</button>
                     <?php if (is_admin($me)) : ?>

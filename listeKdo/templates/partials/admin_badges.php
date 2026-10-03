@@ -7,7 +7,7 @@ $metrics = badge_metrics();
 $tiers = badge_tiers();
 $kinds = badge_kinds();
 $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'description' => '', 'emoji' => '🏅', 'tier' => 'bronze',
-    'metric' => 'ideas', 'threshold' => 1, 'secret' => 0, 'active' => 1, 'position' => (count($badges) + 1) * 10, 'holders' => 0);
+    'metric' => 'ideas', 'threshold' => 1, 'gems' => 0, 'secret' => 0, 'active' => 1, 'position' => (count($badges) + 1) * 10, 'holders' => 0);
 ?>
 <div class="dt__bar">
     <p class="dt__count">
@@ -69,6 +69,12 @@ $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'descri
                     <?php endforeach; ?>
                 </select>
             </label>
+            <?php if (skins_enabled()) : ?>
+                <label class="badge-admin__field badge-admin__field--small" title="0 = automatique (<?php echo badge_default_gems($badge['kind'], $badge['tier']); ?> pour ce type et ce niveau)">
+                    <span><?php echo gem_icon(); ?> Gemmes</span>
+                    <input type="number" name="gems" value="<?php echo isset($badge['gems']) ? (int) $badge['gems'] : 0; ?>" min="0" max="10000" placeholder="<?php echo badge_default_gems($badge['kind'], $badge['tier']); ?>">
+                </label>
+            <?php endif; ?>
             <label class="badge-admin__field badge-admin__field--small">
                 <span>Ordre</span>
                 <input type="number" name="position" value="<?php echo (int) $badge['position']; ?>">

@@ -53,7 +53,7 @@ $themes = themes();
 
             <div class="hero__titles">
                 <h1 class="hero__title">
-                    <img src="<?php echo e(asset('img/deco/' . $theme['key'] . '/title.png')); ?>" alt="<?php echo e($owner ? theme_text($theme, 'heading', $owner) : $theme['title']); ?>" width="460" height="215">
+                    <img src="<?php echo e(asset('img/' . $theme['dir'] . '/title.png')); ?>" alt="<?php echo e($owner ? theme_text($theme, 'heading', $owner) : $theme['title']); ?>" width="460" height="215">
                 </h1>
                 <p class="hero__subtitle"><?php echo e($owner ? theme_text($theme, 'subtitle', $owner) : 'Créez votre liste de cadeaux et partagez-la avec vos proches.'); ?></p>
 

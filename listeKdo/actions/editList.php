@@ -28,6 +28,12 @@ if (private_enabled() && isset($_POST['is_private'])) {
     $changes['is_private'] = '1' === input('is_private') ? 1 : 0;
 }
 
+// Habillage (boutique) : un de ceux achetés par la personne connectée, ou le classique.
+if (skins_enabled() && isset($_POST['skin'])) {
+    $key = skin_choice($me, input('skin'), $changes['theme'], $back);
+    $changes['skin'] = '' !== $key ? $key : null;
+}
+
 db_update('liste_user', $changes, array('id' => (int) $owner['id']));
 
 succeed(array(), $back, 'Liste mise à jour.');

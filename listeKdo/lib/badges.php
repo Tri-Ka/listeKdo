@@ -57,6 +57,12 @@ function badge_metrics()
         'reaction_variety' => 'Réactions différentes utilisées (sur 6)',
         'gift_value' => 'Valeur des cadeaux réservés (€, idées avec prix)',
         'group_amount' => 'Montant versé aux cagnottes (€)',
+        'reaction_1' => "Réactions « j'adore » données",
+        'reaction_2' => "Réactions « j'aime » données",
+        'reaction_3' => 'Réactions « HaHa ! » données',
+        'reaction_4' => 'Réactions « meh » données',
+        'reaction_5' => "Réactions « j'aime pas » données",
+        'reaction_6' => 'Réactions « BEEAARRGH !!! » données',
     );
 }
 
@@ -147,6 +153,32 @@ function badge_fixtures()
         array('ideas-100', 'badge', 'legend', 'ideas', 100, '📚', 'Encyclopédie des envies', 'Avoir ajouté 100 idées.', 0),
         array('comment-250', 'badge', 'legend', 'comments', 250, '🎙️', 'Le micro d\'or', 'Écrire 250 commentaires.', 0),
         array('loyal-3', 'badge', 'silver', 'years', 3, '🕯️', 'Habitué', 'Utiliser le site depuis plus de 3 ans.', 0),
+
+        // Une série par réaction donnée : 5 (bronze), 20 (argent), 50 (or), puis un trophée légendaire à 100.
+        array('react-adore-5', 'badge', 'bronze', 'reaction_1', 5, '😍', 'Cœur tendre', 'Donner 5 réactions « j\'adore ».', 0),
+        array('react-adore-20', 'badge', 'silver', 'reaction_1', 20, '💞', 'Cœur d\'artichaut', 'Donner 20 réactions « j\'adore ».', 0),
+        array('react-adore-50', 'badge', 'gold', 'reaction_1', 50, '💘', 'Grand romantique', 'Donner 50 réactions « j\'adore ».', 0),
+        array('trophy-react-adore', 'trophy', 'legend', 'reaction_1', 100, '💖', 'Amour fou', 'Donner 100 réactions « j\'adore ».', 0),
+        array('react-aime-5', 'badge', 'bronze', 'reaction_2', 5, '👍', 'Pouce levé', 'Donner 5 réactions « j\'aime ».', 0),
+        array('react-aime-20', 'badge', 'silver', 'reaction_2', 20, '🙌', 'Bon public', 'Donner 20 réactions « j\'aime ».', 0),
+        array('react-aime-50', 'badge', 'gold', 'reaction_2', 50, '🌞', 'Positive attitude', 'Donner 50 réactions « j\'aime ».', 0),
+        array('trophy-react-aime', 'trophy', 'legend', 'reaction_2', 100, '😇', 'Bienveillance absolue', 'Donner 100 réactions « j\'aime ».', 0),
+        array('react-haha-5', 'badge', 'bronze', 'reaction_3', 5, '😄', 'Sourire facile', 'Donner 5 réactions « HaHa ! ».', 0),
+        array('react-haha-20', 'badge', 'silver', 'reaction_3', 20, '😂', 'Fou rire', 'Donner 20 réactions « HaHa ! ».', 0),
+        array('react-haha-50', 'badge', 'gold', 'reaction_3', 50, '🤣', 'Pince-sans-rire', 'Donner 50 réactions « HaHa ! ».', 0),
+        array('trophy-react-haha', 'trophy', 'legend', 'reaction_3', 100, '🃏', 'Roi du rire', 'Donner 100 réactions « HaHa ! ».', 0),
+        array('react-meh-5', 'badge', 'bronze', 'reaction_4', 5, '😐', 'Bof', 'Donner 5 réactions « meh ».', 0),
+        array('react-meh-20', 'badge', 'silver', 'reaction_4', 20, '🤷', 'Mouais', 'Donner 20 réactions « meh ».', 0),
+        array('react-meh-50', 'badge', 'gold', 'reaction_4', 50, '🫤', 'Pas convaincu', 'Donner 50 réactions « meh ».', 0),
+        array('trophy-react-meh', 'trophy', 'legend', 'reaction_4', 100, '🗿', 'Impassible', 'Donner 100 réactions « meh ».', 0),
+        array('react-aimepas-5', 'badge', 'bronze', 'reaction_5', 5, '👎', 'Franc-parler', 'Donner 5 réactions « j\'aime pas ».', 0),
+        array('react-aimepas-20', 'badge', 'silver', 'reaction_5', 20, '🙅', 'Difficile à satisfaire', 'Donner 20 réactions « j\'aime pas ».', 0),
+        array('react-aimepas-50', 'badge', 'gold', 'reaction_5', 50, '😤', 'Critique en chef', 'Donner 50 réactions « j\'aime pas ».', 0),
+        array('trophy-react-aimepas', 'trophy', 'legend', 'reaction_5', 100, '🧐', 'Juge suprême', 'Donner 100 réactions « j\'aime pas ».', 0),
+        array('react-beurk-5', 'badge', 'bronze', 'reaction_6', 5, '🤢', 'Haut-le-cœur', 'Donner 5 réactions « BEEAARRGH !!! ».', 0),
+        array('react-beurk-20', 'badge', 'silver', 'reaction_6', 20, '🤮', 'Estomac fragile', 'Donner 20 réactions « BEEAARRGH !!! ».', 0),
+        array('react-beurk-50', 'badge', 'gold', 'reaction_6', 50, '☣️', 'Danger public', 'Donner 50 réactions « BEEAARRGH !!! ».', 0),
+        array('trophy-react-beurk', 'trophy', 'legend', 'reaction_6', 100, '🧟', 'BEEAARRGH suprême', 'Donner 100 réactions « BEEAARRGH !!! ».', 0),
 
         // Trophées (rares)
         array('trophy-complete', 'trophy', 'gold', 'profile_complete', 5, '🏆', 'Profil impeccable', 'Photo, question secrète, petit mot, date et titre : tout est rempli.', 0),
@@ -306,6 +338,12 @@ function badge_metric_values($user)
         array($id, $id)
     );
     $values['reaction_variety'] = badge_count('SELECT COUNT(DISTINCT type) AS n FROM reaction WHERE user_id = ?', array($id));
+    for ($type = 1; $type <= 6; $type++) {
+        $values['reaction_' . $type] = 0;
+    }
+    foreach (db_all('SELECT type, COUNT(*) AS n FROM reaction WHERE user_id = ? GROUP BY type', array($id)) as $row) {
+        $values['reaction_' . (int) $row['type']] = (int) $row['n'];
+    }
     $values['gift_value'] = prices_enabled()
         ? badge_count('SELECT FLOOR(COALESCE(SUM(price), 0)) AS n FROM liste_noel WHERE gifted_by = ?', array($id)) : 0;
     $values['group_amount'] = participations_enabled()

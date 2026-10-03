@@ -7,7 +7,9 @@ $message = $hasMessage ? trim((string) $owner['message']) : '';
 <footer class="footer">
     <?php echo render('partials/waves', array('id' => 'footer-waves', 'class' => 'waves--footer')); ?>
     <div class="footer__inner">
-        <?php echo deco($theme, $theme['footer'], 'footer__deco'); ?>
+        <?php if ($theme['footer']) : ?>
+            <?php echo deco($theme, $theme['footer'], 'footer__deco'); ?>
+        <?php endif; ?>
 
         <figure class="note">
             <blockquote class="note__text">

@@ -66,6 +66,9 @@ $badges = array(
     'showcase' => $owner && $ctx['canView'] ? badges_showcase($owner, $ctx['canEdit']) : array(),
 );
 
+// Boutique : gemmes de la personne connectée et habillages qu'elle possède.
+$shop = $me && skins_enabled() ? array('gems' => gems_of($me['id']), 'owned' => skins_owned($me['id'])) : null;
+
 echo render('page', array(
     'ctx' => $ctx,
     'me' => $me,
@@ -78,5 +81,6 @@ echo render('page', array(
     'myGifts' => $me ? my_gifts($me) : array(),
     'theme' => theme_of($owner),
     'badges' => $badges,
+    'shop' => $shop,
     'flash' => flash_take(),
 ));

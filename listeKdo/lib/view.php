@@ -18,6 +18,15 @@ function icon($name, $class = '')
     return '<svg class="icon' . ('' !== $class ? ' ' . $class : '') . '" aria-hidden="true"><use href="' . e(asset('img/icons.svg')) . '#i-' . $name . '"></use></svg>';
 }
 
+/**
+ * Icône des gemmes (img/gem.png). $label : texte pour les lecteurs d'écran (vide = décorative).
+ */
+function gem_icon($class = '', $label = '')
+{
+    return '<img class="gem' . ('' !== $class ? ' ' . e($class) : '') . '" src="' . e(asset('img/gem.png')) . '" alt="' . e($label) . '" width="16" height="16"'
+        . ('' === $label ? ' aria-hidden="true"' : '') . '>';
+}
+
 function avatar_url($user)
 {
     if ($user && '' !== (string) $user['pictureFile']) {
@@ -88,7 +97,8 @@ function theme_of($user)
     $theme = $themes[$key];
     $theme['key'] = $key;
 
-    return $theme;
+    // Habillage acheté dans la boutique (lib/skins.php) : titre, décorations et couleurs.
+    return skin_apply($theme, $user);
 }
 
 /**
@@ -126,7 +136,7 @@ function theme_text($theme, $field, $owner)
 
 function deco($theme, $name, $class = '')
 {
-    return '<img class="deco deco--' . e($name) . ('' !== $class ? ' ' . e($class) : '') . '" src="' . e(asset('img/deco/' . $theme['key'] . '/' . $name . '.png')) . '" alt="" decoding="async">';
+    return '<img class="deco deco--' . e($name) . ('' !== $class ? ' ' . e($class) : '') . '" src="' . e(asset('img/' . (isset($theme['dir']) ? $theme['dir'] : 'deco/' . $theme['key']) . '/' . $name . '.png')) . '" alt="" decoding="async">';
 }
 
 /**

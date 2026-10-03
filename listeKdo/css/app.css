@@ -5078,3 +5078,932 @@ button.collection-pill {
 .profile__unfriend:hover {
     color: var(--danger);
 }
+
+/* ---------- Habillages (lib/skins.php) : positions communes des décorations découpées ---------- */
+/* Gauche : d1 (grand groupe), d3, d5 ; droite : d2, d4. Les couleurs viennent de l'attribut style de <body>. */
+
+[data-skin] .hero__deco--left .deco:nth-child(1) { width: 250px; left: 0; bottom: 0; }
+[data-skin] .hero__deco--left .deco:nth-child(2) { width: 100px; left: 150px; top: 0; }
+[data-skin] .hero__deco--left .deco:nth-child(3) { width: 90px; left: 20px; top: 10px; }
+[data-skin] .hero__deco--right .deco:nth-child(1) { width: 200px; right: 0; bottom: 10px; }
+[data-skin] .hero__deco--right .deco:nth-child(2) { width: 120px; right: 170px; top: 0; }
+
+[data-skin] .hero__deco .deco {
+    max-height: 260px;
+    object-fit: contain;
+}
+
+/* ---------- Gemmes et boutique (templates/partials/shop.php, lib/skins.php) ---------- */
+
+.user-menu__gem {
+    width: 1.1em;
+    text-align: center;
+}
+
+.user-menu__count--gems {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.trophy-tile__gems {
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.trophy-tile__gems.is-pending {
+    color: var(--text-muted);
+    opacity: .7;
+}
+
+.badge-new__gems {
+    margin: 10px 0 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 800;
+}
+
+.badge-new__gems span {
+    font-weight: 500;
+}
+
+
+/* Icône des gemmes (img/gem.png, gem_icon()) : à la taille du texte, plus grande dans le porte-monnaie. */
+.gem {
+    display: inline-block;
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -.2em;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgb(14 116 220 / .35));
+}
+
+.gem--lg {
+    width: 1.6em;
+    height: 1.6em;
+    vertical-align: -.4em;
+}
+
+/* Sur un bouton coloré (« Acheter »), la gemme bleue se perd : petite pastille blanche derrière. */
+.btn--primary .gem {
+    box-sizing: content-box;
+    width: 1em;
+    height: 1em;
+    padding: 3px;
+    border-radius: 50%;
+    background: #fff;
+    filter: none;
+    vertical-align: -.3em;
+}
+
+/* ---------- Pastille de gemmes (barre du haut) ---------- */
+
+.gem-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 14px 0 8px;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #1e3a8a, #6d28d9);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 6px 16px -6px rgb(76 29 149 / .6);
+    cursor: pointer;
+    transition: transform .15s var(--ease), box-shadow .15s;
+}
+
+.gem-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -8px rgb(76 29 149 / .7);
+}
+
+.gem-pill__icon.gem {
+    width: 28px;
+    height: 28px;
+    vertical-align: 0;
+    filter: drop-shadow(0 2px 6px rgb(56 189 248 / .7));
+    animation: gem-float 3s ease-in-out infinite;
+}
+
+@keyframes gem-float {
+    50% { transform: translateY(-2px) rotate(-6deg); }
+}
+
+/* ---------- Boutique ---------- */
+
+.shop {
+    width: min(980px, calc(100% - 32px));
+    max-width: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.shop__hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 14px 24px;
+    padding: 28px 32px 24px;
+    background:
+        radial-gradient(circle at 12% 20%, rgb(255 255 255 / .18) 0 2px, transparent 3px),
+        radial-gradient(circle at 70% 30%, rgb(255 255 255 / .25) 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 40% 80%, rgb(255 255 255 / .2) 0 2px, transparent 3px),
+        radial-gradient(circle at 88% 70%, rgb(255 255 255 / .2) 0 1.5px, transparent 2.5px),
+        radial-gradient(120% 140% at 100% 0%, #7c3aed 0%, transparent 55%),
+        linear-gradient(135deg, #172554, #1e3a8a 55%, #4c1d95);
+    color: #fff;
+}
+
+.shop__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgb(255 255 255 / .15);
+    color: #fff;
+}
+
+.shop__close:hover {
+    background: rgb(255 255 255 / .28);
+}
+
+.shop__intro h2 {
+    margin: 0;
+    font-size: 1.9rem;
+    letter-spacing: -.01em;
+}
+
+.shop__intro p {
+    margin: 4px 0 0;
+    max-width: 440px;
+    color: rgb(255 255 255 / .8);
+}
+
+.shop__wallet {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 36px;
+    padding: 10px 18px 10px 12px;
+    border-radius: 20px;
+    background: rgb(255 255 255 / .12);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2);
+    backdrop-filter: blur(6px);
+}
+
+.shop__wallet-gem.gem {
+    width: 54px;
+    height: 54px;
+    vertical-align: 0;
+    filter: drop-shadow(0 4px 12px rgb(56 189 248 / .8));
+    animation: gem-float 3s ease-in-out infinite;
+}
+
+.shop__wallet-text {
+    display: grid;
+    line-height: 1;
+}
+
+.shop__wallet-text strong {
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.shop__wallet-text span {
+    color: rgb(255 255 255 / .75);
+    font-size: 13px;
+}
+
+.shop__goal {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 6px;
+}
+
+.shop__goal-label {
+    color: rgb(255 255 255 / .85);
+    font-size: 13px;
+}
+
+.shop__goal-label .gem {
+    filter: none;
+}
+
+.shop__goal-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .18);
+    overflow: hidden;
+}
+
+.shop__goal-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--goal);
+    border-radius: inherit;
+    background: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6);
+    box-shadow: 0 0 12px rgb(56 189 248 / .8);
+}
+
+.shop__tabs {
+    display: flex;
+    gap: 6px;
+    padding: 14px 32px 0;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    scrollbar-width: none;
+}
+
+.shop__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.shop__tab span {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    font-size: 11px;
+}
+
+.shop__tab[aria-pressed="true"] {
+    border-bottom-color: #6d28d9;
+    color: var(--text);
+}
+
+.shop__body {
+    max-height: min(62vh, 760px);
+    padding: 20px 32px 24px;
+    overflow-y: auto;
+}
+
+.shop__note {
+    margin: 0 0 14px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.shop__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.shop__earn {
+    margin: 22px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+/* Carte d'article : aperçu façon mini-liste (couleurs, confettis et titre de l'habillage). */
+.shop-item {
+    --rarity: #64748b;
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: 0 0 0 1px var(--line), 0 6px 18px -12px rgb(29 36 64 / .3);
+    transition: transform .2s var(--ease), box-shadow .2s;
+}
+
+.shop-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px var(--line), 0 18px 34px -16px rgb(29 36 64 / .45);
+}
+
+.shop-item--rare { --rarity: #2563eb; }
+.shop-item--epique { --rarity: #9333ea; }
+.shop-item--legendaire { --rarity: #d97706; }
+
+.shop-item--epique {
+    box-shadow: 0 0 0 1px rgb(147 51 234 / .35), 0 10px 26px -12px rgb(147 51 234 / .55);
+}
+
+/* Légendaire : bordure dégradée qui tourne lentement. */
+.shop-item--legendaire::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: 22px;
+    background: conic-gradient(from var(--spin, 0deg), #f59e0b, #f472b6, #a78bfa, #38bdf8, #f59e0b);
+    animation: shop-spin 6s linear infinite;
+}
+
+@property --spin {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+@keyframes shop-spin {
+    to { --spin: 360deg; }
+}
+
+.shop-item.is-worn {
+    box-shadow: 0 0 0 3px var(--sk-brand, var(--brand)), 0 10px 26px -12px rgb(29 36 64 / .4);
+}
+
+.shop-item__preview {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 150px;
+    padding: 18px 16px 22px;
+    border-radius: 20px 20px 0 0;
+    background:
+        radial-gradient(circle at 12% 22%, var(--sk-c1, #ffd36b) 0 4px, transparent 5px),
+        radial-gradient(circle at 88% 30%, var(--sk-c2, #8fc1ff) 0 3px, transparent 4px),
+        radial-gradient(circle at 20% 82%, var(--sk-c3, #ffb4c8) 0 3px, transparent 4px),
+        radial-gradient(circle at 82% 78%, var(--sk-c1, #ffd36b) 0 3px, transparent 4px),
+        linear-gradient(180deg, var(--sk-hero, #f4f6fb), var(--sk-page, #fff));
+    overflow: hidden;
+}
+
+.shop-item__preview img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 12px rgb(0 0 0 / .12));
+    transition: transform .3s var(--ease);
+}
+
+.shop-item:hover .shop-item__preview img {
+    transform: scale(1.06) rotate(-1deg);
+}
+
+.shop-item__rarity {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--rarity);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 10px -4px var(--rarity);
+}
+
+.shop-item__owned {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    color: var(--success);
+    font-size: 22px;
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / .2));
+}
+
+/* Les trois couleurs de l'habillage, en bas de l'aperçu. */
+.shop-item__swatch {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    display: flex;
+    gap: 4px;
+    translate: -50% 0;
+}
+
+.shop-item__swatch i {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--sk-brand);
+    box-shadow: 0 1px 3px rgb(0 0 0 / .2);
+}
+
+.shop-item__swatch i:nth-child(2) { background: var(--sk-c1); }
+.shop-item__swatch i:nth-child(3) { background: var(--sk-c2); }
+
+.shop-item__body {
+    display: grid;
+    align-content: start;
+    gap: 3px;
+    padding: 12px 16px 4px;
+}
+
+.shop-item__name {
+    font-size: 16px;
+}
+
+.shop-item__desc {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.shop-item__action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 56px;
+    padding: 8px 16px 14px;
+}
+
+.shop-item__buy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #1e3a8a, #6d28d9);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    box-shadow: 0 8px 18px -8px rgb(76 29 149 / .7);
+    cursor: pointer;
+    transition: transform .15s var(--ease), box-shadow .15s;
+}
+
+.shop-item__buy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -10px rgb(76 29 149 / .8);
+}
+
+.shop-item__buy .gem {
+    filter: drop-shadow(0 0 6px rgb(56 189 248 / .9));
+}
+
+.shop-item.is-affordable .shop-item__buy {
+    animation: shop-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes shop-glow {
+    50% { box-shadow: 0 8px 22px -6px rgb(56 189 248 / .8); }
+}
+
+.shop-item__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sk-brand, var(--brand-strong));
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.shop-item__state--owned {
+    color: var(--text-muted);
+}
+
+.shop-item__price {
+    font-weight: 800;
+}
+
+.shop-item__price.is-short {
+    color: var(--text-muted);
+}
+
+.shop-item__price.is-short .gem {
+    filter: grayscale(.6);
+    opacity: .7;
+}
+
+.shop-item__missing {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .shop {
+        width: 100%;
+    }
+
+    .shop__hero {
+        grid-template-columns: 1fr;
+        padding: 22px 18px 18px;
+    }
+
+    .shop__wallet {
+        justify-self: start;
+        margin-right: 0;
+    }
+
+    .shop__tabs {
+        padding: 10px 12px 0;
+    }
+
+    .shop__body {
+        max-height: 58vh;
+        padding: 16px;
+    }
+
+    .shop__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .shop-item__preview {
+        height: 110px;
+    }
+
+    .shop-item__desc {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-item--legendaire::before,
+    .gem-pill__icon.gem,
+    .shop__wallet-gem.gem,
+    .shop-item.is-affordable .shop-item__buy {
+        animation: none;
+    }
+}
+
+/* ---------- Aperçu d'un habillage (boutique) ---------- */
+
+.shop-item__zoom {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: rgb(15 23 42 / 0);
+    cursor: zoom-in;
+    transition: background-color .2s;
+}
+
+.shop-item__zoom-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgb(15 23 42 / .75);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .2s, transform .2s var(--ease);
+}
+
+.shop-item__zoom:hover,
+.shop-item__zoom:focus-visible {
+    background: rgb(15 23 42 / .12);
+}
+
+.shop-item__zoom:hover .shop-item__zoom-label,
+.shop-item__zoom:focus-visible .shop-item__zoom-label {
+    opacity: 1;
+    transform: none;
+}
+
+/* Sur écran tactile, l'étiquette reste visible. */
+@media (hover: none) {
+    .shop-item__zoom-label {
+        opacity: 1;
+        transform: none;
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+    .shop-item__zoom {
+        place-items: end center;
+        padding-bottom: 26px;
+    }
+}
+
+.skin-preview {
+    width: min(1040px, calc(100% - 24px));
+    max-width: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.skin-preview__stage {
+    position: relative;
+    background: var(--page);
+    color: var(--text);
+}
+
+.skin-preview__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--hero-from);
+}
+
+.skin-preview__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    background: #fff;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+}
+
+.skin-preview__brand .icon {
+    padding: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    box-sizing: content-box;
+}
+
+.skin-preview__dots {
+    display: flex;
+    gap: 8px;
+}
+
+.skin-preview__dots i {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.skin-preview__hero {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 420px) 1fr;
+    align-items: center;
+    gap: 12px;
+    min-height: 290px;
+    padding: 4px 20px 40px;
+    background:
+        radial-gradient(circle at 10% 25%, var(--confetti-1) 0 5px, transparent 6px),
+        radial-gradient(circle at 90% 20%, var(--confetti-2) 0 6px, transparent 7px),
+        radial-gradient(circle at 22% 85%, var(--confetti-3) 0 5px, transparent 6px),
+        radial-gradient(circle at 78% 80%, var(--confetti-1) 0 4px, transparent 5px),
+        radial-gradient(circle at 60% 10%, var(--confetti-3) 0 4px, transparent 5px),
+        linear-gradient(180deg, var(--hero-from), var(--page));
+}
+
+.skin-preview__deco {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 220px;
+}
+
+.skin-preview__deco img {
+    max-width: 48%;
+    max-height: 120px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 14px rgb(0 0 0 / .12));
+    animation: float 6s ease-in-out infinite;
+}
+
+.skin-preview__deco img:first-child {
+    max-width: 90%;
+    max-height: 170px;
+}
+
+.skin-preview__deco img:nth-child(2) { animation-delay: -2s; }
+.skin-preview__deco img:nth-child(3) { animation-delay: -4s; }
+
+.skin-preview__center {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.skin-preview__title {
+    width: 100%;
+    max-height: 190px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 18px rgb(0 0 0 / .12));
+}
+
+.skin-preview__subtitle {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.skin-preview__countdown {
+    display: flex;
+    gap: 6px;
+}
+
+.skin-preview__countdown b {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #fff;
+    font-size: 17px;
+    box-shadow: var(--shadow-sm);
+}
+
+.skin-preview__countdown b:last-child {
+    background: var(--brand);
+    color: #fff;
+}
+
+.skin-preview__tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: fit-content;
+    margin: -22px auto 0;
+    padding: 5px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: var(--shadow);
+    position: relative;
+}
+
+.skin-preview__tabs span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.skin-preview__tabs .is-on {
+    background: var(--brand);
+    color: #fff;
+}
+
+.skin-preview__tabs .icon {
+    color: var(--brand);
+}
+
+.skin-preview__tabs .is-on .icon {
+    color: #fff;
+}
+
+.skin-preview__cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 22px 24px 26px;
+}
+
+.skin-preview__cards i {
+    height: 110px;
+    border-radius: 18px;
+    background:
+        linear-gradient(var(--brand-soft), var(--brand-soft)) 14px 14px / 70px 18px no-repeat,
+        linear-gradient(var(--line), var(--line)) 14px 76px / calc(100% - 112px) 10px no-repeat,
+        linear-gradient(var(--brand), var(--brand)) right 14px bottom 14px / 70px 26px no-repeat,
+        #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.skin-preview__footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.skin-preview__footer > div {
+    display: grid;
+    flex: 1;
+}
+
+.skin-preview__footer > div span {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.skin-preview__buy {
+    width: auto;
+    padding: 0 22px;
+}
+
+@media (max-width: 700px) {
+    .skin-preview {
+        width: 100%;
+    }
+
+    .skin-preview__hero {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        padding-bottom: 36px;
+    }
+
+    .skin-preview__deco {
+        display: none;
+    }
+
+    .skin-preview__deco--left {
+        display: flex;
+        order: 2;
+        min-height: 0;
+    }
+
+    .skin-preview__deco--left img {
+        max-height: 90px !important;
+        max-width: 30% !important;
+    }
+
+    .skin-preview__cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .skin-preview__cards i:nth-child(3) {
+        display: none;
+    }
+}
+
+.skin-preview__price {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---------- Barre du haut sur mobile : l'essentiel seulement ---------- */
+/* Restent : la liste, l'interrupteur « idées offertes », les gemmes, la cloche et le compte.
+   Partager, paramètres et amis passent dans le menu du compte (.user-menu__mobile). */
+
+.user-menu__mobile {
+    display: none !important;
+}
+
+@media (max-width: 700px) {
+    .topbar__share,
+    .topbar__settings,
+    .friends-shortcut {
+        display: none !important;
+    }
+
+    .user-menu__mobile {
+        display: flex !important;
+    }
+
+    .topbar__actions {
+        gap: 8px;
+    }
+
+    /* Gemmes : bouton rond, le solde en pastille (comme la cloche). */
+    .gem-pill {
+        position: relative;
+        flex: none;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+
+    .gem-pill__icon.gem {
+        width: 26px;
+        height: 26px;
+    }
+
+    .gem-pill__value {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        min-width: 20px;
+        padding: 1px 5px;
+        border: 2px solid #fff;
+        border-radius: 999px;
+        background: #6d28d9;
+        font-size: 10px;
+        line-height: 14px;
+        text-align: center;
+    }
+}

@@ -1435,6 +1435,55 @@ document.addEventListener('submit', async (event) => {
     }
 });
 
+/* ---------- Boutique : un onglet par type de liste ---------- */
+
+document.addEventListener('click', (event) => {
+    const tab = event.target.closest('[data-shop-tab]');
+    if (!tab) return;
+    $$('[data-shop-tab]').forEach((other) => other.setAttribute('aria-pressed', String(other === tab)));
+    $$('[data-shop-section]').forEach((section) => { section.hidden = section.dataset.shopSection !== tab.dataset.shopTab; });
+});
+
+// Aperçu d'un habillage : fausse liste à ses couleurs, ouverte par-dessus la boutique.
+const skinPreview = $('#skin-preview-dialog');
+let previewSource = null;
+document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-skin-preview]');
+    if (!trigger || !skinPreview) return;
+    const data = JSON.parse(trigger.dataset.skinPreview);
+    const stage = $('[data-preview-stage]', skinPreview);
+    for (const [name, value] of Object.entries(data.colors)) stage.style.setProperty(`--${name}`, value);
+    $('[data-preview-title]', skinPreview).src = data.title;
+    $('[data-preview-subtitle]', skinPreview).textContent = data.subtitle;
+    for (const side of ['left', 'right']) {
+        $(`[data-preview-${side}]`, skinPreview).replaceChildren(...data[side].map((src) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            return img;
+        }));
+    }
+    $('[data-preview-name]', skinPreview).textContent = data.name;
+    $('[data-preview-meta]', skinPreview).textContent = `${data.rarity} · listes « ${data.type} »`;
+
+    // Bouton d'achat (ou « Utiliser ») de la carte, repris tel quel.
+    previewSource = trigger.closest('.shop-item').querySelector('.shop-item__action button[type=submit]');
+    const buy = $('[data-preview-buy]', skinPreview);
+    buy.hidden = !previewSource;
+    if (previewSource) buy.innerHTML = previewSource.innerHTML;
+    // Pas de bouton (trop cher, déjà porté…) : on recopie l'état affiché sur la carte.
+    const price = $('[data-preview-price]', skinPreview);
+    const action = trigger.closest('.shop-item').querySelector('.shop-item__action');
+    price.hidden = Boolean(previewSource);
+    price.innerHTML = previewSource ? '' : [...action.children].filter((el) => el.tagName !== 'INPUT').map((el) => el.outerHTML).join(' ');
+
+    skinPreview.showModal();
+});
+$('[data-preview-buy]', skinPreview || document)?.addEventListener('click', () => {
+    skinPreview.close();
+    previewSource?.click();
+});
+
 /* ---------- Badges (templates/partials/badges.php) ---------- */
 
 // Nouveau badge : la fenêtre s'ouvre au chargement, avec des confettis.

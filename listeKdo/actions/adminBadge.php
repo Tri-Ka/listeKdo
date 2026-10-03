@@ -35,6 +35,9 @@ $values = array(
     'active' => '1' === input('active') ? 1 : 0,
     'secret' => '1' === input('secret') ? 1 : 0,
 );
+if (skins_enabled()) {
+    $values['gems'] = max(0, min(10000, input_int('gems')));
+}
 
 if ('' === $values['name'] || '' === $values['emoji']) {
     fail('Le nom et l\'emoji sont obligatoires.', $back);

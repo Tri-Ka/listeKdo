@@ -1083,3 +1083,10 @@ a.dt__page:hover {
         grid-column: 2 / -1;
     }
 }
+
+.gem {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: -.2em;
+}

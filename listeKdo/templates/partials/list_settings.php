@@ -27,6 +27,30 @@ $theme = theme_of($owner);
                 </label>
             <?php endif; ?>
             <?php echo render('partials/theme_field', array('current' => $owner['theme'])); ?>
+            <?php if (isset($shop) && $shop) : ?>
+                <?php
+                $currentSkin = isset($owner['skin']) ? (string) $owner['skin'] : '';
+                // Articles achetés pour ce type de liste (changer le type plus haut demande d'enregistrer d'abord).
+                $choices = array();
+                foreach (skin_items() as $key => $item) {
+                    if (isset($shop['owned'][$key]) && $item['theme'] === $owner['theme']) {
+                        $choices[$key] = $item['label'];
+                    }
+                }
+                ?>
+                <label class="field">
+                    <span>Habillage <small>(achetés dans la boutique pour ce type de liste)</small></span>
+                    <select name="skin">
+                        <option value="">Classique</option>
+                        <?php foreach ($choices as $key => $label) : ?>
+                            <option value="<?php echo e($key); ?>"<?php echo $key === $currentSkin ? ' selected' : ''; ?>><?php echo e($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if (0 === count($choices)) : ?>
+                        <small class="field__hint">Aucun habillage pour ce type de liste : <button type="button" class="link-btn" data-open="shop-dialog">ouvrir la boutique</button>.</small>
+                    <?php endif; ?>
+                </label>
+            <?php endif; ?>
             <?php if (event_dates_enabled()) : ?>
                 <label class="field">
                     <span>Date de l'événement <small>(<?php echo $isMine ? 'ma date de naissance pour un anniversaire' : 'date de naissance pour un anniversaire'; ?>, la date du mariage ou de la naissance prévue ; Noël tombe toujours le 25/12)</small></span>

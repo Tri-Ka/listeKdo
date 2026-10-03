@@ -7,6 +7,7 @@ $showcase = $badges['showcase'];
 $new = $badges['new'];
 $tiers = badge_tiers();
 $mine = $ctx['me'] && $owner && (int) $ctx['me']['id'] === (int) $owner['id'];
+$withGems = skins_enabled();
 ?>
 <?php if (0 < count($showcase)) : ?>
     <?php
@@ -32,6 +33,9 @@ $mine = $ctx['me'] && $owner && (int) $ctx['me']['id'] === (int) $owner['id'];
             <p class="badges__summary">
                 <strong><?php echo (int) $badges['count']; ?></strong> obtenu<?php echo 1 < $badges['count'] ? 's' : ''; ?>
                 <?php if ($ctx['canEdit']) : ?>sur <?php echo count($showcase); ?><?php endif; ?>
+                <?php if ($mine && isset($shop) && $shop) : ?>
+                    · <button type="button" class="link-btn" data-open="shop-dialog"><?php echo gem_icon(); ?> <?php echo (int) $shop['gems']['balance']; ?> gemmes à dépenser</button>
+                <?php endif; ?>
             </p>
             <?php foreach (array('trophy' => 'Trophées', 'badge' => 'Badges') as $kind => $label) : ?>
                 <?php if (0 < count($groups[$kind])) : ?>
@@ -53,6 +57,9 @@ $mine = $ctx['me'] && $owner && (int) $ctx['me']['id'] === (int) $owner['id'];
                                     <span class="trophy-tile__chip"><?php echo isset($tiers[$badge['tier']]) ? e($tiers[$badge['tier']]) : ''; ?> · <?php echo e(date('d/m/Y', strtotime($badge['earned']))); ?></span>
                                 <?php elseif ($showProgress) : ?>
                                     <span class="trophy-tile__count"><?php echo (int) $badge['value']; ?> / <?php echo (int) $badge['threshold']; ?></span>
+                                <?php endif; ?>
+                                <?php if ($withGems && !$hidden) : ?>
+                                    <span class="trophy-tile__gems<?php echo $badge['earned'] ? '' : ' is-pending'; ?>">+<?php echo badge_gems($badge); ?> <?php echo gem_icon(); ?></span>
                                 <?php endif; ?>
                             </li>
                         <?php endforeach; ?>
@@ -81,6 +88,10 @@ $mine = $ctx['me'] && $owner && (int) $ctx['me']['id'] === (int) $owner['id'];
                     <?php endforeach; ?>
                 </ul>
                 <?php if (8 < count($new)) : ?><p class="badge-new__text">et <?php echo count($new) - 8; ?> autres…</p><?php endif; ?>
+            <?php endif; ?>
+            <?php if ($withGems) : ?>
+                <?php $won = 0; foreach ($new as $badge) { $won += badge_gems($badge); } ?>
+                <p class="badge-new__gems">+<?php echo (int) $won; ?> <?php echo gem_icon(); ?> <span>gemmes à dépenser dans la boutique</span></p>
             <?php endif; ?>
         </div>
         <footer class="modal__footer badge-new__footer">

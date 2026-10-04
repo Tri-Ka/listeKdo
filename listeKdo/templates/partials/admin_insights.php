@@ -8,7 +8,7 @@ $totalIdeas = max(1, (int) $insights['ideas']['total']);
 $giftedPercent = min(100, round(100 * (int) $insights['ideas']['gifted'] / $totalIdeas));
 $receivedPercent = min(100 - $giftedPercent, round(100 * (int) $insights['ideas']['received'] / $totalIdeas));
 $maxHolders = 1;
-foreach ($insights['badges']['popular'] as $badge) {
+foreach ($insights['badges']['all'] as $badge) {
     $maxHolders = max($maxHolders, (int) $badge['holders']);
 }
 $activity = array('labels' => array(), 'values' => array());
@@ -24,10 +24,11 @@ if (received_enabled()) {
     $ideaData['values'][] = (int) $insights['ideas']['received'];
 }
 $badgeData = array('labels' => array(), 'values' => array());
-foreach ($insights['badges']['popular'] as $badge) {
+foreach ($insights['badges']['all'] as $badge) {
     $badgeData['labels'][] = $badge['emoji'] . ' ' . $badge['name'];
     $badgeData['values'][] = (int) $badge['holders'];
 }
+$badgeChartHeight = 30 + count($insights['badges']['all']) * 30;
 $badgeTrend = array('labels' => array(), 'values' => array());
 $gemTrend = array('labels' => array(), 'values' => array());
 foreach ($insights['activity'] as $month) {
@@ -122,10 +123,10 @@ $referralPercent = $insights['referrals']['total'] ? round(100 * $insights['refe
         <?php if ($insights['badges']['enabled']) : ?>
         <article class="insight-card insight-card--badges">
             <div class="insight-card__head"><div><h3>Badges & trophées</h3><p><?php echo (int) $insights['badges']['earned']; ?> obtenus par <?php echo (int) $insights['badges']['holders']; ?> personne(s).</p></div><span class="badge-summary"><?php echo (int) $insights['badges']['defined']; ?> en jeu</span></div>
-            <?php if (count($insights['badges']['popular'])) : ?><div class="chart-wrap chart-wrap--badges" data-chart="badges" data-chart-values="<?php echo e(kdo_json($badgeData)); ?>">
-                <div class="chart-canvas" hidden aria-label="Badges les plus obtenus"></div>
+            <?php if (count($insights['badges']['all'])) : ?><div class="chart-wrap chart-wrap--badges" style="--chart-height: <?php echo (int) $badgeChartHeight; ?>px" data-chart="badges" data-chart-values="<?php echo e(kdo_json($badgeData)); ?>">
+                <div class="chart-canvas" hidden aria-label="Nombre de personnes ayant obtenu chaque badge"></div>
                 <ol class="badge-chart chart-wrap__fallback">
-                    <?php foreach ($insights['badges']['popular'] as $badge) : ?><li><span class="badge-chart__name"><?php echo e($badge['emoji']); ?> <?php echo e($badge['name']); ?></span><span class="badge-chart__track"><i style="width: <?php echo (int) round(100 * $badge['holders'] / $maxHolders); ?>%"></i></span><strong><?php echo (int) $badge['holders']; ?></strong></li><?php endforeach; ?>
+                    <?php foreach ($insights['badges']['all'] as $badge) : ?><li><span class="badge-chart__name"><?php echo e($badge['emoji']); ?> <?php echo e($badge['name']); ?></span><span class="badge-chart__track"><i style="width: <?php echo (int) round(100 * $badge['holders'] / $maxHolders); ?>%"></i></span><strong><?php echo (int) $badge['holders']; ?></strong></li><?php endforeach; ?>
                 </ol>
             </div><?php else : ?><p class="insight-card__empty">Les premiers badges apparaîtront ici dès qu’ils seront obtenus.</p><?php endif; ?>
         </article>

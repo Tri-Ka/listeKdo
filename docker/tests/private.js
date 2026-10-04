@@ -1,5 +1,5 @@
 /*
- * Liste privée : visible seulement par son propriétaire (et ses gestionnaires).
+ * Liste privée : visible seulement par son propriétaire (et ses gestionnaires), plus les amis invités.
  * Site local, lancé par run.sh (Etienne = propriétaire, Mallory = amie).
  */
 const { chromium } = require('playwright-core');
@@ -74,6 +74,38 @@ async function setPrivate(page, on) {
     check(await post(`${B}actions/addComment.php`, { productId: ideaId, content: 'intrus' }) === 404, 'amie : commentaire refusé');
     check(await post(`${B}actions/objectGifted.php`, { id: ideaId }) === 404, 'amie : réservation refusée');
     check(await post(`${B}actions/addReaction.php`, { object: ideaId, value: 1 }) === 400, 'amie : réaction refusée');
+
+    /* ---- Amie invitée : elle voit la liste privée ---- */
+    const setViewer = async (on) => {
+        await owner.goto(`${B}?user=${ETIENNE}`);
+        await owner.click('.topbar__settings');
+        const option = owner.locator('#list-settings-dialog .private-viewers__option', { hasText: 'Mallory' });
+        if (await option.locator('input').isChecked() !== on) {
+            await option.click();
+        }
+        await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    };
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    await owner.click('.topbar__settings');
+    check(await owner.locator('#list-settings-dialog [data-private-viewers]').isVisible(), 'paramètres : choix des amis visible quand la liste est privée');
+    await owner.locator('#list-settings-dialog .private-viewers__option', { hasText: 'Mallory' }).screenshot({ path: `${__dirname}/out/private-viewer-option.png` });
+    await owner.locator('#list-settings-dialog [data-close]').first().click();
+    await setViewer(true);
+    check((await owner.locator('.profile__private').getAttribute('data-tip')).includes('1 ami choisi'), 'propriétaire : pastille « … et 1 ami choisi »');
+    await friend.goto(`${B}?user=${ETIENNE}`);
+    check(await friend.locator('.private-notice').count() === 0 && await friend.locator(`#idea-${secretId}`).count() === 1, 'amie invitée : voit la liste privée');
+    check(await friend.locator(`.friends a[href*="${ETIENNE}"]`).count() === 1, 'amie invitée : la liste est dans ses amis');
+    check(await friend.locator('[data-share]').count() === 0, 'amie invitée : pas de bloc de partage');
+    check(await post(`${B}actions/addReaction.php`, { object: ideaId, value: 1 }) === 200, 'amie invitée : réaction acceptée');
+    await post(`${B}actions/addReaction.php`, { object: ideaId, value: 1 });
+    await setViewer(false);
+    await friend.goto(`${B}?user=${ETIENNE}`);
+    check(await friend.locator('.private-notice').count() === 1, 'amie retirée des invités : de nouveau « Cette liste est privée »');
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    await owner.click('.topbar__settings');
+    await owner.locator('#list-settings-dialog input[name=is_private][type=checkbox]').setChecked(false);
+    check(!(await owner.locator('#list-settings-dialog [data-private-viewers]').isVisible()), 'paramètres : choix des amis masqué quand la liste est publique');
+    await owner.locator('#list-settings-dialog [data-close]').first().click();
 
     /* ---- Liste de nouveau publique ---- */
     await setPrivate(owner, false);

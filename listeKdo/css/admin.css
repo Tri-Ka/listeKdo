@@ -245,8 +245,11 @@
 }
 
 .chart-wrap--badges {
-    height: 154px;
+    /* Tous les badges : le graphique garde 30 px par ligne et défile dans le bloc. */
+    height: min(var(--chart-height, 154px), 420px);
     margin-top: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .chart-wrap--visits,
@@ -263,6 +266,16 @@
 
 .chart-wrap .chart-canvas[hidden] {
     display: none;
+}
+
+.chart-wrap--badges .chart-canvas {
+    inset: 0 0 auto 0;
+    height: var(--chart-height, 154px) !important;
+}
+
+.chart-wrap--badges .chart-wrap__fallback {
+    max-height: 100%;
+    overflow: auto;
 }
 
 .activity-chart {

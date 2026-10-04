@@ -297,7 +297,7 @@ function admin_insights()
         'activity' => array(),
         'ideas' => array('total' => 0, 'gifted' => 0, 'received' => 0),
         'counters' => array(),
-        'badges' => array('enabled' => false, 'defined' => 0, 'earned' => 0, 'holders' => 0, 'popular' => array()),
+        'badges' => array('enabled' => false, 'defined' => 0, 'earned' => 0, 'holders' => 0, 'all' => array()),
         'presence' => array('enabled' => false, 'now' => 0, 'day' => 0, 'week' => 0, 'month' => 0),
         'visits' => array('enabled' => false, 'days' => array()),
         'referrals' => array('enabled' => false, 'total' => 0, 'active' => 0),
@@ -390,8 +390,8 @@ function admin_insights()
         $row = db_one('SELECT COUNT(*) AS earned_count, COUNT(DISTINCT user_id) AS holder_count FROM user_badge');
         $insights['badges']['earned'] = $row ? (int) $row['earned_count'] : 0;
         $insights['badges']['holders'] = $row ? (int) $row['holder_count'] : 0;
-        foreach (db_all("SELECT b.name, b.emoji, COUNT(ub.user_id) AS holders FROM badge b LEFT JOIN user_badge ub ON ub.badge_id = b.id WHERE b.active = 1 GROUP BY b.id, b.name, b.emoji ORDER BY holders DESC, b.position ASC LIMIT 5") as $row) {
-            $insights['badges']['popular'][] = array('name' => $row['name'], 'emoji' => $row['emoji'], 'holders' => (int) $row['holders']);
+        foreach (db_all("SELECT b.name, b.emoji, COUNT(ub.user_id) AS holders FROM badge b LEFT JOIN user_badge ub ON ub.badge_id = b.id WHERE b.active = 1 GROUP BY b.id, b.name, b.emoji ORDER BY holders DESC, b.position ASC") as $row) {
+            $insights['badges']['all'][] = array('name' => $row['name'], 'emoji' => $row['emoji'], 'holders' => (int) $row['holders']);
         }
         foreach (db_all("SELECT DATE_FORMAT(earned_at, '%Y-%m') AS month_key, COUNT(*) AS n FROM user_badge WHERE earned_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY month_key") as $row) {
             if (isset($months[$row['month_key']])) $months[$row['month_key']]['badges'] = (int) $row['n'];
@@ -514,6 +514,9 @@ function admin_delete_user($user)
     if (children_enabled()) {
         db_query('DELETE FROM liste_manager WHERE child_id = ? OR user_id = ?', array($id, $id));
     }
+    if (viewers_enabled()) {
+        db_query('DELETE FROM liste_viewer WHERE list_id = ? OR user_id = ?', array($id, $id));
+    }
     if (badges_enabled()) {
         db_query('DELETE FROM user_badge WHERE user_id = ?', array($id));
     }
@@ -525,6 +528,9 @@ function admin_delete_user($user)
     }
     if (items_enabled()) {
         db_query('UPDATE liste_item SET gifted_by = NULL WHERE gifted_by = ?', array($id));
+    }
+    if (db_has_table('user_skin')) {
+        db_query('DELETE FROM user_skin WHERE user_id = ?', array($id));
     }
 
     $ok = db_query('DELETE FROM liste_user WHERE id = ?', array($id));

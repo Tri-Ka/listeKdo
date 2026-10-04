@@ -27,9 +27,18 @@ async function session(browser, name, password = 'test') {
 
     // Code et lien dans la boutique
     await sponsor.click('.gem-pill');
-    const code = (await sponsor.locator('.referral__value').innerText()).trim();
-    const link = await sponsor.locator('[data-referral-link]').inputValue();
+    const code = (await sponsor.locator('#shop-dialog .referral__value').innerText()).trim();
+    const link = await sponsor.locator('#shop-dialog [data-referral-link]').inputValue();
     check(/^[A-Z2-9]{6}$/.test(code) && link.endsWith('?parrain=' + code), 'boutique : code de parrainage ' + code + ' et lien');
+
+    // Même code dans la fenêtre de partage de la liste
+    await sponsor.goto(B);
+    await sponsor.click('.topbar__share');
+    await sponsor.waitForSelector('#share-dialog[open] .referral');
+    check((await sponsor.locator('#share-dialog .referral__value').innerText()).trim() === code
+        && await sponsor.locator('#share-dialog [data-referral-link]').inputValue() === link, 'partage : code et lien de parrainage');
+    await sponsor.screenshot({ path: 'out/share-referral.png' });
+    await sponsor.click('#share-dialog [data-close]');
 
     // Visiteur : le lien ouvre l'inscription avec le code prérempli
     const visitor = await (await browser.newContext({ viewport: { width: 1366, height: 900 } })).newPage();

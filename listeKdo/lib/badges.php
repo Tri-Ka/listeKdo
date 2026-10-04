@@ -49,6 +49,7 @@ function badge_metrics()
         'has_event_date' => "Date de l'événement (1 = oui)",
         'has_title' => 'Titre de liste (1 = oui)',
         'profile_complete' => 'Profil complet (0 à 5 : photo, question, petit mot, date, titre)',
+        'skins' => 'Habillages achetés',
         'years' => 'Années depuis sa première idée',
         'visits' => 'Jours de visite',
         'activity' => 'Activité totale (idées + commentaires + réactions + cadeaux)',
@@ -139,6 +140,11 @@ function badge_fixtures()
         array('profile-message', 'badge', 'bronze', 'has_message', 1, '✉️', 'Petit mot', 'Écrire un petit mot en bas de sa liste.', 0),
         array('profile-date', 'badge', 'bronze', 'has_event_date', 1, '📅', 'Date cochée', "Indiquer la date de l'événement.", 0),
         array('profile-title', 'badge', 'bronze', 'has_title', 1, '🏷️', 'Titre sur mesure', 'Donner un titre à sa liste.', 0),
+        // Boutique : un article correspond à un habillage pour un type de liste.
+        array('skin-1', 'badge', 'bronze', 'skins', 1, '🎨', 'Nouveau look', 'Acheter un premier habillage.', 0),
+        array('skin-5', 'badge', 'silver', 'skins', 5, '👗', 'Collection de styles', 'Acheter 5 habillages.', 0),
+        array('skin-15', 'badge', 'gold', 'skins', 15, '🧥', 'Garde-robe complète', 'Acheter 15 habillages.', 0),
+        array('trophy-skin-30', 'trophy', 'legend', 'skins', 30, '🏆', 'Icône de style', 'Acheter 30 habillages.', 0),
         array('loyal-1', 'badge', 'silver', 'years', 1, '🎂', 'Fidèle', 'Utiliser le site depuis plus d\'un an.', 0),
         array('loyal-5', 'badge', 'gold', 'years', 5, '🏅', 'Vétéran', 'Utiliser le site depuis plus de 5 ans.', 0),
 
@@ -336,6 +342,11 @@ function badge_metric_values($user)
     $values['has_event_date'] = null !== birth_date($user) ? 1 : 0;
     $values['has_title'] = '' !== list_title($user) ? 1 : 0;
     $values['profile_complete'] = $values['has_photo'] + $values['has_secret'] + $values['has_message'] + $values['has_event_date'] + $values['has_title'];
+
+    // Un achat correspond à un article « habillage/type de liste » dans user_skin.
+    // La table est absente tant que la migration de la boutique n'a pas été appliquée.
+    $values['skins'] = db_has_table('user_skin')
+        ? badge_count('SELECT COUNT(*) AS n FROM user_skin WHERE user_id = ?', array($id)) : 0;
 
     $first = db_one('SELECT MIN(created_at) AS first FROM liste_noel WHERE user_id = ?', array($id));
     $values['years'] = $first && $first['first'] ? max(0, (int) floor((time() - strtotime($first['first'])) / (365.25 * 86400))) : 0;

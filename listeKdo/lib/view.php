@@ -13,6 +13,18 @@ function asset($path)
     return file_exists($file) ? $path . '?v=' . filemtime($file) : $path;
 }
 
+/**
+ * Capture d'écran de la page « Comment ça marche ? » (img/guide/), cliquable pour l'ouvrir en grand.
+ * Largeur et hauteur en pixels CSS (les fichiers sont en double résolution).
+ */
+function guide_image($file, $alt, $width, $height, $class = '')
+{
+    $src = asset('img/guide/' . $file);
+
+    return '<a class="guide-shot' . ('' !== $class ? ' ' . $class : '') . '" href="' . e($src) . '" target="_blank" rel="noopener">'
+        . '<img src="' . e($src) . '" alt="' . e($alt) . '" width="' . (int) $width . '" height="' . (int) $height . '" loading="lazy" decoding="async"></a>';
+}
+
 function icon($name, $class = '')
 {
     return '<svg class="icon' . ('' !== $class ? ' ' . $class : '') . '" aria-hidden="true"><use href="' . e(asset('img/icons.svg')) . '#i-' . $name . '"></use></svg>';

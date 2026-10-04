@@ -2,6 +2,8 @@
 require_once 'lib/bootstrap.php';
 
 $me = current_user();
+$page = input('page');
+$isHowItWorks = 'comment-ca-marche' === $page;
 $code = input('user');
 $owner = null;
 
@@ -87,5 +89,8 @@ echo render('page', array(
     'theme' => theme_of($owner),
     'badges' => $badges,
     'shop' => $shop,
+    'isHowItWorks' => $isHowItWorks,
+    // La visite est mémorisée par compte, pas seulement dans ce navigateur.
+    'showOnboarding' => $me && onboarding_available() && empty($me['onboarding_seen_at']),
     'flash' => flash_take(),
 ));

@@ -20,7 +20,7 @@ mkdir -p out && touch out/.start
 status=0
 docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     -v "$PWD/../../extension-chrome":/ext:ro mcr.microsoft.com/playwright:v1.63.0-noble \
-    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node shop.js && node referral.js && node private.js && node extension.js' || status=$?
+    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node shop.js && node referral.js && node account.js && node private.js && node tour.js && node extension.js' || status=$?
 
 # Nettoyage : comptes de test et images envoyées pendant le test.
 for id in $(sql "SELECT id FROM liste_user WHERE nom LIKE 'Test1%';" | tail -n +2); do rm -rf "../../listeKdo/uploads/$id"; done
@@ -34,6 +34,7 @@ sql "DELETE FROM user_skin WHERE user_id IN (1, 141); UPDATE liste_user SET skin
 sql "DELETE FROM notification WHERE type = 8 AND author_id NOT IN (SELECT id FROM liste_user);" 2>/dev/null || true
 # Liste privée (private.js) : remise en public même si le test s'arrête en cours de route.
 sql "UPDATE liste_user SET is_private = 0 WHERE id = 1;" || true
+sql "DELETE FROM liste_viewer WHERE list_id = 1;" 2>/dev/null || true
 sql "DELETE FROM liste_noel WHERE nom = 'Idée reçue test';"
 sql "DELETE FROM notification WHERE product_id IN (SELECT id FROM liste_noel WHERE nom = 'Produit test extension'); DELETE FROM liste_noel WHERE nom = 'Produit test extension'; DELETE FROM liste_item WHERE product_id NOT IN (SELECT id FROM liste_noel);"
 find ../../listeKdo/uploads/img -type f -newer out/.start -delete

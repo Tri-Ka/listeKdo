@@ -76,9 +76,33 @@ $theme = theme_of($owner);
                     <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($owner['is_private']) ? ' checked' : ''; ?>>
                     <span>
                         <strong>Liste privée</strong>
-                        <small><?php echo $isMine ? 'Visible par vous seul : vos amis ne la voient plus, même avec le lien' : 'Visible seulement par ses gestionnaires, même avec le lien'; ?></small>
+                        <small><?php echo $isMine ? 'Visible par vous seul et les amis choisis ci-dessous, même avec le lien' : 'Visible seulement par ses gestionnaires et les amis choisis ci-dessous, même avec le lien'; ?></small>
                     </span>
                 </label>
+                <?php if (viewers_enabled()) : ?>
+                    <?php
+                    // Amis autorisés : affichés seulement quand la case « Liste privée » est cochée (css/app.css).
+                    $candidates = list_viewer_candidates($owner);
+                    $viewerIds = list_viewer_ids($owner['id']);
+                    ?>
+                    <fieldset class="field private-viewers" data-private-viewers>
+                        <input type="hidden" name="viewers_sent" value="1">
+                        <legend>Qui peut la voir quand même ? <small>(<?php echo $isMine ? 'parmi vos amis' : 'parmi les amis de la liste'; ?>)</small></legend>
+                        <?php if (0 === count($candidates)) : ?>
+                            <p class="private-viewers__empty">Aucun ami pour l'instant : <?php echo $isMine ? 'vous seul la voyez' : 'seuls ses gestionnaires la voient'; ?>.</p>
+                        <?php else : ?>
+                            <div class="private-viewers__list">
+                                <?php foreach ($candidates as $friend) : ?>
+                                    <label class="private-viewers__option">
+                                        <input type="checkbox" name="viewers[]" value="<?php echo (int) $friend['id']; ?>"<?php echo in_array((int) $friend['id'], $viewerIds) ? ' checked' : ''; ?>>
+                                        <?php echo avatar($friend, 'private-viewers__avatar'); ?>
+                                        <span><?php echo e($friend['nom']); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </fieldset>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
         <footer class="modal__footer">

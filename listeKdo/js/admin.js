@@ -484,9 +484,9 @@ function chartOptions(type, data) {
     return {
         animationDuration: 650,
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        grid: { top: 4, right: 26, bottom: 2, left: 108 },
+        grid: { top: 4, right: 26, bottom: 2, left: 140 },
         xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
-        yAxis: { type: 'category', data: data.labels, inverse: true, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { ...commonText, width: 96, overflow: 'truncate' } },
+        yAxis: { type: 'category', data: data.labels, inverse: true, axisTick: { show: false }, axisLine: { show: false }, axisLabel: { ...commonText, width: 128, overflow: 'truncate' } },
         series: [{ type: 'bar', data: data.values, barMaxWidth: 15, label: { show: true, position: 'right', color: '#626a85' }, itemStyle: { color: '#7b5ce0', borderRadius: [0, 6, 6, 0] } }],
     };
 }

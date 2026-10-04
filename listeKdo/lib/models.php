@@ -205,6 +205,12 @@ function user_create($name, $password, $pictureFile, $theme)
     ));
 }
 
+/** Migration sql/2026-10-04-visite-guidee.sql : visite guidée affichée une seule fois par compte. */
+function onboarding_available()
+{
+    return db_has_column('liste_user', 'onboarding_seen_at');
+}
+
 /**
  * Listes d'enfants gérées par un utilisateur (table liste_manager).
  */
@@ -297,15 +303,84 @@ function is_private_list($user)
 }
 
 /**
- * L'utilisateur peut-il voir cette liste ? Une liste privée n'est visible que de ceux qui la gèrent.
+ * La table liste_viewer existe-t-elle ? (migration sql/2026-10-04-liste-privee-invites.sql)
  */
-function can_view($me, $owner)
+function viewers_enabled()
 {
-    return !is_private_list($owner) || can_manage($me, $owner);
+    return private_enabled() && db_has_table('liste_viewer');
 }
 
 /**
- * Ids des listes privées que l'utilisateur ne peut pas voir (une seule requête, plus ses listes secondaires).
+ * Ids des amis autorisés à voir une liste privée.
+ */
+function list_viewer_ids($listId)
+{
+    $ids = array();
+    if (viewers_enabled()) {
+        foreach (db_all('SELECT user_id FROM liste_viewer WHERE list_id = ?', array((int) $listId)) as $row) {
+            $ids[] = (int) $row['user_id'];
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * Amis qu'on peut autoriser à voir une liste privée : ses amis, sans ses gestionnaires
+ * (ils la voient déjà) ni les comptes sans mot de passe (listes secondaires : personne ne s'y connecte).
+ */
+function list_viewer_candidates($owner)
+{
+    $excluded = array((int) $owner['id']);
+    foreach (child_managers($owner['id']) as $manager) {
+        $excluded[] = (int) $manager['id'];
+    }
+
+    $candidates = array();
+    foreach (user_friends($owner['id']) as $friend) {
+        if ('' !== (string) $friend['password'] && !in_array((int) $friend['id'], $excluded)) {
+            $candidates[] = $friend;
+        }
+    }
+
+    return $candidates;
+}
+
+/**
+ * Remplace les amis autorisés à voir une liste privée (seulement parmi list_viewer_candidates()).
+ */
+function list_viewers_set($owner, $ids)
+{
+    $allowed = array();
+    foreach (list_viewer_candidates($owner) as $friend) {
+        $allowed[] = (int) $friend['id'];
+    }
+
+    db_query('DELETE FROM liste_viewer WHERE list_id = ?', array((int) $owner['id']));
+    foreach ($ids as $id) {
+        if (in_array((int) $id, $allowed)) {
+            db_query('REPLACE INTO liste_viewer (list_id, user_id) VALUES (?, ?)', array((int) $owner['id'], (int) $id));
+        }
+    }
+}
+
+/**
+ * L'utilisateur peut-il voir cette liste ? Une liste privée n'est visible que de ceux qui la gèrent
+ * et des amis qu'ils ont choisis (liste_viewer).
+ */
+function can_view($me, $owner)
+{
+    if (!is_private_list($owner) || can_manage($me, $owner)) {
+        return true;
+    }
+
+    return $me && viewers_enabled()
+        && null !== db_one('SELECT list_id FROM liste_viewer WHERE list_id = ? AND user_id = ?', array((int) $owner['id'], (int) $me['id']));
+}
+
+/**
+ * Ids des listes privées que l'utilisateur ne peut pas voir (une seule requête, plus ses listes secondaires) :
+ * toutes, sauf les siennes et celles où il est invité.
  */
 function hidden_list_ids($me)
 {
@@ -320,8 +395,15 @@ function hidden_list_ids($me)
         }
     }
 
+    $sql = 'SELECT id FROM liste_user WHERE is_private = 1 AND id NOT IN (?)';
+    $params = array($mine);
+    if ($me && viewers_enabled()) {
+        $sql .= ' AND id NOT IN (SELECT list_id FROM liste_viewer WHERE user_id = ?)';
+        $params[] = (int) $me['id'];
+    }
+
     $ids = array();
-    foreach (db_all('SELECT id FROM liste_user WHERE is_private = 1 AND id NOT IN (?)', array($mine)) as $row) {
+    foreach (db_all($sql, $params) as $row) {
         $ids[] = (int) $row['id'];
     }
 
@@ -397,6 +479,14 @@ function friend_remove($user, $friend)
 {
     db_query('DELETE FROM user_friend WHERE user_id = ? AND friend_code = ?', array((int) $user['id'], $friend['code']));
     db_query('DELETE FROM user_friend WHERE user_id = ? AND friend_code = ?', array((int) $friend['id'], $user['code']));
+
+    // Plus amis : plus invités à voir la liste privée de l'autre.
+    if (viewers_enabled()) {
+        db_query(
+            'DELETE FROM liste_viewer WHERE (list_id = ? AND user_id = ?) OR (list_id = ? AND user_id = ?)',
+            array((int) $user['id'], (int) $friend['id'], (int) $friend['id'], (int) $user['id'])
+        );
+    }
 }
 
 /* ---------- Question secrète (mot de passe oublié) ---------- */

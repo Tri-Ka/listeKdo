@@ -37,7 +37,16 @@ $themes = themes();
                                 <button type="button" class="profile__stat profile__badges" data-open="badges-dialog" aria-label="Voir les badges (<?php echo (int) $badges['count']; ?>)">🏅 <?php echo (int) $badges['count']; ?></button>
                             <?php endif; ?>
                             <?php if ($ctx['private']) : ?>
-                                <span class="profile__stat profile__private" data-tip="Visible seulement par <?php echo $ctx['isOwner'] ? 'vous' : 'ses gestionnaires'; ?>"><?php echo icon('lock'); ?> Privée</span>
+                                <?php
+                                if ($ctx['canEdit']) {
+                                    $viewerCount = count(list_viewer_ids($ctx['owner']['id']));
+                                    $privateTip = 'Visible seulement par ' . ($ctx['isOwner'] ? 'vous' : 'ses gestionnaires')
+                                        . (0 < $viewerCount ? ' et ' . $viewerCount . ' ami' . (1 < $viewerCount ? 's' : '') . ' choisi' . (1 < $viewerCount ? 's' : '') : '');
+                                } else {
+                                    $privateTip = 'Liste privée : vous faites partie des amis invités à la voir';
+                                }
+                                ?>
+                                <span class="profile__stat profile__private" data-tip="<?php echo e($privateTip); ?>"><?php echo icon('lock'); ?> Privée</span>
                             <?php endif; ?>
                         </div>
                         <?php if (!$ctx['canEdit'] && $ctx['me'] && !$ctx['isFriend']) : ?>
@@ -129,6 +138,27 @@ $themes = themes();
                         <button type="button" class="round-btn" data-native-share hidden title="Plus d'options" aria-label="Plus d'options de partage"><?php echo icon('ellipsis'); ?></button>
                     </div>
                 </div>
+
+                <?php $me = current_user(); ?>
+                <?php if ($me && referral_enabled()) : ?>
+                    <?php
+                    $rewards = referral_rewards();
+                    $code = referral_code($me);
+                    $link = site_base_url() . '?parrain=' . $code;
+                    ?>
+                    <section class="referral referral--share" data-referral>
+                        <div class="referral__intro">
+                            <strong>Parrainez vos proches : +<?php echo (int) $rewards['sponsor']; ?> <?php echo gem_icon(); ?> par filleul</strong>
+                            <span>Ils créent leur liste avec votre code<?php echo 0 < $rewards['welcome'] ? ' (+' . (int) $rewards['welcome'] . ' gemmes pour eux)' : ''; ?>. Vous gagnez les vôtres à leur première idée.</span>
+                        </div>
+                        <div class="referral__code">
+                            <span class="referral__value"><?php echo e($code); ?></span>
+                            <input type="hidden" value="<?php echo e($link); ?>" data-referral-link>
+                            <button type="button" class="btn btn--light btn--sm" data-referral-copy><?php echo icon('link'); ?> Copier le lien</button>
+                            <a class="btn btn--light btn--sm" href="https://wa.me/?text=<?php echo e(rawurlencode('Viens créer ta liste de cadeaux avec moi ! Mon code de parrainage : ' . $code . ' — ' . $link)); ?>" target="_blank" rel="noopener"><?php echo icon('whatsapp'); ?> WhatsApp</a>
+                        </div>
+                    </section>
+                <?php endif; ?>
                 </div>
             </dialog>
         <?php endif; ?>

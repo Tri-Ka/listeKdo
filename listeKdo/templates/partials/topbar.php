@@ -99,35 +99,52 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
                 <div class="user-menu__panel">
                     <p class="user-menu__name"><?php echo e($me['nom']); ?></p>
                     <?php // Petits écrans : actions retirées de la barre du haut, regroupées ici. ?>
-                    <?php if ($owner && $ctx['canView'] && !$ctx['private']) : ?>
-                        <button type="button" class="user-menu__mobile" data-open="share-dialog"><?php echo icon('share-nodes'); ?> Partager la liste</button>
+                    <?php $menuShare = $owner && $ctx['canView'] && !$ctx['private']; ?>
+                    <?php if ($menuShare || ($owner && $ctx['canEdit'])) : ?>
+                        <div class="user-menu__group user-menu__mobile">
+                            <?php if ($menuShare) : ?>
+                                <button type="button" data-open="share-dialog"><?php echo icon('share-nodes'); ?> Partager la liste</button>
+                            <?php endif; ?>
+                            <?php if ($owner && $ctx['canEdit']) : ?>
+                                <button type="button" data-open="list-settings-dialog"><?php echo icon('gear'); ?> Paramètres de la liste</button>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
-                    <?php if ($owner && $ctx['canEdit']) : ?>
-                        <button type="button" class="user-menu__mobile" data-open="list-settings-dialog"><?php echo icon('gear'); ?> Paramètres de la liste</button>
-                    <?php endif; ?>
-                    <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>"><?php echo icon('list'); ?> Ma liste</a>
-                    <?php foreach ($children as $child) : ?>
-                        <a href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>"><?php echo icon('layer-group'); ?> <?php echo e($child['nom']); ?></a>
-                    <?php endforeach; ?>
-                    <?php if (children_enabled()) : ?>
-                        <button type="button" data-open="child-new-dialog"><?php echo icon('plus'); ?> Créer une liste secondaire</button>
-                    <?php endif; ?>
-                    <?php $giftCount = my_gifts_count($myGifts); ?>
-                    <button type="button" data-open="my-gifts-dialog"><?php echo icon('gift'); ?> Les cadeaux que j'offre
-                        <?php if (0 < $giftCount) : ?><span class="user-menu__count"><?php echo (int) $giftCount; ?></span><?php endif; ?></button>
-                    <?php if (isset($shop) && $shop) : ?>
-                        <button type="button" data-open="shop-dialog"><?php echo gem_icon('user-menu__gem'); ?> Boutique
-                            <span class="user-menu__count user-menu__count--gems"><?php echo (int) $shop['gems']['balance']; ?></span></button>
-                    <?php endif; ?>
-                    <button type="button" data-open="profile-dialog"><?php echo icon('user'); ?> Mon profil</button>
-                    <button type="button" data-open="extension-dialog"><?php echo icon('puzzle-piece'); ?> Extension Chrome</button>
-                    <?php if (is_admin($me)) : ?>
-                        <a href="admin.php"><?php echo icon('shield-halved'); ?> Administration</a>
-                    <?php endif; ?>
-                    <form method="post" action="actions/disconnect.php">
-                        <?php echo csrf_field(); ?>
-                        <button type="submit"><?php echo icon('right-from-bracket'); ?> Se déconnecter</button>
-                    </form>
+                    <div class="user-menu__group">
+                        <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>"><?php echo icon('list'); ?> Ma liste</a>
+                        <?php foreach ($children as $child) : ?>
+                            <a href="index.php?user=<?php echo e(rawurlencode($child['code'])); ?>"><?php echo icon('layer-group'); ?> <?php echo e($child['nom']); ?></a>
+                        <?php endforeach; ?>
+                        <?php if (children_enabled()) : ?>
+                            <button type="button" class="user-menu__minor" data-open="child-new-dialog"><?php echo icon('plus'); ?> Nouvelle liste secondaire</button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="user-menu__group">
+                        <?php $giftCount = my_gifts_count($myGifts); ?>
+                        <button type="button" data-open="my-gifts-dialog"><?php echo icon('gift'); ?> Cadeaux que j'offre
+                            <?php if (0 < $giftCount) : ?><span class="user-menu__count"><?php echo (int) $giftCount; ?></span><?php endif; ?></button>
+                        <?php if (isset($shop) && $shop) : ?>
+                            <button type="button" data-open="shop-dialog"><?php echo gem_icon('user-menu__gem'); ?> Boutique
+                                <span class="user-menu__count user-menu__count--gems"><?php echo (int) $shop['gems']['balance']; ?></span></button>
+                        <?php endif; ?>
+                        <button type="button" data-open="profile-dialog"><?php echo icon('user'); ?> Mon profil</button>
+                    </div>
+                    <div class="user-menu__group">
+                        <a href="index.php?page=comment-ca-marche"><?php echo icon('circle-info'); ?> Comment ça marche ?</a>
+                        <?php if (onboarding_available()) : ?>
+                            <button type="button" data-start-onboarding><?php echo icon('eye'); ?> Visite guidée</button>
+                        <?php endif; ?>
+                        <button type="button" data-open="extension-dialog"><?php echo icon('puzzle-piece'); ?> Extension Chrome</button>
+                        <?php if (is_admin($me)) : ?>
+                            <a href="admin.php"><?php echo icon('shield-halved'); ?> Administration</a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="user-menu__group">
+                        <form method="post" action="actions/disconnect.php">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit"><?php echo icon('right-from-bracket'); ?> Se déconnecter</button>
+                        </form>
+                    </div>
                 </div>
             </details>
         <?php else : ?>

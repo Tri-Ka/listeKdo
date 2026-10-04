@@ -1,5 +1,5 @@
 <?php
-$pageTitle = $owner ? theme_text($theme, 'heading', $owner) : $theme['title'];
+$pageTitle = $isHowItWorks ? 'Comment ça marche ?' : ($owner ? theme_text($theme, 'heading', $owner) : $theme['title']);
 if ($owner && !$ctx['canView']) {
     $pageTitle = 'Liste privée';
 }
@@ -26,7 +26,7 @@ if ($owner && !$ctx['canView']) {
     <script type="module" src="<?php echo e(asset('js/app.js')); ?>"></script>
 </head>
 
-<body data-theme="<?php echo $owner ? e($theme['key']) : 'home'; ?>"<?php echo $owner && $theme['skin'] ? ' data-skin="' . e($theme['skin']) . '" style="' . e(skin_style($theme)) . '"' : ''; ?>>
+<body data-theme="<?php echo $owner ? e($theme['key']) : 'home'; ?>"<?php echo $isHowItWorks ? ' data-page="guide"' : ''; ?><?php echo $owner && $theme['skin'] ? ' data-skin="' . e($theme['skin']) . '" style="' . e(skin_style($theme)) . '"' : ''; ?>>
     <?php echo render('partials/topbar', array('ctx' => $ctx, 'friends' => $friends, 'newNotifications' => $newNotifications, 'theme' => $theme, 'myGifts' => $myGifts, 'shop' => $shop)); ?>
 
     <?php if ($me) : ?>
@@ -34,14 +34,20 @@ if ($owner && !$ctx['canView']) {
     <?php endif; ?>
 
     <main class="page">
-        <?php if (!$owner) : ?>
+        <?php if ($isHowItWorks) : ?>
+            <?php echo render('partials/how_it_works', array('me' => $me)); ?>
+        <?php elseif (!$owner) : ?>
             <?php echo render('partials/home', array('notFound' => '' !== input('user'))); ?>
         <?php elseif (!$ctx['canView']) : ?>
             <section class="private-notice">
                 <span class="private-notice__icon"><?php echo icon('lock'); ?></span>
                 <h1>Cette liste est privée</h1>
-                <p>Pour l'instant, seule la personne qui l'a créée peut la voir.</p>
-                <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> <?php echo $me ? 'Revenir à ma liste' : "Retour à l'accueil"; ?></a>
+                <p>Seuls la personne qui l'a créée et les amis qu'elle a choisis peuvent la voir.<?php echo $me ? '' : ' Vous en faites partie ? Connectez-vous.'; ?></p>
+                <?php if ($me) : ?>
+                    <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> Revenir à ma liste</a>
+                <?php else : ?>
+                    <button type="button" class="btn btn--primary" data-open="login-dialog"><?php echo icon('circle-user'); ?> Se connecter</button>
+                <?php endif; ?>
             </section>
         <?php else : ?>
             <?php echo render('partials/hero', array('ctx' => $ctx, 'theme' => $theme, 'objectCount' => count($objects), 'badges' => $badges)); ?>
@@ -80,6 +86,14 @@ if ($owner && !$ctx['canView']) {
     <?php endif; ?>
 
     <?php echo render('partials/dialogs', array('ctx' => $ctx)); ?>
+    <?php if ($me && onboarding_available()) : ?>
+        <?php echo render('partials/onboarding', array(
+            'ctx' => $ctx,
+            // Sur sa propre liste seulement : c'est elle que la visite présente.
+            'onHome' => $ctx['isOwner'] && !$isHowItWorks,
+            'autoStart' => $showOnboarding && $ctx['isOwner'] && !$isHowItWorks,
+        )); ?>
+    <?php endif; ?>
     <?php echo render('partials/confirm'); ?>
     <?php echo render('partials/badges', array('ctx' => $ctx, 'owner' => $owner, 'badges' => $badges, 'shop' => $shop)); ?>
     <?php if ($shop) : ?>

@@ -36,4 +36,10 @@ if (skins_enabled() && isset($_POST['skin'])) {
 
 db_update('liste_user', $changes, array('id' => (int) $owner['id']));
 
+// Liste privée : amis choisis qui la voient quand même (cases à cocher, aucune cochée = personne).
+if (viewers_enabled() && isset($_POST['viewers_sent'])) {
+    $viewers = isset($_POST['viewers']) && is_array($_POST['viewers']) ? $_POST['viewers'] : array();
+    list_viewers_set($owner, $viewers);
+}
+
 succeed(array(), $back, 'Liste mise à jour.');

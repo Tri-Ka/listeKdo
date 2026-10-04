@@ -32,6 +32,10 @@ if ($gems['balance'] < $price) {
 }
 
 db_insert('user_skin', array('user_id' => (int) $me['id'], 'skin' => $key, 'price' => $price, 'bought_at' => db_now()));
+// L'achat peut débloquer un badge d'habillage : on le calcule tout de suite afin que la
+// redirection affiche la célébration, sans attendre le délai normal de 30 secondes.
+unset($_SESSION['kdo_badges_at']);
+badges_refresh($me);
 // Posé tout de suite sur sa liste si elle est de ce type.
 $themes = themes();
 $label = $items[$key]['label'] . ' · ' . $themes[$items[$key]['theme']]['label'];

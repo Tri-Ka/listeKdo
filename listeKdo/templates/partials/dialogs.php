@@ -141,11 +141,27 @@
                     <span>Répéter le mot de passe</span>
                     <input type="password" name="re-password" autocomplete="new-password" data-match="password">
                 </label>
+                <?php // Champs rattachés au formulaire #delete-account-form (attribut form), placé hors du formulaire du profil. ?>
+                <details class="danger-zone">
+                    <summary><?php echo icon('trash-can'); ?> Supprimer mon compte</summary>
+                    <div class="danger-zone__body">
+                        <p>Votre liste, vos idées, vos commentaires et vos réactions seront effacés définitivement, ainsi que les listes secondaires que vous êtes seul à gérer. Les cadeaux que vous aviez réservés redeviennent disponibles.</p>
+                        <label class="field">
+                            <span>Votre mot de passe actuel</span>
+                            <input type="password" name="current_password" form="delete-account-form" required autocomplete="current-password">
+                        </label>
+                        <button type="submit" class="btn btn--danger btn--sm" form="delete-account-form"
+                            data-confirm="Votre compte et votre liste seront supprimés définitivement. Cette action est irréversible." data-confirm-title="Supprimer votre compte ?" data-confirm-ok="Supprimer mon compte" data-confirm-icon="trash-can"><?php echo icon('trash-can'); ?> Supprimer définitivement</button>
+                    </div>
+                </details>
             </div>
             <footer class="modal__footer">
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
                 <button type="submit" class="btn btn--primary">Enregistrer</button>
             </footer>
+        </form>
+        <form method="post" action="actions/deleteAccount.php" id="delete-account-form">
+            <?php echo csrf_field(); ?>
         </form>
     </dialog>
 <?php endif; ?>
@@ -293,7 +309,7 @@
                         <input type="checkbox" name="is_private" value="1" role="switch">
                         <span>
                             <strong>Liste privée</strong>
-                            <small>Visible seulement par ses gestionnaires, même avec le lien</small>
+                            <small>Visible seulement par ses gestionnaires, même avec le lien. Vous pourrez ensuite choisir des amis qui la voient, dans ses paramètres.</small>
                         </span>
                     </label>
                 <?php endif; ?>

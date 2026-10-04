@@ -23,7 +23,7 @@ async function session(browser, name, password = 'test') {
 (async () => {
     const browser = await chromium.launch();
     const sponsor = await session(browser, 'Etienne');
-    const before = await balance(sponsor);
+    let before = await balance(sponsor);
 
     // Code et lien dans la boutique
     await sponsor.click('.gem-pill');
@@ -64,6 +64,14 @@ async function session(browser, name, password = 'test') {
     await Promise.all([visitor.waitForNavigation(), visitor.click('#signup-dialog button[type=submit]')]);
     await visitor.evaluate(() => document.getElementById('secret-invite-dialog')?.close());
     check(await balance(visitor) >= 50, 'filleul : bonus de bienvenue (' + await balance(visitor) + ' gemmes)');
+
+    // Amis dans les deux sens : chacun voit l'autre dans ses amis
+    check(await visitor.locator('#friends-dialog .friends-grid a', { hasText: 'Etienne' }).count() > 0, 'filleul : parrain dans ses amis');
+    await sponsor.reload();
+    check(await sponsor.locator('#friends-dialog .friends-grid a', { hasText: name }).count() > 0, 'parrain : filleul dans ses amis');
+
+    // Nouvel ami : le parrain gagne la gemme « Ami ajouté » (et peut-être un badge). On repart de ce solde.
+    before = await balance(sponsor);
 
     // Pas encore d'idée : le parrain ne gagne rien
     await sponsor.reload();

@@ -30,10 +30,17 @@ if (isset($_POST['referral']) && is_array($_POST['referral'])) {
 
 // Prix des habillages (même formulaire ou formulaire « Prix des habillages »).
 $prices = isset($_POST['price']) && is_array($_POST['price']) ? $_POST['price'] : array();
-foreach (skins() as $key => $skin) {
+$priceKeys = array_keys(skins());
+// Cadres et effets de compte à rebours : champ « frame_ruban » (accessory_price_setting()).
+if (accessories_enabled()) {
+    foreach (array_keys(accessory_items()) as $id) {
+        $priceKeys[] = accessory_price_setting($id);
+    }
+}
+foreach ($priceKeys as $key) {
     if (isset($prices[$key])) {
         setting_save('price_' . $key, max(1, min(100000, (int) $prices[$key])));
     }
 }
 
-succeed(array(), $back, 0 < count($prices) ? 'Prix des habillages enregistrés.' : 'Gemmes par action enregistrées.');
+succeed(array(), $back, 0 < count($prices) ? 'Prix de la boutique enregistrés.' : 'Gemmes par action enregistrées.');

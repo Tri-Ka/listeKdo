@@ -53,7 +53,7 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     check(await owner.locator('[data-shop-section="birthday"]').isVisible() && await owner.locator('[data-shop-section="noel"]').isHidden(), 'boutique : onglet du type de sa liste ouvert');
     // Première section = le type de la liste d'Etienne (anniversaire) : un article par habillage et par type.
     const mine = owner.locator('[data-shop-section="birthday"]');
-    check(await owner.locator('#shop-dialog .shop-item', { hasText: 'Pastel' }).count() === 5, 'boutique : Pastel vendu séparément pour chaque type de liste (5 articles)');
+    check(await owner.locator('#shop-dialog [data-shop-panel="skins"] .shop-item', { hasText: 'Pastel' }).count() === 5, 'boutique : Pastel vendu séparément pour chaque type de liste (5 articles)');
     // Aperçu : fausse liste aux couleurs de l'habillage, par-dessus la boutique.
     await mine.locator('.shop-item', { hasText: 'Néon' }).locator('[data-skin-preview]').click();
     check(await owner.locator('#skin-preview-dialog[open] [data-preview-title]').getAttribute('src').then((src) => src.includes('img/skins/neon/birthday/title.png')), 'aperçu : titre de l\'habillage');
@@ -81,9 +81,9 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     await Promise.all([owner.waitForNavigation(), owner.locator('[data-shop-section="birthday"] .shop-item', { hasText: 'Classique' }).locator('button[type=submit]').click()]);
     check(await owner.locator('body').getAttribute('data-skin') === null, 'retour à l\'habillage classique');
     await owner.click('.topbar__settings');
-    check(await owner.locator('#list-settings-dialog .skin-field__option:visible').count() === 2, 'paramètres : seuls les habillages de ce type de liste sont proposés (classique + Pastel)');
+    check(await owner.locator('#list-settings-dialog [data-skin-field] .skin-field__option:visible').count() === 2, 'paramètres : seuls les habillages de ce type de liste sont proposés (classique + Pastel)');
     await owner.locator('#list-settings-dialog .skin-field__option', { has: owner.locator('input[value="pastel/birthday"]') }).click();
-    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
     check(await owner.locator('body').getAttribute('data-skin') === 'pastel', 'paramètres de la liste : habillage choisi');
 
     /* ---- Habillage non acheté refusé ---- */
@@ -94,6 +94,63 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
         return r.status;
     });
     check(refused === 403, 'habillage non acheté refusé (' + refused + ')');
+
+    /* ---- Cadres et effets de compte à rebours ---- */
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    const gems = await balance(owner);
+    await owner.click('.gem-pill');
+    await owner.click('[data-shop-cat="frame"]');
+    check(await owner.locator('[data-shop-panel="frame"]').isVisible() && await owner.locator('[data-shop-panel="skins"]').isHidden(), 'catégorie « Cadres » : seuls les cadres sont affichés');
+    check(await owner.locator('[data-shop-subnav]').isHidden(), 'catégorie « Cadres » : pas de choix du type de liste');
+    check(await owner.locator('[data-shop-panel="frame"] .shop__rarity').count() === 6, 'cadres groupés par rareté (6 groupes)');
+    const frameItems = await owner.locator('[data-shop-panel="frame"] .shop-item').count();
+    check(frameItems > 20 && await owner.locator('[data-shop-panel="frame"] .shop-item .frame-host').count() === frameItems, 'aperçu de sa photo dans chaque cadre (et sans cadre)');
+    check(await owner.locator('[data-shop-panel="frame"] .frame--img .frame__img').count() === 14, 'cadres illustrés : 14 images');
+    if (gems >= 100) {
+        await owner.locator('[data-shop-item="frame/trait"] button[type=submit]').click();
+        await Promise.all([owner.waitForNavigation(), owner.click('#confirm-dialog [data-confirm-ok]')]);
+        check(await owner.locator('.profile__avatar .frame--trait').count() === 1, 'cadre acheté : il entoure la photo de la liste');
+        check(await balance(owner) === gems - 50, 'cadre : 50 gemmes dépensées');
+        await friend.goto(`${B}?user=${ETIENNE}`);
+        check(await friend.locator('.profile__avatar .frame--trait').count() === 1, 'amie : voit le cadre sur la liste');
+        check(await friend.locator('.mini-frame[data-frame="trait"] .frame--trait').count() > 0, 'amie : même cadre sur les petites photos (amis…)');
+
+        await owner.click('.gem-pill');
+        await owner.click('[data-shop-cat="countdown"]');
+        await owner.locator('[data-shop-item="countdown/pastel"] button[type=submit]').click();
+        await Promise.all([owner.waitForNavigation(), owner.click('#confirm-dialog [data-confirm-ok]')]);
+        await owner.click('.gem-pill');
+        await owner.click('[data-shop-cat="countdown"]');
+        check((await owner.locator('[data-shop-item="countdown/pastel"]').innerText()).includes('Sur ma liste'), 'effet acheté : porté sur sa liste');
+        if (await owner.locator('[data-countdown]').count()) {
+            check(await owner.locator('[data-countdown]').getAttribute('data-fx') === 'pastel', 'effet : compte à rebours animé');
+        }
+
+        // Compte à rebours : se change dans « Paramètres de la liste ».
+        await owner.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
+        await owner.locator('[data-open="list-settings-dialog"]').first().evaluate((b) => b.click());
+        const fx = owner.locator('#list-settings-dialog .accessory-field--countdown');
+        check(await fx.locator('input[value="pastel"]').isChecked(), 'paramètres de la liste : effet porté coché');
+        await fx.locator('.skin-field__option', { hasText: 'Classique' }).click();
+        await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
+        check(await owner.locator('[data-countdown][data-fx]').count() === 0 && await owner.locator('#list-settings-dialog .accessory-field--countdown input[value=""]').isChecked(), 'paramètres de la liste : retour au compte à rebours classique');
+
+        // Cadre : se change dans « Mon profil ».
+        await owner.locator('[data-open="profile-dialog"]').first().evaluate((b) => b.click());
+        const frameField = owner.locator('#profile-dialog .accessory-field--frame');
+        check(await frameField.locator('input[value="trait"]').isChecked(), 'mon profil : cadre porté coché');
+        await frameField.locator('.skin-field__option', { hasText: 'Sans cadre' }).click();
+        await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog .modal__footer button[type=submit]')]);
+        check(await owner.locator('.profile__avatar .frame').count() === 0, 'mon profil : sans cadre, la photo retrouve son allure');
+    }
+    const wearRefused = await owner.evaluate(async () => {
+        const body = new FormData();
+        body.append('kind', 'frame');
+        body.append('item', 'prisme');
+        const r = await fetch('actions/shopWear.php', { method: 'POST', body, headers: { Accept: 'application/json', 'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content } });
+        return r.status;
+    });
+    check(wearRefused === 403, 'cadre non acheté refusé (' + wearRefused + ')');
 
     check(owner.errors.length + friend.errors.length === 0, 'aucune erreur JS ' + [...owner.errors, ...friend.errors].join(' | '));
     await browser.close();

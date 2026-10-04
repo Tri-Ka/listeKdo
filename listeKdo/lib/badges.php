@@ -52,7 +52,7 @@ function badge_metrics()
         'skins' => 'Habillages achetés',
         'years' => 'Années depuis sa première idée',
         'visits' => 'Jours de visite',
-        'activity' => 'Activité totale (idées + commentaires + réactions + cadeaux)',
+        'activity' => 'Activité totale (idées + suggestions + commentaires + réactions + cadeaux)',
         'ideas_described' => 'Idées avec une description',
         'ideas_gifted' => 'Ses idées réservées par les autres',
         'comments_received' => 'Commentaires reçus sur ses idées',
@@ -65,6 +65,9 @@ function badge_metrics()
         'reaction_4' => 'Réactions « meh » données',
         'reaction_5' => "Réactions « j'aime pas » données",
         'reaction_6' => 'Réactions « BEEAARRGH !!! » données',
+        'suggestions' => 'Idées suggérées sur les listes des amis',
+        'suggestions_lists' => 'Listes différentes où l\'on a suggéré une idée',
+        'suggestions_gifted' => 'Ses suggestions réservées par les autres',
     );
 }
 
@@ -199,13 +202,24 @@ function badge_fixtures()
         // Trophées (rares)
         array('trophy-complete', 'trophy', 'gold', 'profile_complete', 5, '🏆', 'Profil impeccable', 'Photo, question secrète, petit mot, date et titre : tout est rempli.', 0),
         array('trophy-group-done', 'trophy', 'gold', 'groups_completed', 1, '🎯', 'Cagnotte bouclée', 'Participer à une cagnotte qui atteint son montant.', 0),
-        array('trophy-active', 'trophy', 'legend', 'activity', 200, '🔥', 'Hyperactif', '200 actions : idées, commentaires, réactions et cadeaux.', 0),
+        array('trophy-active', 'trophy', 'legend', 'activity', 200, '🔥', 'Hyperactif', '200 actions : idées, suggestions, commentaires, réactions et cadeaux.', 0),
         array('trophy-king', 'trophy', 'legend', 'gifts', 50, '🦄', 'Roi du Kdo', 'Un trophée secret… pour les plus généreux.', 1),
         array('trophy-pioneer', 'trophy', 'legend', 'years', 7, '🦕', 'Pionnier', 'Un trophée secret pour ceux qui étaient là dès le début.', 1),
         array('trophy-santa', 'trophy', 'legend', 'recipients', 20, '🛷', 'Tournée du Père Noël', 'Gâter 20 personnes différentes.', 0),
         array('trophy-star', 'trophy', 'gold', 'reactions_received', 100, '👑', 'Influenceur', 'Recevoir 100 réactions sur ses idées.', 0),
         array('trophy-patron', 'trophy', 'legend', 'gift_value', 1000, '🤑', 'Mécène royal', 'Un trophée secret pour les plus grands cœurs.', 1),
         array('trophy-allin', 'trophy', 'gold', 'ideas_gifted', 25, '🌈', 'Liste comblée', '25 de ses idées réservées par les autres.', 0),
+
+        // Suggestions (idées ajoutées sur la liste d'un ami). Ajoutés à la fin : les badges déjà installés gardent leur place.
+        array('suggest-1', 'badge', 'bronze', 'suggestions', 1, '💭', 'Souffleur', "Suggérer une première idée sur la liste d'un ami.", 0),
+        array('suggest-10', 'badge', 'silver', 'suggestions', 10, '🧠', 'Boîte à idées', 'Suggérer 10 idées à ses amis.', 0),
+        array('suggest-25', 'badge', 'gold', 'suggestions', 25, '🔮', 'Devin', 'Suggérer 25 idées à ses amis.', 0),
+        array('suggest-lists-3', 'badge', 'silver', 'suggestions_lists', 3, '🧭', 'Bon conseiller', 'Suggérer des idées sur 3 listes différentes.', 0),
+        array('suggest-gifted-1', 'badge', 'bronze', 'suggestions_gifted', 1, '🎯', 'Dans le mille', "Une de ses suggestions a été réservée par quelqu'un.", 0),
+        array('suggest-gifted-10', 'badge', 'gold', 'suggestions_gifted', 10, '🤫', 'Complice', '10 de ses suggestions réservées par les autres.', 0),
+        array('trophy-suggest-50', 'trophy', 'legend', 'suggestions', 50, '🧞', 'Génie des cadeaux', 'Suggérer 50 idées à ses amis.', 0),
+        array('trophy-suggest-lists-10', 'trophy', 'gold', 'suggestions_lists', 10, '🗺️', 'Conseiller de tous', 'Suggérer des idées sur 10 listes différentes.', 0),
+        array('trophy-suggest-gifted-25', 'trophy', 'legend', 'suggestions_gifted', 25, '🕵️', 'Agent secret du Père Noël', 'Un trophée secret pour les meilleurs souffleurs.', 1),
     );
 
     $badges = array();
@@ -278,14 +292,17 @@ function badge_metric_values($user)
     $id = (int) $user['id'];
     $values = array();
 
-    $values['ideas'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ?', array($id));
-    $values['ideas_photo'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND (image_url <> '' OR (file IS NOT NULL AND file <> ''))", array($id));
-    $values['ideas_link'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND link <> ''", array($id));
-    $values['ideas_price'] = prices_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND price IS NOT NULL', array($id)) : 0;
-    $values['favorites'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND favorite = 1', array($id));
-    $values['received'] = received_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND received_at IS NOT NULL', array($id)) : 0;
+    // Les suggestions des amis (own_ideas_sql()) ne comptent jamais : le propriétaire de la liste ne doit pas les deviner.
+    $own = own_ideas_sql();
+    $ownN = own_ideas_sql('n.');
+    $values['ideas'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ?' . $own, array($id));
+    $values['ideas_photo'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND (image_url <> '' OR (file IS NOT NULL AND file <> ''))" . $own, array($id));
+    $values['ideas_link'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND link <> ''" . $own, array($id));
+    $values['ideas_price'] = prices_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND price IS NOT NULL' . $own, array($id)) : 0;
+    $values['favorites'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND favorite = 1' . $own, array($id));
+    $values['received'] = received_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND received_at IS NOT NULL' . $own, array($id)) : 0;
     $values['collections'] = items_enabled()
-        ? badge_count('SELECT COUNT(DISTINCT i.product_id) AS n FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ?', array($id)) : 0;
+        ? badge_count('SELECT COUNT(DISTINCT i.product_id) AS n FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ?' . $ownN, array($id)) : 0;
 
     // Cadeaux : idées réservées seul + éléments de collection réservés.
     $values['gifts'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE gifted_by = ?', array($id))
@@ -329,7 +346,7 @@ function badge_metric_values($user)
     $values['comments'] = badge_count('SELECT COUNT(*) AS n FROM comment WHERE user_id = ?', array($id));
     $values['reactions_given'] = badge_count('SELECT COUNT(*) AS n FROM reaction WHERE user_id = ?', array($id));
     $values['reactions_received'] = badge_count(
-        'SELECT COUNT(*) AS n FROM reaction r INNER JOIN liste_noel n ON n.id = r.product_id WHERE n.user_id = ? AND r.user_id <> ?',
+        'SELECT COUNT(*) AS n FROM reaction r INNER JOIN liste_noel n ON n.id = r.product_id WHERE n.user_id = ? AND r.user_id <> ?' . $ownN,
         array($id, $id)
     );
     $values['friends'] = badge_count('SELECT COUNT(*) AS n FROM user_friend WHERE user_id = ?', array($id));
@@ -348,7 +365,7 @@ function badge_metric_values($user)
     $values['skins'] = db_has_table('user_skin')
         ? badge_count('SELECT COUNT(*) AS n FROM user_skin WHERE user_id = ?', array($id)) : 0;
 
-    $first = db_one('SELECT MIN(created_at) AS first FROM liste_noel WHERE user_id = ?', array($id));
+    $first = db_one('SELECT MIN(created_at) AS first FROM liste_noel WHERE user_id = ?' . $own, array($id));
     $values['years'] = $first && $first['first'] ? max(0, (int) floor((time() - strtotime($first['first'])) / (365.25 * 86400))) : 0;
 
     // L'historique ne contient qu'une ligne par personne et par journée. Sans sa migration,
@@ -356,12 +373,33 @@ function badge_metric_values($user)
     $values['visits'] = visit_history_enabled()
         ? badge_count('SELECT COUNT(*) AS n FROM user_visit WHERE user_id = ?', array($id)) : 0;
 
-    $values['activity'] = $values['ideas'] + $values['comments'] + $values['reactions_given'] + $values['gifts'];
+    // Suggestions faites sur les listes des amis (comptées pour leur auteur, jamais pour le propriétaire).
+    // « Réservée » : idée offerte seul, élément de collection réservé ou cagnotte, par quelqu'un d'autre que l'auteur.
+    $values['suggestions'] = 0;
+    $values['suggestions_lists'] = 0;
+    $values['suggestions_gifted'] = 0;
+    if (suggestions_enabled()) {
+        $values['suggestions'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE suggested_by = ?', array($id));
+        $values['suggestions_lists'] = badge_count('SELECT COUNT(DISTINCT user_id) AS n FROM liste_noel WHERE suggested_by = ?', array($id));
+        $sql = 'SELECT COUNT(*) AS n FROM liste_noel n WHERE n.suggested_by = ? AND ((n.gifted_by IS NOT NULL AND n.gifted_by <> ?)';
+        $params = array($id, $id);
+        if (items_enabled()) {
+            $sql .= ' OR EXISTS (SELECT 1 FROM liste_item i WHERE i.product_id = n.id AND i.gifted_by IS NOT NULL AND i.gifted_by <> ?)';
+            $params[] = $id;
+        }
+        if (participations_enabled()) {
+            $sql .= ' OR EXISTS (SELECT 1 FROM liste_participation p WHERE p.product_id = n.id AND p.user_id <> ?)';
+            $params[] = $id;
+        }
+        $values['suggestions_gifted'] = badge_count($sql . ')', $params);
+    }
 
-    $values['ideas_described'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND description <> ''", array($id));
-    $values['ideas_gifted'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND gifted_by IS NOT NULL AND gifted_by <> ?', array($id, $id));
+    $values['activity'] = $values['ideas'] + $values['suggestions'] + $values['comments'] + $values['reactions_given'] + $values['gifts'];
+
+    $values['ideas_described'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND description <> ''" . $own, array($id));
+    $values['ideas_gifted'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND gifted_by IS NOT NULL AND gifted_by <> ?' . $own, array($id, $id));
     $values['comments_received'] = badge_count(
-        'SELECT COUNT(*) AS n FROM comment c INNER JOIN liste_noel n ON n.id = c.product_id WHERE n.user_id = ? AND c.user_id <> ?',
+        'SELECT COUNT(*) AS n FROM comment c INNER JOIN liste_noel n ON n.id = c.product_id WHERE n.user_id = ? AND c.user_id <> ?' . $ownN,
         array($id, $id)
     );
     $values['reaction_variety'] = badge_count('SELECT COUNT(DISTINCT type) AS n FROM reaction WHERE user_id = ?', array($id));

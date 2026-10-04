@@ -13,8 +13,11 @@ $themes = themes();
         <div class="hero__head">
             <?php if ($owner) : ?>
                 <div class="profile">
-                    <div class="profile__avatar">
+                    <?php $frame = accessory_worn($owner, 'frame'); // Cadre acheté dans la boutique (lib/skins.php). ?>
+                    <?php $catalog = frames(); ?>
+                    <div class="profile__avatar<?php echo '' !== $frame ? ' has-frame' : ''; ?><?php echo '' !== $frame && !empty($catalog[$frame]['image']) ? ' has-frame--img' : ''; ?>">
                         <img src="<?php echo e(avatar_url($owner)); ?>" alt="" width="132" height="132" data-tip="<?php echo e($owner['nom']); ?>" data-fallback="<?php echo e(avatar_default_url($owner)); ?>">
+                        <?php echo frame_html($frame); ?>
 
                         <?php if ($ctx['canEdit']) : ?>
                             <button type="button" class="round-btn round-btn--sm profile__action" data-open="<?php echo $ctx['isOwner'] ? 'profile-dialog' : 'child-dialog'; ?>" title="Modifier mon profil" aria-label="Modifier mon profil"><?php echo icon('pen'); ?></button>
@@ -81,7 +84,9 @@ $themes = themes();
                         's' => array($left % 60, 'sec'),
                     );
                     ?>
-                    <div class="countdown<?php echo 0 === event_days($owner) ? ' is-today' : ''; ?>" data-countdown="<?php echo e(date('Y-m-d', $next)); ?>" role="timer" aria-label="<?php echo e(event_label($owner)); ?>">
+                    <?php $fx = accessory_worn($owner, 'countdown'); // Effet acheté dans la boutique (lib/skins.php). ?>
+                    <div class="countdown<?php echo 0 === event_days($owner) ? ' is-today' : ''; ?>" data-countdown="<?php echo e(date('Y-m-d', $next)); ?>"<?php echo '' !== $fx ? ' data-fx="' . e($fx) . '"' : ''; ?> role="timer" aria-label="<?php echo e(event_label($owner)); ?>">
+                        <?php echo countdown_fx_html($fx); ?>
                         <?php $age = event_age($owner); ?>
                         <span class="countdown__label"><?php echo icon('gift'); ?> <?php echo e(event_name($owner)); ?><?php echo null !== $age ? ' · ' . (int) $age . ' ans' : ''; ?> dans</span>
                         <span class="countdown__units">
@@ -124,7 +129,7 @@ $themes = themes();
                     <h2 id="share-title">Partager la liste</h2>
                     <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
                 </header>
-                <div class="modal__body share" data-share data-share-code="<?php echo e($owner['code']); ?>">
+                <div class="modal__body share" data-share data-short="list" data-short-user="<?php echo e($owner['code']); ?>">
                 <p class="share__label">Envoyez ce lien à vos proches : ils verront la liste sans avoir besoin de compte.</p>
                 <div class="share__row">
                     <div class="share__link">
@@ -144,9 +149,9 @@ $themes = themes();
                     <?php
                     $rewards = referral_rewards();
                     $code = referral_code($me);
-                    $link = site_base_url() . '?parrain=' . $code;
+                    $link = referral_url($me);
                     ?>
-                    <section class="referral referral--share" data-referral>
+                    <section class="referral referral--share" data-referral data-short="referral">
                         <div class="referral__intro">
                             <strong>Parrainez vos proches : +<?php echo (int) $rewards['sponsor']; ?> <?php echo gem_icon(); ?> par filleul</strong>
                             <span>Ils créent leur liste avec votre code<?php echo 0 < $rewards['welcome'] ? ' (+' . (int) $rewards['welcome'] . ' gemmes pour eux)' : ''; ?>. Vous gagnez les vôtres à leur première idée.</span>

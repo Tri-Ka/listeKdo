@@ -1,7 +1,7 @@
 <?php
 /*
  * Paramètres d'une liste (la sienne ou une liste secondaire qu'on gère) :
- * titre, type de liste (thème), date de l'événement, liste privée.
+ * titre, type de liste (thème), habillage, effet du compte à rebours, date de l'événement, liste privée.
  */
 require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
@@ -32,6 +32,12 @@ if (private_enabled() && isset($_POST['is_private'])) {
 if (skins_enabled() && isset($_POST['skin'])) {
     $key = skin_choice($me, input('skin'), $changes['theme'], $back);
     $changes['skin'] = '' !== $key ? $key : null;
+}
+
+// Effet du compte à rebours (boutique) : un de ceux achetés par la personne connectée, ou le classique.
+if (accessories_enabled() && isset($_POST['countdown_fx'])) {
+    $key = accessory_choice($me, 'countdown', input('countdown_fx'), $back);
+    $changes['countdown_fx'] = '' !== $key ? $key : null;
 }
 
 db_update('liste_user', $changes, array('id' => (int) $owner['id']));

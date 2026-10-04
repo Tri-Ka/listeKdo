@@ -83,6 +83,7 @@ const step = async (label, fn) => { try { await fn(); } catch (e) { console.log(
     await closeAll(hugo);
   });
   await step('collection', async () => { await hugo.addStyleTag({ content: '.friends { visibility: hidden !important; }' }); await shot(hugo.locator('.card', { hasText: 'Livres de cuisine' }), 'collection'); });
+  await step('suggestion', async () => { await shot(hugo.locator('.card', { hasText: 'Appareil photo' }), 'suggestion'); });
   await step('mes-cadeaux', async () => { await hugo.locator('[data-open="my-gifts-dialog"]').first().evaluate((b) => b.click()); await hugo.waitForTimeout(400); await shot(hugo.locator('#my-gifts-dialog'), 'mes-cadeaux'); await closeAll(hugo); });
 
   /* ---- Mobile ---- */

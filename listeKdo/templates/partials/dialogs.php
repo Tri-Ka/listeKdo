@@ -124,6 +124,9 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
+                <?php if (accessories_enabled()) : ?>
+                    <?php echo render('partials/accessory_field', array('kind' => 'frame', 'current' => accessory_worn($me, 'frame'), 'owned' => skins_owned($me['id']), 'me' => $me)); ?>
+                <?php endif; ?>
                 <?php if (secret_enabled()) : ?>
                     <?php echo render('partials/secret_fields', array('current' => $me['secret_question'], 'required' => false)); ?>
                 <?php endif; ?>
@@ -166,18 +169,33 @@
     </dialog>
 <?php endif; ?>
 
-<?php if ($ctx['canEdit']) : ?>
+<?php
+// Le même formulaire sert aux amis pour suggérer une idée (suggest=1) et à modifier leurs suggestions.
+$suggestMode = !$ctx['canEdit'] && !empty($ctx['canSuggest']);
+$addTitle = $suggestMode ? 'Suggérer une idée' : 'Une nouvelle idée ?';
+$addLabel = $suggestMode ? 'Suggérer' : 'Ajouter';
+?>
+<?php if ($ctx['canEdit'] || $suggestMode) : ?>
     <dialog class="modal" id="object-form-dialog" aria-labelledby="object-form-title">
         <form method="post" action="actions/addObject.php" enctype="multipart/form-data" data-object-form data-resize-images
-            data-add-action="actions/addObject.php" data-edit-action="actions/editObject.php">
+            data-add-action="actions/addObject.php" data-edit-action="actions/editObject.php"
+            data-add-title="<?php echo e($addTitle); ?>" data-add-label="<?php echo e($addLabel); ?>">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="object_id" value="">
             <input type="hidden" name="owner" value="<?php echo e($ctx['owner']['code']); ?>">
+            <?php if ($suggestMode) : ?>
+                <input type="hidden" name="suggest" value="1">
+            <?php endif; ?>
             <header class="modal__header">
-                <h2 id="object-form-title" data-object-form-title>Une nouvelle idée ?</h2>
+                <h2 id="object-form-title" data-object-form-title><?php echo e($addTitle); ?></h2>
                 <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
             </header>
             <div class="modal__body form">
+                <?php if ($suggestMode) : ?>
+                    <p class="form__notice"><?php echo icon('lightbulb'); ?>
+                        <span><strong><?php echo e($ctx['owner']['nom']); ?> ne verra jamais cette idée.</strong>
+                        Ses autres amis la verront avec votre nom, et pourront la réserver ou en discuter.</span></p>
+                <?php endif; ?>
                 <label class="field">
                     <span>Lien vers le Kdo</span>
                     <input type="url" name="link" inputmode="url" placeholder="https://… (le nom et l'image seront remplis automatiquement)" data-metadata-source>
@@ -237,14 +255,14 @@
                     <span class="image-choices__label">Images trouvées sur la page : cliquez pour choisir</span>
                     <div class="image-choices__list" data-image-choices-list></div>
                 </div>
-                <p class="form__tip"><?php echo icon('puzzle-piece'); ?> Plus rapide : <button type="button" class="link-btn" data-open="extension-dialog">l'extension Chrome</button> ajoute un produit depuis sa page.</p>
+                <p class="form__tip"<?php echo $suggestMode ? ' hidden' : ''; ?>><?php echo icon('puzzle-piece'); ?> Plus rapide : <button type="button" class="link-btn" data-open="extension-dialog">l'extension Chrome</button> ajoute un produit depuis sa page.</p>
             </div>
             <footer class="modal__footer">
                 <button type="submit" class="btn btn--danger" form="delete-object-form" data-delete-object hidden
                     data-confirm="Elle disparaîtra de la liste, avec ses commentaires et ses réactions." data-confirm-title="Supprimer cette idée ?" data-confirm-ok="Supprimer" data-confirm-icon="trash-can" aria-label="Supprimer"><?php echo icon('trash-can'); ?></button>
                 <span class="modal__spacer"></span>
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
-                <button type="submit" class="btn btn--primary" data-object-form-submit>Ajouter</button>
+                <button type="submit" class="btn btn--primary" data-object-form-submit><?php echo e($addLabel); ?></button>
             </footer>
         </form>
         <form method="post" action="actions/deleteObject.php" id="delete-object-form" data-delete-idea>
@@ -309,7 +327,7 @@
                         <input type="checkbox" name="is_private" value="1" role="switch">
                         <span>
                             <strong>Liste privée</strong>
-                            <small>Visible seulement par ses gestionnaires, même avec le lien. Vous pourrez ensuite choisir des amis qui la voient, dans ses paramètres.</small>
+                            <small>Visible seulement par ses gestionnaires, même avec le lien. Vous pourrez ensuite inviter des proches à la voir, dans ses paramètres.</small>
                         </span>
                     </label>
                 <?php endif; ?>

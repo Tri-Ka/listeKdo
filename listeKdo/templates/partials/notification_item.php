@@ -18,6 +18,11 @@
                 <?php if ('' !== (string) $notification['product_nom']) : ?>
                     <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
                 <?php endif; ?>
+            <?php elseif (NOTIF_SUGGESTION == $notification['type']) : ?>
+                a suggéré une idée pour <strong><?php echo e($notification['owner_nom']); ?></strong> 💡
+                <?php if ('' !== (string) $notification['product_nom']) : ?>
+                    <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
+                <?php endif; ?>
             <?php elseif (NOTIF_EVENT == $notification['type']) : ?>
                 <?php
                 $when = array(1 => 'demain', 7 => 'dans une semaine', 30 => 'dans un mois');

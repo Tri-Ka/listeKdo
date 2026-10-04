@@ -110,7 +110,7 @@ $homeBadges = array(
         <div class="home-feature">
             <span class="home-feature__icon"><?php echo icon('lock'); ?></span>
             <h3>Liste privée</h3>
-            <p>Gardez-la pour vous, ou montrez-la seulement aux amis que vous choisissez.</p>
+            <p>Gardez-la pour vous, ou montrez-la seulement aux proches que vous invitez.</p>
         </div>
     </div>
 </section>

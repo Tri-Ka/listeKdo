@@ -14,7 +14,10 @@ Ajoute le produit de la page en cours à votre liste de cadeaux.
 
 1. Se connecter une fois sur http://datcharrye.free.fr/listeKdo/ dans Chrome.
 2. Sur la page d'un produit, cliquer sur l'icône cadeau.
-3. Vérifier le nom, la description, l'image et le lien, puis « Ajouter à ma liste ».
+3. Vérifier le nom, la description, l'image et le lien, puis « Ajouter à la liste ».
+
+Dans « Ajouter à », on choisit sa liste, une liste secondaire qu'on gère, ou un ami (groupe « Suggérer à un ami ») :
+l'idée devient alors une **suggestion** sur sa liste, qu'il ne verra jamais (ses autres amis, oui).
 
 En bas de la fenêtre, « Site » permet de basculer sur le Docker local (`localhost:8090`) pour tester.
 
@@ -24,6 +27,7 @@ En bas de la fenêtre, « Site » permet de basculer sur le Docker local (`local
   Les paramètres de suivi (`utm_…`, `gclid`…) sont retirés du lien.
 - `popup.js` récupère le compte et le jeton CSRF via `actions/me.php`, puis envoie l'idée à `actions/addObject.php`,
   avec la session déjà ouverte dans Chrome (aucun mot de passe stocké dans l'extension).
+  `me.php` renvoie aussi `friends` (amis à qui suggérer, `suggestion_targets()`) ; une suggestion part avec `suggest=1`.
 - Mises à jour : `update.js` compare la version du manifest à `download/extension-version.txt` sur le site.
   `background.js` vérifie au démarrage de Chrome puis toutes les 6 h et met une flèche sur l'icône ;
   la fenêtre affiche alors une bannière qui télécharge le zip. Une fois le dossier remplacé,

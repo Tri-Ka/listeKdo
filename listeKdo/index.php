@@ -13,6 +13,27 @@ if ('' !== $code) {
     $owner = $me;
 }
 
+// Lien d'invitation d'une liste privée (?user=…&invite=…) : gardé en session le temps de se connecter
+// ou de créer un compte, puis accepté au premier passage connecté, quelle que soit la page.
+if ('' !== input('invite') && list_invite_valid($owner, input('invite'))) {
+    $_SESSION['kdo_invite'] = array('code' => $owner['code'], 'token' => input('invite'));
+} elseif ('' !== input('invite') && $owner) {
+    flash("Ce lien d'invitation n'est plus valable : demandez-en un nouveau.");
+}
+if ($me && !empty($_SESSION['kdo_invite'])) {
+    $invite = $_SESSION['kdo_invite'];
+    unset($_SESSION['kdo_invite']);
+    $invited = user_find_by_code($invite['code']);
+    if (list_invite_valid($invited, $invite['token'])) {
+        list_invite_accept($me, $invited);
+        flash('Vous pouvez maintenant voir la liste de ' . $invited['nom'] . '.', 'success');
+    } else {
+        flash("Ce lien d'invitation n'est plus valable : demandez-en un nouveau.");
+    }
+    header('Location: index.php?user=' . rawurlencode($invite['code']));
+    exit;
+}
+
 // Tous les amis pour les notifications (filtrées dans notifications_where()), seulement les listes visibles à l'écran.
 $allFriends = $me ? user_friends($me['id']) : array();
 $friends = friends_by_event(visible_lists($me, $allFriends));
@@ -37,17 +58,25 @@ $ctx = array(
     // Liste privée : seuls ceux qui la gèrent la voient.
     'private' => is_private_list($owner),
     'canView' => can_view($me, $owner),
+    // Invitation en attente (pas encore connecté) : la page « liste privée » propose de se connecter.
+    'invited' => $owner && !empty($_SESSION['kdo_invite']) && $_SESSION['kdo_invite']['code'] === $owner['code'],
     // Voir qui offre quoi : tous les utilisateurs connectés sauf le propriétaire lui-même
     // (le parent d'un enfant le voit, pour coordonner les cadeaux).
     'canGift' => $me && $owner && !$isOwner,
+    // Suggérer une idée que le propriétaire ne verra pas : réservé à ses amis.
+    'canSuggest' => can_suggest($me, $owner),
     'children' => $me ? user_children($me['id']) : array(),
     'ownerChildren' => $owner ? visible_lists($me, user_children($owner['id'])) : array(),
 );
 
 // Les idées reçues (archivées) ne sont visibles que par ceux qui gèrent la liste.
+// Les suggestions des amis, comme les dons, ne sont visibles que de ceux qui voient qui offre quoi (jamais du propriétaire).
 $objects = array();
 if ($owner && $ctx['canView']) {
     foreach (objects_for_user($owner['id']) as $id => $object) {
+        if ($object['suggestion'] && !$ctx['canGift']) {
+            continue;
+        }
         if (!$object['received'] || $ctx['canEdit']) {
             $objects[$id] = $object;
         }

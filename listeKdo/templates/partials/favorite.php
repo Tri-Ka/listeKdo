@@ -1,5 +1,7 @@
 <?php $id = (int) $object['id']; ?>
-<?php if ($ctx['canEdit']) : ?>
+<?php if (!empty($object['suggestion'])) : ?>
+    <?php // Pas de coup de cœur sur une suggestion : le propriétaire ne la voit pas. ?>
+<?php elseif ($ctx['canEdit']) : ?>
     <form method="post" action="actions/toggleFavorite.php" data-ajax="favorite" class="card__favorite">
         <?php echo csrf_field(); ?>
         <input type="hidden" name="id" value="<?php echo $id; ?>">

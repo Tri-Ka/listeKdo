@@ -56,7 +56,7 @@ $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'descri
 <?php if (skins_enabled()) : ?>
     <form class="gem-rates" method="post" action="actions/adminGems.php">
         <?php echo csrf_field(); ?>
-        <p class="gem-rates__title"><?php echo gem_icon(); ?> Prix des habillages <small>(en gemmes, pour chaque type de liste ; les achats déjà faits ne changent pas)</small></p>
+        <p class="gem-rates__title"><?php echo gem_icon(); ?> Prix de la boutique <small>(en gemmes ; un habillage, pour chaque type de liste ; les achats déjà faits ne changent pas)</small></p>
         <div class="gem-rates__fields">
             <?php $rarities = skin_rarities(); ?>
             <?php foreach (skins() as $key => $skin) : ?>
@@ -65,6 +65,16 @@ $blank = array('id' => 0, 'code' => '', 'kind' => 'badge', 'name' => '', 'descri
                     <input type="number" name="price[<?php echo e($key); ?>]" value="<?php echo skin_price($key, $skin['price']); ?>" min="1" max="100000" title="Par défaut : <?php echo (int) $skin['price']; ?>">
                 </label>
             <?php endforeach; ?>
+            <?php if (accessories_enabled()) : ?>
+                <?php // Cadres et effets de compte à rebours : un prix par article (réglage « price_frame_ruban »…), par défaut selon la rareté. ?>
+                <?php $accessoryKinds = accessory_kinds(); ?>
+                <?php foreach (accessory_items() as $id => $item) : ?>
+                    <label class="badge-admin__field">
+                        <span><?php echo e($accessoryKinds[$item['kind']]['label']); ?> · <?php echo e($item['label']); ?> · <?php echo e($rarities[$item['rarity']]); ?></span>
+                        <input type="number" name="price[<?php echo e(accessory_price_setting($id)); ?>]" value="<?php echo (int) $item['price']; ?>" min="1" max="100000" title="Par défaut : <?php echo (int) $item['default_price']; ?>">
+                    </label>
+                <?php endforeach; ?>
+            <?php endif; ?>
             <?php if (settings_enabled()) : ?>
                 <button type="submit" class="btn btn--primary btn--sm">Enregistrer</button>
             <?php endif; ?>

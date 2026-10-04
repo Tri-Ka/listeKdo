@@ -55,6 +55,12 @@ if (array_key_exists('message', $me) && isset($_POST['message'])) {
     $changes['message'] = '' !== $message ? $message : null;
 }
 
+// Cadre de la photo (boutique) : un de ceux achetés, ou aucun.
+if (accessories_enabled() && isset($_POST['frame'])) {
+    $key = accessory_choice($me, 'frame', input('frame'), $back);
+    $changes['frame'] = '' !== $key ? $key : null;
+}
+
 if ('' !== $password) {
     $changes['password'] = password_make($password);
 }

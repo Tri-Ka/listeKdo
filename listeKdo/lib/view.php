@@ -97,9 +97,21 @@ function avatar($user, $class = 'avatar', $lazy = true, $tip = null)
 
     // data-tip : le nom s'affiche au survol (infobulle gérée par js/app.js).
     // data-fallback : avatar à l'initiale si la photo envoyée est introuvable.
-    return '<img class="' . e($class) . '" src="' . e(avatar_url($user)) . '" alt="' . e($name) . '"'
+    $frame = accessory_worn($user, 'frame');
+    $img = '<img class="' . e('' !== $frame ? 'mini-frame__img' : $class) . '" src="' . e(avatar_url($user)) . '" alt="' . e($name) . '"'
         . ('' !== $name ? ' data-tip="' . e(null !== $tip ? $tip : $name) . '"' : '')
         . ($lazy ? ' loading="lazy"' : '') . ' decoding="async" width="40" height="40" data-fallback="' . e(avatar_default_url($user)) . '">';
+
+    if ('' === $frame) {
+        return $img;
+    }
+
+    // Cadre acheté dans la boutique : le même que sur sa liste, réduit à la taille de la photo (css/app.css,
+    // « Cadres », .mini-frame). L'enveloppe porte la classe de la photo, donc sa taille et sa place.
+    $frames = frames();
+
+    return '<span class="' . e($class) . ' mini-frame' . (!empty($frames[$frame]['image']) ? ' mini-frame--img' : '') . '" data-frame="' . e($frame) . '">'
+        . $img . frame_html($frame) . '</span>';
 }
 
 function theme_of($user)
@@ -272,16 +284,21 @@ function share_url($user)
 }
 
 /**
- * Lien court en HTTPS (TinyURL) qui redirige vers share_url().
+ * Lien court en HTTPS (TinyURL) d'un lien du site : partage d'une liste, parrainage, invitation, lien de secours…
  * Certaines applications (WhatsApp…) ouvrent les liens en HTTPS, que Free ne gère pas :
  * le lien court, lui, est en HTTPS puis redirige vers le site en HTTP.
- * Créé une seule fois par liste et gardé dans cache/ ; en cas d'échec, nouvel essai après un jour.
+ * Créé une seule fois par lien et gardé dans cache/ ; en cas d'échec, nouvel essai après un jour (le lien long reste).
+ * Seuls les liens du site en ligne sont raccourcis : en local (localhost), le lien long est rendu tel quel.
+ * Trop lent pour l'affichage : les pages appellent actions/shortUrl.php en arrière-plan (js/app.js, [data-short]).
  */
-function short_share_url($user)
+function short_link($long)
 {
-    $long = share_url($user);
+    if (0 !== strpos($long, 'http://datcharrye.free.fr/')) {
+        return $long;
+    }
+
     $dir = KDO_ROOT . '/cache';
-    $file = $dir . '/short-' . sha1($user['code']) . '.txt';
+    $file = $dir . '/short-' . sha1($long) . '.txt';
 
     if (file_exists($file)) {
         $cached = trim(implode('', file($file)));
@@ -322,6 +339,14 @@ function short_share_url($user)
     }
 
     return '' !== $short ? $short : $long;
+}
+
+/**
+ * Lien de parrainage d'un compte (ouvre l'inscription avec le code prérempli).
+ */
+function referral_url($user)
+{
+    return site_base_url() . '?parrain=' . referral_code($user);
 }
 
 /**

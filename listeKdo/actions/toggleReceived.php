@@ -7,6 +7,10 @@ require_post();
 $me = require_login();
 
 list($object, $owner) = managed_object($me, input_int('id'));
+// Une suggestion se marque « reçue » seulement par un gestionnaire, pas par son auteur.
+if (is_suggestion($object) && !can_manage($me, $owner)) {
+    fail("Cette idée n'existe pas.", list_url($owner['code']), 404);
+}
 
 if (!received_enabled()) {
     fail("L'archivage n'est pas encore activé (voir sql/2026-10-01-prix-participations-enfants.sql).", list_url($owner['code']), 500);

@@ -2,7 +2,8 @@
 /*
  * Boutique (pastille de gemmes de la barre du haut, menu du compte) : gemmes gagnées avec les badges,
  * articles à acheter (un habillage pour un type de liste) et à porter sur sa liste. Voir lib/skins.php.
- * Un onglet par type de liste (js/app.js : [data-shop-tab]), celui de sa liste ouvert par défaut.
+ * Trois catégories (js/app.js : [data-shop-cat]) : habillages, cadres, compte à rebours. Les habillages ont un
+ * sous-onglet par type de liste ([data-shop-tab]), celui de sa liste ouvert par défaut. Articles groupés par rareté.
  * L'habillage d'une liste secondaire se choisit dans ses « Paramètres de la liste ».
  */
 $gems = $shop['gems'];
@@ -24,26 +25,21 @@ foreach ($byTheme as $t => $list) {
     }
 }
 
-// Objectif : l'article le moins cher pas encore acheté pour le type de sa liste (sinon, n'importe lequel).
-$goal = null;
-foreach (array(isset($byTheme[$myTheme]) ? $byTheme[$myTheme] : array(), skin_items()) as $pool) {
-    foreach ($pool as $key => $item) {
-        if (!isset($owned[$key]) && (null === $goal || $item['price'] < $goal['price'])) {
-            $goal = $item;
-        }
-    }
-    if ($goal) {
-        break;
+// Cadres et effets de compte à rebours (onglets après les types de liste).
+$accessories = array();
+if (accessories_enabled()) {
+    foreach (accessory_items() as $id => $item) {
+        $accessories[$item['kind']][$id] = $item;
     }
 }
-$goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goal['price']))) : 100;
+$kinds = accessory_kinds();
 ?>
 <dialog class="modal shop" id="shop-dialog" aria-labelledby="shop-title">
     <header class="shop__hero">
         <button type="button" class="modal__close shop__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
         <div class="shop__intro">
             <h2 id="shop-title">Boutique</h2>
-            <p>Offrez un nouveau look à votre liste avec les gemmes gagnées grâce à vos badges.</p>
+            <p>Dépensez vos gemmes pour habiller votre liste et votre photo.</p>
         </div>
         <div class="shop__wallet">
             <?php echo gem_icon('shop__wallet-gem'); ?>
@@ -52,39 +48,59 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
                 <span>gemme<?php echo 1 < $gems['balance'] ? 's' : ''; ?></span>
             </span>
         </div>
-        <?php if ($goal) : ?>
-            <div class="shop__goal">
-                <span class="shop__goal-label">
-                    <?php if (100 <= $goalPercent) : ?>
-                        De quoi s'offrir <strong><?php echo e($goal['label']); ?> · <?php echo e($themes[$goal['theme']]['label']); ?></strong> !
-                    <?php else : ?>
-                        Prochain habillage : <strong><?php echo e($goal['label']); ?> · <?php echo e($themes[$goal['theme']]['label']); ?></strong>
-                        — encore <?php echo (int) ($goal['price'] - $gems['balance']); ?> <?php echo gem_icon(); ?>
-                    <?php endif; ?>
-                </span>
-                <span class="shop__goal-bar" style="--goal: <?php echo $goalPercent; ?>%"></span>
-            </div>
-        <?php endif; ?>
     </header>
 
-    <nav class="shop__tabs" aria-label="Types de liste">
+    <?php
+    $skinsTotal = 0;
+    $skinsHave = 0;
+    foreach ($sorted as $theme => $items) {
+        foreach ($items as $key => $item) {
+            $skinsTotal++;
+            if (isset($owned[$key])) $skinsHave++;
+        }
+    }
+    $cats = array('skins' => array('Habillages', 'palette', $skinsHave, $skinsTotal));
+    foreach ($accessories as $kind => $items) {
+        $have = 0;
+        foreach ($items as $id => $item) {
+            if (isset($owned[$id])) $have++;
+        }
+        $cats[$kind] = array($kinds[$kind]['label'], 'frame' === $kind ? 'circle-user' : 'calendar-days', $have, count($items));
+    }
+    ?>
+    <?php if (1 < count($cats)) : ?>
+        <nav class="shop__cats" aria-label="Catégories">
+            <?php foreach ($cats as $cat => $info) : ?>
+                <button type="button" class="shop__cat" data-shop-cat="<?php echo e($cat); ?>" aria-pressed="<?php echo 'skins' === $cat ? 'true' : 'false'; ?>">
+                    <span class="shop__cat-icon"><?php echo icon($info[1]); ?></span>
+                    <span class="shop__cat-text"><strong><?php echo e($info[0]); ?></strong><small><?php echo (int) $info[2]; ?>/<?php echo (int) $info[3]; ?> dans ma collection</small></span>
+                </button>
+            <?php endforeach; ?>
+        </nav>
+    <?php endif; ?>
+
+    <nav class="shop__tabs" aria-label="Types de liste" data-shop-subnav>
         <?php foreach ($sorted as $theme => $items) : ?>
             <?php $have = 0; foreach ($items as $key => $item) { if (isset($owned[$key])) $have++; } ?>
             <button type="button" class="shop__tab" data-shop-tab="<?php echo e($theme); ?>" aria-pressed="<?php echo $theme === $myTheme ? 'true' : 'false'; ?>">
-                <?php echo e($themes[$theme]['label']); ?>
-                <span><?php echo (int) $have; ?>/<?php echo count($items); ?></span>
+                <?php if (!empty($themes[$theme]['footer'])) : ?>
+                    <img class="shop__tab-thumb" src="<?php echo e(asset('img/deco/' . $theme . '/' . $themes[$theme]['footer'] . '.png')); ?>" alt="" loading="lazy">
+                <?php endif; ?>
+                <span class="shop__tab-label"><?php echo e($themes[$theme]['label']); ?></span>
+                <span class="shop__tab-count"><?php echo (int) $have; ?>/<?php echo count($items); ?></span>
             </button>
         <?php endforeach; ?>
     </nav>
 
     <div class="modal__body shop__body">
+        <div data-shop-panel="skins">
         <?php foreach ($sorted as $theme => $items) : ?>
             <section class="shop__section" data-shop-section="<?php echo e($theme); ?>"<?php echo $theme !== $myTheme ? ' hidden' : ''; ?>>
-                <?php if ($theme !== $myTheme) : ?>
-                    <p class="shop__note">Pour vos listes « <?php echo e($themes[$theme]['label']); ?> » (la vôtre est « <?php echo e($themes[$myTheme]['label']); ?> ») : à choisir ensuite dans les paramètres de la liste.</p>
-                <?php endif; ?>
+                <?php $first = true; ?>
+                <?php foreach (shop_by_rarity($items) as $rarity => $group) : ?>
+                <h3 class="shop__rarity shop__rarity--<?php echo e($rarity); ?>"><?php echo e($rarities[$rarity]); ?> <span><?php echo count($group); ?></span></h3>
                 <ul class="shop__grid">
-                    <?php if ($theme === $myTheme) : ?>
+                    <?php if ($first && $theme === $myTheme) : ?>
                         <?php // Habillage d'origine, toujours disponible. ?>
                         <li class="shop-item shop-item--classic<?php echo '' === $current ? ' is-worn' : ''; ?>">
                             <div class="shop-item__preview">
@@ -105,8 +121,9 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
                             </form>
                         </li>
                     <?php endif; ?>
+                    <?php $first = false; ?>
 
-                    <?php foreach ($items as $key => $skin) : ?>
+                    <?php foreach ($group as $key => $skin) : ?>
                         <?php
                         $has = isset($owned[$key]);
                         $worn = $key === $current;
@@ -173,6 +190,86 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
                         </li>
                     <?php endforeach; ?>
                 </ul>
+                <?php endforeach; ?>
+            </section>
+        <?php endforeach; ?>
+        </div>
+
+        <?php foreach ($accessories as $kind => $items) : ?>
+            <?php $worn = accessory_worn($me, $kind); ?>
+            <section class="shop__section" data-shop-panel="<?php echo e($kind); ?>" hidden>
+                <?php $first = true; ?>
+                <?php foreach (shop_by_rarity($items) as $rarity => $group) : ?>
+                <h3 class="shop__rarity shop__rarity--<?php echo e($rarity); ?>"><?php echo e($rarities[$rarity]); ?> <span><?php echo count($group); ?></span></h3>
+                <ul class="shop__grid">
+                    <?php if ($first) : ?>
+                    <?php // Sans cadre / sans effet : toujours disponible. ?>
+                    <li class="shop-item shop-item--classic<?php echo '' === $worn ? ' is-worn' : ''; ?>">
+                        <div class="shop-item__preview shop-item__preview--<?php echo e($kind); ?>">
+                            <?php echo render('partials/shop_accessory', array('kind' => $kind, 'key' => '', 'me' => $me)); ?>
+                        </div>
+                        <div class="shop-item__body">
+                            <strong class="shop-item__name"><?php echo 'frame' === $kind ? 'Sans cadre' : 'Classique'; ?></strong>
+                            <span class="shop-item__desc"><?php echo 'frame' === $kind ? 'Votre photo, toute simple.' : 'Le compte à rebours d\'origine.'; ?></span>
+                        </div>
+                        <form method="post" action="actions/shopWear.php" class="shop-item__action">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="kind" value="<?php echo e($kind); ?>">
+                            <input type="hidden" name="item" value="">
+                            <?php if ('' === $worn) : ?>
+                                <span class="shop-item__state"><?php echo icon('circle-check'); ?> <?php echo 'frame' === $kind ? 'Sur ma photo' : 'Sur ma liste'; ?></span>
+                            <?php else : ?>
+                                <button type="submit" class="btn btn--light btn--sm">Utiliser</button>
+                            <?php endif; ?>
+                        </form>
+                    </li>
+                    <?php endif; ?>
+                    <?php $first = false; ?>
+
+                    <?php foreach ($group as $id => $item) : ?>
+                        <?php
+                        $has = isset($owned[$id]);
+                        $isWorn = $item['key'] === $worn;
+                        $missing = $item['price'] - $gems['balance'];
+                        ?>
+                        <li class="shop-item shop-item--<?php echo e($item['rarity']); ?><?php echo $has ? ' is-owned' : ''; ?><?php echo $isWorn ? ' is-worn' : ''; ?><?php echo !$has && 0 >= $missing ? ' is-affordable' : ''; ?>" data-shop-item="<?php echo e($id); ?>">
+                            <div class="shop-item__preview shop-item__preview--<?php echo e($kind); ?>">
+                                <?php echo render('partials/shop_accessory', array('kind' => $kind, 'key' => $item['key'], 'me' => $me)); ?>
+                                <span class="shop-item__rarity"><?php echo e($rarities[$item['rarity']]); ?></span>
+                                <?php if ($has) : ?>
+                                    <span class="shop-item__owned" title="Dans votre collection"><?php echo icon('circle-check'); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="shop-item__body">
+                                <strong class="shop-item__name"><?php echo e($item['label']); ?></strong>
+                                <span class="shop-item__desc"><?php echo e($item['description']); ?></span>
+                            </div>
+                            <form method="post" action="actions/<?php echo $has ? 'shopWear' : 'shopBuy'; ?>.php" class="shop-item__action">
+                                <?php echo csrf_field(); ?>
+                                <?php if ($has) : ?>
+                                    <input type="hidden" name="kind" value="<?php echo e($kind); ?>">
+                                    <input type="hidden" name="item" value="<?php echo e($item['key']); ?>">
+                                <?php else : ?>
+                                    <input type="hidden" name="skin" value="<?php echo e($id); ?>">
+                                <?php endif; ?>
+                                <?php if ($isWorn) : ?>
+                                    <span class="shop-item__state"><?php echo icon('circle-check'); ?> <?php echo 'frame' === $kind ? 'Sur ma photo' : 'Sur ma liste'; ?></span>
+                                <?php elseif ($has) : ?>
+                                    <button type="submit" class="btn btn--light btn--sm">Utiliser</button>
+                                <?php elseif (0 < $missing) : ?>
+                                    <span class="shop-item__price is-short"><?php echo gem_icon(); ?> <?php echo (int) $item['price']; ?></span>
+                                    <span class="shop-item__missing">encore <?php echo (int) $missing; ?></span>
+                                <?php else : ?>
+                                    <button type="submit" class="shop-item__buy"
+                                        data-confirm="<?php echo e('frame' === $kind ? 'Le cadre « ' . $item['label'] . ' » entourera aussitôt votre photo.' : 'L\'effet « ' . $item['label'] . ' » animera aussitôt le compte à rebours de votre liste.'); ?>" data-confirm-title="Acheter pour <?php echo (int) $item['price']; ?> gemmes ?" data-confirm-ok="Acheter" data-confirm-icon="gift">
+                                        <?php echo gem_icon(); ?> <?php echo (int) $item['price']; ?>
+                                    </button>
+                                <?php endif; ?>
+                            </form>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endforeach; ?>
             </section>
         <?php endforeach; ?>
 
@@ -180,10 +277,10 @@ $goalPercent = $goal ? min(100, (int) round(100 * $gems['balance'] / max(1, $goa
             <?php
             $rewards = referral_rewards();
             $code = referral_code($me);
-            $link = site_base_url() . '?parrain=' . $code;
+            $link = referral_url($me);
             $refs = referral_counts($me['id']);
             ?>
-            <section class="referral" data-referral>
+            <section class="referral" data-referral data-short="referral">
                 <div class="referral__intro">
                     <strong>Parrainez vos proches : +<?php echo (int) $rewards['sponsor']; ?> <?php echo gem_icon(); ?> par filleul</strong>
                     <span>Ils s'inscrivent avec votre code<?php echo 0 < $rewards['welcome'] ? ' (et reçoivent ' . (int) $rewards['welcome'] . ' gemmes)' : ''; ?>. Vous gagnez vos gemmes dès qu'ils ajoutent leur première idée.</span>

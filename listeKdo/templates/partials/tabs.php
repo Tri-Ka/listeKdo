@@ -1,5 +1,5 @@
 <?php
-$counts = array('all' => 0, 'available' => 0, 'gifted' => 0, 'favorite' => 0, 'received' => 0);
+$counts = array('all' => 0, 'available' => 0, 'gifted' => 0, 'favorite' => 0, 'suggestion' => 0, 'received' => 0);
 $hasPrices = false;
 foreach ($objects as $object) {
     if ($object['received']) {
@@ -10,6 +10,9 @@ foreach ($objects as $object) {
     $counts[$object['complete'] ? 'gifted' : 'available']++;
     if ($object['favorite']) {
         $counts['favorite']++;
+    }
+    if ($object['suggestion']) {
+        $counts['suggestion']++;
     }
     if (null !== $object['price']) {
         $hasPrices = true;
@@ -23,6 +26,10 @@ foreach ($objects as $object) {
         <button type="button" class="tabs__tab gift-only" aria-pressed="false" data-filter="gifted"><?php echo icon('circle-check'); ?> Déjà offertes <span data-count="gifted">(<?php echo $counts['gifted']; ?>)</span></button>
     <?php endif; ?>
     <button type="button" class="tabs__tab tabs__tab--heart" aria-pressed="false" data-filter="favorite"><?php echo icon('heart'); ?> Coups de cœur <span data-count="favorite">(<?php echo $counts['favorite']; ?>)</span></button>
+    <?php // Suggestions des amis : jamais montrées au propriétaire (filtrées dans index.php), onglet masqué s'il n'y en a pas. ?>
+    <?php if ($ctx['canGift'] && suggestions_enabled()) : ?>
+        <button type="button" class="tabs__tab" aria-pressed="false" data-filter="suggestion"<?php echo 0 === $counts['suggestion'] ? ' hidden' : ''; ?>><?php echo icon('lightbulb'); ?> Suggestions <span data-count="suggestion">(<?php echo $counts['suggestion']; ?>)</span></button>
+    <?php endif; ?>
     <?php if ($ctx['canEdit'] && received_enabled()) : ?>
         <button type="button" class="tabs__tab" aria-pressed="false" data-filter="received"<?php echo 0 === $counts['received'] ? ' hidden' : ''; ?>><?php echo icon('box-archive'); ?> Reçus <span data-count="received">(<?php echo $counts['received']; ?>)</span></button>
     <?php endif; ?>
@@ -39,6 +46,9 @@ foreach ($objects as $object) {
             <option value="gifted" class="gift-only-option">Déjà offertes (<?php echo $counts['gifted']; ?>)</option>
         <?php endif; ?>
         <option value="favorite">Coups de cœur (<?php echo $counts['favorite']; ?>)</option>
+        <?php if ($ctx['canGift'] && suggestions_enabled()) : ?>
+            <option value="suggestion">Suggestions des amis (<?php echo $counts['suggestion']; ?>)</option>
+        <?php endif; ?>
         <?php if ($ctx['canEdit'] && received_enabled()) : ?>
             <option value="received">Reçus (<?php echo $counts['received']; ?>)</option>
         <?php endif; ?>

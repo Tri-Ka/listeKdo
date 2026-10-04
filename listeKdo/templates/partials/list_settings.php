@@ -1,6 +1,7 @@
 <?php
 /*
- * « Paramètres de la liste » (roue dentée de la barre du haut) : titre, type de liste, date, liste privée.
+ * « Paramètres de la liste » (roue dentée de la barre du haut) : titre, type de liste, habillage, compte à rebours,
+ * date, liste privée.
  * Pour sa propre liste comme pour une liste secondaire gérée ($owner).
  */
 $isMine = (int) $owner['id'] === (int) $ctx['me']['id'];
@@ -63,6 +64,9 @@ $theme = theme_of($owner);
                         </button>
                     </div>
                 </fieldset>
+                <?php if (accessories_enabled()) : ?>
+                    <?php echo render('partials/accessory_field', array('kind' => 'countdown', 'current' => accessory_worn($owner, 'countdown'), 'owned' => $shop['owned'], 'me' => $ctx['me'])); ?>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if (event_dates_enabled()) : ?>
                 <label class="field">
@@ -76,7 +80,7 @@ $theme = theme_of($owner);
                     <input type="checkbox" name="is_private" value="1" role="switch"<?php echo !empty($owner['is_private']) ? ' checked' : ''; ?>>
                     <span>
                         <strong>Liste privée</strong>
-                        <small><?php echo $isMine ? 'Visible par vous seul et les amis choisis ci-dessous, même avec le lien' : 'Visible seulement par ses gestionnaires et les amis choisis ci-dessous, même avec le lien'; ?></small>
+                        <small><?php echo $isMine ? 'Visible par vous seul et les personnes invitées ci-dessous, même avec le lien' : 'Visible seulement par ses gestionnaires et les personnes invitées ci-dessous, même avec le lien'; ?></small>
                     </span>
                 </label>
                 <?php if (viewers_enabled()) : ?>
@@ -89,7 +93,7 @@ $theme = theme_of($owner);
                         <input type="hidden" name="viewers_sent" value="1">
                         <legend>Qui peut la voir quand même ? <small>(<?php echo $isMine ? 'parmi vos amis' : 'parmi les amis de la liste'; ?>)</small></legend>
                         <?php if (0 === count($candidates)) : ?>
-                            <p class="private-viewers__empty">Aucun ami pour l'instant : <?php echo $isMine ? 'vous seul la voyez' : 'seuls ses gestionnaires la voient'; ?>.</p>
+                            <p class="private-viewers__empty">Aucun ami pour l'instant : envoyez le lien d'invitation ci-dessous.</p>
                         <?php else : ?>
                             <div class="private-viewers__list">
                                 <?php foreach ($candidates as $friend) : ?>
@@ -101,6 +105,20 @@ $theme = theme_of($owner);
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
+                        <?php if (invites_enabled()) : ?>
+                            <?php // Lien d'invitation : pour ceux qui ne sont pas encore amis (ils ne peuvent pas ajouter une liste privée). ?>
+                            <div class="private-invite" data-short="invite" data-short-user="<?php echo e($owner['code']); ?>">
+                                <p class="private-invite__label"><?php echo icon('link'); ?> Pas dans la liste ? Envoyez-lui ce lien d'invitation : en l'ouvrant, il pourra la voir.</p>
+                                <div class="share__link">
+                                    <input type="text" readonly value="<?php echo e(list_invite_url($owner)); ?>" aria-label="Lien d'invitation" data-invite-url>
+                                    <button type="button" class="btn btn--primary btn--sm" data-copy-invite><?php echo icon('link'); ?> Copier</button>
+                                </div>
+                                <?php // Rattaché au formulaire #list-invite-reset (après celui-ci) : Entrée dans un champ ne doit pas le déclencher. ?>
+                                <button type="submit" class="private-invite__reset" form="list-invite-reset"
+                                    data-confirm="L'ancien lien ne marchera plus. Les personnes déjà invitées gardent l'accès (décochez-les pour le leur retirer)."
+                                    data-confirm-title="Créer un nouveau lien ?" data-confirm-ok="Nouveau lien" data-confirm-icon="key">Créer un nouveau lien</button>
+                            </div>
+                        <?php endif; ?>
                     </fieldset>
                 <?php endif; ?>
             <?php endif; ?>
@@ -110,4 +128,10 @@ $theme = theme_of($owner);
             <button type="submit" class="btn btn--primary">Enregistrer</button>
         </footer>
     </form>
+    <?php if (private_enabled() && invites_enabled()) : ?>
+        <form id="list-invite-reset" method="post" action="actions/resetInvite.php" hidden>
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="owner" value="<?php echo e($owner['code']); ?>">
+        </form>
+    <?php endif; ?>
 </dialog>

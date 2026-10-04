@@ -482,6 +482,25 @@ svg {
     color: var(--danger);
 }
 
+/* Suggestion pour un ami : il ne verra pas l'idée (même couleur que sur le site). */
+.suggest-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgb(246 177 0 / .14);
+    color: #5c4100;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.suggest-note svg {
+    margin-top: 2px;
+    fill: #c98f00;
+}
+
 /* Bouton d'envoi toujours visible en bas de la fenêtre. */
 .actions {
     position: sticky;

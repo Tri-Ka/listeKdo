@@ -6,6 +6,7 @@ $sections = array(
     'partager' => 'Partager',
     'offrir' => 'Offrir',
     'plusieurs' => 'À plusieurs',
+    'suggerer' => 'Suggérer',
     'echanger' => 'Échanger',
     'amis' => 'Amis',
     'personnaliser' => 'Personnaliser',
@@ -87,7 +88,7 @@ $sections = array(
             <li>Un <strong>lien court</strong> à copier, ou à envoyer directement par WhatsApp, Facebook ou X.</li>
             <li>N'importe qui peut <strong>consulter</strong> la liste avec ce lien. Pour réserver un cadeau, commenter ou réagir, il faut un compte (gratuit, et prêt en une minute).</li>
             <li>Votre <strong>code de parrainage</strong> est juste en dessous : un proche qui s'inscrit avec lui reçoit des gemmes de bienvenue, et vous aussi dès qu'il ajoute sa première idée.</li>
-            <li>Besoin de discrétion ? Rendez votre liste <strong>privée</strong> dans les paramètres : elle n'est plus visible, même avec le lien, sauf par les <strong>amis que vous choisissez</strong> (cochez-les juste en dessous de l'option).</li>
+            <li>Besoin de discrétion ? Rendez votre liste <strong>privée</strong> dans les paramètres : elle n'est plus visible, même avec le lien, sauf par les <strong>personnes que vous choisissez</strong> : cochez vos amis juste en dessous de l'option, ou envoyez le <strong>lien d'invitation</strong> à ceux qui ne le sont pas encore.</li>
         </ul>
     </div>
     <figure class="guide-feature__media">
@@ -132,7 +133,24 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature" id="echanger">
+<section class="guide-feature" id="suggerer">
+    <div class="guide-feature__text">
+        <p class="guide-feature__eyebrow"><?php echo icon('lightbulb'); ?> Pour vos proches</p>
+        <h2>Suggérez une idée, sans que la personne la voie</h2>
+        <p>Vous savez ce qui ferait plaisir à un ami, mais ce n'est pas sur sa liste ? Sur sa liste, touchez <strong>« Suggérer une idée »</strong>.</p>
+        <ul class="guide-list">
+            <li>La personne qui a fait la liste <strong>ne la voit jamais</strong> : ni l'idée, ni les commentaires, ni les notifications. La surprise reste entière.</li>
+            <li>Ses autres amis la voient, avec votre nom et une étiquette jaune <strong>« Suggestion »</strong>. Ils peuvent la réserver, lancer une cagnotte ou en discuter, comme n'importe quelle idée.</li>
+            <li>L'onglet <strong>« Suggestions »</strong> les regroupe, et vous pouvez modifier ou supprimer les vôtres avec le menu « ⋯ ».</li>
+            <li>Depuis l'<strong>extension Chrome</strong>, choisissez un ami dans « Ajouter à » pour lui suggérer le produit de la page.</li>
+        </ul>
+    </div>
+    <figure class="guide-feature__media">
+        <?php echo guide_image('suggestion.jpg', "Une idée suggérée par Inès sur la liste de Léa, vue par Hugo", 384, 454, 'guide-shot--narrow'); ?>
+    </figure>
+</section>
+
+<section class="guide-feature guide-feature--reverse" id="echanger">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo icon('comments'); ?> Pour tout le monde</p>
         <h2>Commentez, réagissez, ne ratez rien</h2>
@@ -149,7 +167,7 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature guide-feature--reverse" id="amis">
+<section class="guide-feature" id="amis">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo icon('user-plus'); ?> Pour tout le monde</p>
         <h2>Vos amis et leurs événements au même endroit</h2>
@@ -165,7 +183,7 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature" id="personnaliser">
+<section class="guide-feature guide-feature--reverse" id="personnaliser">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo icon('palette'); ?> Pour vous</p>
         <h2>Une liste à votre image</h2>
@@ -174,7 +192,7 @@ $sections = array(
             <li>Le <strong>type de liste</strong> : anniversaire, Noël, naissance, mariage ou simple wishlist. Les couleurs et les décorations changent avec lui.</li>
             <li>Un <strong>titre</strong> personnalisé (« Les 30 ans de Léa ») et la <strong>date de l'événement</strong>, pour le compte à rebours et les rappels.</li>
             <li>Les <strong>habillages</strong> achetés dans la boutique.</li>
-            <li>L'option <strong>liste privée</strong>, avec le choix des <strong>amis qui peuvent quand même la voir</strong>.</li>
+            <li>L'option <strong>liste privée</strong>, avec le choix des <strong>amis qui peuvent quand même la voir</strong> et un <strong>lien d'invitation</strong> pour les autres.</li>
             <li>Dans <strong>« Mon profil »</strong> : votre photo, votre mot de passe, votre question secrète et un <strong>petit mot</strong> affiché en bas de votre liste.</li>
         </ul>
     </div>
@@ -183,7 +201,7 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature guide-feature--reverse" id="secondaires">
+<section class="guide-feature" id="secondaires">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo icon('child-reaching'); ?> Pour vous</p>
         <h2>Des listes pour vos enfants, votre bébé à venir…</h2>
@@ -199,14 +217,15 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature" id="badges">
+<section class="guide-feature guide-feature--reverse" id="badges">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo gem_icon(); ?> Pour le plaisir</p>
-        <h2>Badges, gemmes et boutique d'habillages</h2>
+        <h2>Badges, gemmes et boutique</h2>
         <ul class="guide-list">
             <li>Chaque action vous rapproche d'un <strong>badge</strong> : première idée, premier cadeau réservé, commentaires, amis, ancienneté… Certains sont secrets !</li>
             <li>Les badges et vos actions sur le site rapportent des <strong>gemmes</strong>. Le parrainage aussi.</li>
-            <li>Dépensez-les dans la <strong>boutique</strong> pour offrir un nouvel habillage à votre liste : pirate, pastel, far west, cosmique…</li>
+            <li>Dépensez-les dans la <strong>boutique</strong>, rangée en trois catégories : un nouvel <strong>habillage</strong> pour votre liste (pirate, pastel, far west, cosmique…), un <strong>cadre</strong> autour de votre photo, ou un <strong>effet</strong> sur votre compte à rebours.</li>
+            <li>Plus un article est rare, plus il en jette : du simple anneau aux cadres holographiques, des bulles à la galaxie.</li>
             <li>Tout se gagne en utilisant le site : rien n'est payant.</li>
         </ul>
     </div>
@@ -216,7 +235,7 @@ $sections = array(
     </figure>
 </section>
 
-<section class="guide-feature guide-feature--reverse" id="extension">
+<section class="guide-feature" id="extension">
     <div class="guide-feature__text">
         <p class="guide-feature__eyebrow"><?php echo icon('puzzle-piece'); ?> Sur ordinateur</p>
         <h2>L'extension Chrome : ajoutez depuis n'importe quelle boutique</h2>
@@ -237,6 +256,10 @@ $sections = array(
     <details>
         <summary>Est-ce que je peux voir qui m'offre quoi ?</summary>
         <p>Non, jamais. Sur votre propre liste, vous ne voyez ni les réservations, ni les cagnottes, ni les notifications de cadeaux. Seuls vos proches les voient.</p>
+    </details>
+    <details>
+        <summary>Mes amis peuvent-ils ajouter des idées à ma liste ?</summary>
+        <p>Oui, sous forme de suggestions. Mais vous ne les verrez jamais : elles ne sont visibles que de vos autres amis, qui peuvent vous les offrir. C'est fait pour garder la surprise.</p>
     </details>
     <details>
         <summary>Mes proches doivent-ils créer un compte ?</summary>

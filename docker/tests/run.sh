@@ -20,10 +20,12 @@ mkdir -p out && touch out/.start
 status=0
 docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     -v "$PWD/../../extension-chrome":/ext:ro mcr.microsoft.com/playwright:v1.63.0-noble \
-    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node shop.js && node referral.js && node account.js && node private.js && node tour.js && node extension.js' || status=$?
+    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node shop.js && node referral.js && node account.js && node private.js && node suggestions.js && node tour.js && node extension.js' || status=$?
 
 # Nettoyage : comptes de test et images envoyées pendant le test.
 for id in $(sql "SELECT id FROM liste_user WHERE nom LIKE 'Test1%';" | tail -n +2); do rm -rf "../../listeKdo/uploads/$id"; done
+# Amitiés avec les comptes de test (le parrainage en crée dans les deux sens).
+sql "DELETE FROM user_friend WHERE user_id IN (SELECT id FROM liste_user WHERE nom LIKE 'Test1%') OR friend_code IN (SELECT code FROM liste_user WHERE nom LIKE 'Test1%');"
 sql "DELETE FROM liste_user WHERE nom LIKE 'Test1%';"
 # Liens de gestion et badges des comptes supprimés.
 sql "DELETE FROM liste_manager WHERE child_id NOT IN (SELECT id FROM liste_user) OR user_id NOT IN (SELECT id FROM liste_user);"
@@ -31,11 +33,16 @@ sql "DELETE FROM user_badge WHERE user_id NOT IN (SELECT id FROM liste_user);" 2
 sql "DELETE FROM user_badge WHERE badge_id IN (SELECT id FROM badge WHERE name LIKE 'Test1%'); DELETE FROM badge WHERE name LIKE 'Test1%';" 2>/dev/null || true
 # Achats de la boutique faits par les tests (shop.js).
 sql "DELETE FROM user_skin WHERE user_id IN (1, 141); UPDATE liste_user SET skin = NULL WHERE id IN (1, 141);" 2>/dev/null || true
+sql "UPDATE liste_user SET frame = NULL, countdown_fx = NULL WHERE id IN (1, 141);" 2>/dev/null || true
 sql "DELETE FROM notification WHERE type = 8 AND author_id NOT IN (SELECT id FROM liste_user);" 2>/dev/null || true
 # Liste privée (private.js) : remise en public même si le test s'arrête en cours de route.
 sql "UPDATE liste_user SET is_private = 0 WHERE id = 1;" || true
 sql "DELETE FROM liste_viewer WHERE list_id = 1;" 2>/dev/null || true
 sql "DELETE FROM liste_noel WHERE nom = 'Idée reçue test';"
+# Suggestions (suggestions.js), si le test s'est arrêté avant de les supprimer.
+sql "DELETE FROM comment WHERE product_id IN (SELECT id FROM liste_noel WHERE nom LIKE 'Suggestion test%'); DELETE FROM notification WHERE product_id IN (SELECT id FROM liste_noel WHERE nom LIKE 'Suggestion test%'); DELETE FROM liste_noel WHERE nom LIKE 'Suggestion test%';"
+# Badges de suggestion obtenus par Mallory pendant le test, et leur notification.
+sql "DELETE FROM notification WHERE type = 7 AND author_id = 141 AND product_id IN (SELECT id FROM badge WHERE code LIKE '%suggest%'); DELETE FROM user_badge WHERE user_id = 141 AND badge_id IN (SELECT id FROM badge WHERE code LIKE '%suggest%');" 2>/dev/null || true
 sql "DELETE FROM notification WHERE product_id IN (SELECT id FROM liste_noel WHERE nom = 'Produit test extension'); DELETE FROM liste_noel WHERE nom = 'Produit test extension'; DELETE FROM liste_item WHERE product_id NOT IN (SELECT id FROM liste_noel);"
 find ../../listeKdo/uploads/img -type f -newer out/.start -delete
 # Photo de profil envoyée par features.js (l'ancienne est remise par « saved »).

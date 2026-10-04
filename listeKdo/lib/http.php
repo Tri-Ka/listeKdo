@@ -153,13 +153,15 @@ function target_owner($me)
 
 /**
  * Idée d'une liste que l'utilisateur peut gérer, sinon arrêt.
+ * Une suggestion se gère par son auteur et par les gestionnaires, jamais par le propriétaire de la liste.
  */
 function managed_object($me, $id)
 {
     $object = object_find($id);
     $owner = $object ? user_find($object['user_id']) : null;
+    $allowed = $object && (is_suggestion($object) ? suggestion_editable($me, $object, $owner) : can_manage($me, $owner));
 
-    if (!$object || !can_manage($me, $owner)) {
+    if (!$allowed) {
         fail("Cette idée n'existe pas.", list_url($me['code']), 404);
     }
 
@@ -167,13 +169,18 @@ function managed_object($me, $id)
 }
 
 /**
- * Idée d'une liste que l'utilisateur peut voir (une liste privée n'est visible que de ceux qui la gèrent).
+ * Idée d'une liste que l'utilisateur peut voir (une liste privée n'est visible que de ceux qui la gèrent,
+ * une suggestion n'est jamais visible du propriétaire de la liste).
  */
 function visible_object($me, $id)
 {
     $object = object_find($id);
 
     if ($object && !can_view($me, user_find($object['user_id']))) {
+        return null;
+    }
+
+    if ($object && is_suggestion($object) && (!$me || (int) $me['id'] === (int) $object['user_id'])) {
         return null;
     }
 

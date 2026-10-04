@@ -3,9 +3,19 @@ $id = (int) $object['id'];
 $gifted = $object['complete'];
 $commentCount = count($object['comments']);
 $received = $object['received'];
+// Suggestion d'un ami (jamais affichée au propriétaire) : modifiable par son auteur et par les gestionnaires,
+// comme suggestion_editable(), mais sans requête par vignette.
+$suggestion = !empty($object['suggestion']);
+$suggester = $suggestion && !empty($object['suggested_by_user']) ? $object['suggested_by_user'] : null;
+$editable = $ctx['canEdit'];
+if ($suggestion) {
+    $mySuggestion = $ctx['me'] && (int) $object['suggested_by'] === (int) $ctx['me']['id'] && !empty($ctx['canSuggest']);
+    $editable = ($ctx['canEdit'] && !$ctx['isOwner']) || $mySuggestion;
+}
 ?>
-<article class="card<?php echo $ctx['canGift'] && $gifted ? ' card--gifted' : ''; ?><?php echo $received ? ' card--received' : ''; ?>" id="idea-<?php echo $id; ?>"
+<article class="card<?php echo $ctx['canGift'] && $gifted ? ' card--gifted' : ''; ?><?php echo $received ? ' card--received' : ''; ?><?php echo $suggestion ? ' card--suggestion' : ''; ?>" id="idea-<?php echo $id; ?>"
     data-object="<?php echo $id; ?>"
+    data-suggestion="<?php echo $suggestion ? '1' : '0'; ?>"
     data-favorite="<?php echo $object['favorite'] ? '1' : '0'; ?>"
     data-received="<?php echo $received ? '1' : '0'; ?>"
     data-price="<?php echo null !== $object['price'] ? e($object['price']) : ''; ?>"
@@ -20,8 +30,18 @@ $received = $object['received'];
         <?php if ($ctx['canEdit'] && received_enabled()) : ?>
             <span class="card__badge card__badge--received"><?php echo icon('circle-check'); ?> Reçu</span>
         <?php endif; ?>
-        <span class="card__badge card__badge--idea"><?php echo icon($object['is_group'] ? 'users' : 'gift'); ?>
-            <?php echo $object['is_collection'] ? 'Collection · ' . (int) $object['items_total'] : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
+        <?php if ($suggestion) : ?>
+            <span class="card__badge card__badge--idea card__badge--suggestion">
+                <?php if ($suggester) : ?>
+                    <span class="suggester"><?php echo avatar($suggester, 'suggester__avatar'); ?><?php echo icon('lightbulb', 'suggester__bulb'); ?></span>
+                <?php else : ?>
+                    <?php echo icon('lightbulb'); ?>
+                <?php endif; ?>
+                Suggestion<?php echo $suggester ? ' de ' . e($suggester['nom']) : ''; ?></span>
+        <?php else : ?>
+            <span class="card__badge card__badge--idea"><?php echo icon($object['is_group'] ? 'users' : 'gift'); ?>
+                <?php echo $object['is_collection'] ? 'Collection · ' . (int) $object['items_total'] : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
+        <?php endif; ?>
         <?php if ($ctx['canGift']) : ?>
             <span class="card__badge card__badge--gifted gift-only"><?php echo icon('circle-check'); ?> Déjà offert</span>
         <?php endif; ?>
@@ -64,11 +84,11 @@ $received = $object['received'];
                 <div class="gift-slot" data-gift-slot="<?php echo $id; ?>">
                     <?php echo render('partials/gift', array('object' => $object, 'ctx' => $ctx)); ?>
                 </div>
-            <?php elseif (!$ctx['canEdit'] && '' !== $object['link']) : ?>
+            <?php elseif (!$editable && '' !== $object['link']) : ?>
                 <a class="btn btn--primary" href="<?php echo e($object['link']); ?>" target="_blank" rel="noopener nofollow">Voir <?php echo icon('chevron-right'); ?></a>
             <?php endif; ?>
 
-            <?php if ($ctx['canEdit']) : ?>
+            <?php if ($editable) : ?>
                 <?php
                 $editData = kdo_json(array(
                     'id' => $id,
@@ -84,7 +104,7 @@ $received = $object['received'];
                     <summary class="round-btn" aria-label="Modifier, marquer comme reçu, supprimer" data-tip="Modifier…"><?php echo icon('ellipsis'); ?></summary>
                     <div class="card-menu__panel">
                         <button type="button" data-open-object-form="<?php echo e($editData); ?>"><?php echo icon('pen'); ?> Modifier</button>
-                        <?php if (received_enabled()) : ?>
+                        <?php if (received_enabled() && $ctx['canEdit']) : ?>
                             <form method="post" action="actions/toggleReceived.php" data-ajax="received">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="id" value="<?php echo $id; ?>">

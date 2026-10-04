@@ -41,12 +41,21 @@ if ($owner && !$ctx['canView']) {
         <?php elseif (!$ctx['canView']) : ?>
             <section class="private-notice">
                 <span class="private-notice__icon"><?php echo icon('lock'); ?></span>
-                <h1>Cette liste est privée</h1>
-                <p>Seuls la personne qui l'a créée et les amis qu'elle a choisis peuvent la voir.<?php echo $me ? '' : ' Vous en faites partie ? Connectez-vous.'; ?></p>
-                <?php if ($me) : ?>
-                    <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> Revenir à ma liste</a>
+                <?php if ($ctx['invited']) : ?>
+                    <h1>Vous êtes invité à voir cette liste</h1>
+                    <p>Elle est privée : connectez-vous, ou créez votre compte en une minute, pour la découvrir.</p>
+                    <div class="private-notice__actions">
+                        <button type="button" class="btn btn--primary" data-open="login-dialog"><?php echo icon('circle-user'); ?> Se connecter</button>
+                        <button type="button" class="btn btn--ghost" data-open="signup-dialog">Créer un compte</button>
+                    </div>
                 <?php else : ?>
-                    <button type="button" class="btn btn--primary" data-open="login-dialog"><?php echo icon('circle-user'); ?> Se connecter</button>
+                    <h1>Cette liste est privée</h1>
+                    <p>Seuls la personne qui l'a créée et ceux qu'elle a invités peuvent la voir.<?php echo $me ? ' Pour y accéder, demandez-lui son lien d\'invitation.' : ' Vous en faites partie ? Connectez-vous.'; ?></p>
+                    <?php if ($me) : ?>
+                        <a class="btn btn--primary" href="index.php"><?php echo icon('gift'); ?> Revenir à ma liste</a>
+                    <?php else : ?>
+                        <button type="button" class="btn btn--primary" data-open="login-dialog"><?php echo icon('circle-user'); ?> Se connecter</button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </section>
         <?php else : ?>
@@ -60,6 +69,12 @@ if ($owner && !$ctx['canView']) {
                         <strong>Ajouter une idée</strong>
                         <span>Collez un lien, on s'occupe du reste</span>
                     </button>
+                <?php elseif ($ctx['canSuggest']) : ?>
+                    <button type="button" class="card card--add card--suggest" data-open-object-form>
+                        <span class="card--add__icon"><?php echo icon('lightbulb'); ?></span>
+                        <strong>Suggérer une idée</strong>
+                        <span>Vous savez ce qui lui ferait plaisir ? <?php echo e($owner['nom']); ?> ne la verra pas, ses autres amis oui.</span>
+                    </button>
                 <?php endif; ?>
 
                 <?php foreach ($objects as $object) : ?>
@@ -67,7 +82,7 @@ if ($owner && !$ctx['canView']) {
                 <?php endforeach; ?>
             </section>
 
-            <p class="empty" data-empty<?php echo 0 === count($objects) && !$ctx['canEdit'] ? '' : ' hidden'; ?>>Aucune idée cadeau ici pour l'instant.</p>
+            <p class="empty" data-empty<?php echo 0 === count($objects) && !$ctx['canEdit'] && !$ctx['canSuggest'] ? '' : ' hidden'; ?>>Aucune idée cadeau ici pour l'instant.</p>
 
             <?php foreach ($objects as $object) : ?>
                 <?php echo render('partials/object_dialog', array('object' => $object, 'ctx' => $ctx)); ?>

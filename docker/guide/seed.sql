@@ -33,6 +33,9 @@ SET @the = LAST_INSERT_ID();
 INSERT INTO liste_noel (nom, image_url, file, link, description, user_id, gifted_by, created_at, favorite, price) VALUES
 ('Plaid tout doux', '', 'demo-plaid.png', 'https://example.com/plaid', 'Couleur terracotta ou vert sauge.', @lea, NULL, DATE_SUB(NOW(), INTERVAL 5 DAY), 0, 35.00);
 SET @plaid = LAST_INSERT_ID();
+-- Suggestion d'Inès sur la liste de Léa : visible de Hugo, jamais de Léa.
+INSERT INTO liste_noel (nom, image_url, file, link, description, user_id, gifted_by, created_at, favorite, price, suggested_by) VALUES
+('Appareil photo instantané', '', 'demo-photo.png', 'https://example.com/photo', 'Elle en parlait l''autre jour, pour garder des souvenirs de ses voyages.', @lea, NULL, DATE_SUB(NOW(), INTERVAL 4 DAY), 0, 79.00, @ines);
 INSERT INTO liste_noel (nom, image_url, file, link, description, user_id, gifted_by, created_at, favorite, price) VALUES
 ('Château en briques', '', 'demo-lego.png', 'https://example.com/chateau', '', @lea, NULL, DATE_SUB(NOW(), INTERVAL 4 DAY), 0, 60.00);
 SET @lego = LAST_INSERT_ID();

@@ -133,12 +133,13 @@ if (onboarding) {
         { icon: 'eye', eyebrow: 'La surprise', title: 'Vous ne saurez pas qui offre quoi', text: 'Vos proches réservent les idées, seuls ou en se cotisant à plusieurs, sans que vous le voyiez. Eux voient ce qui est déjà pris : pas de doublon, et la surprise reste entière.' },
         { targets: ['.profile__avatar'], icon: 'user', eyebrow: 'Votre profil', title: 'Votre photo et votre profil', text: 'Changez votre photo, votre nom et votre mot de passe ici. Ils sont aussi dans le menu du compte.' },
         { targets: ['[data-countdown]', '.topbar__days'], icon: 'calendar-days', eyebrow: 'Le grand jour', title: 'Le compte à rebours', text: 'La date de votre événement s’affiche ici. Vos amis reçoivent un rappel à l’approche du jour J.' },
-        { targets: ['.topbar__settings', { sel: '.user-menu__mobile [data-open="list-settings-dialog"]', menu: true }], icon: 'gear', eyebrow: 'À votre image', title: 'Les paramètres de la liste', text: 'Choisissez le type de liste (anniversaire, Noël, naissance, mariage…), son titre, la date de l’événement, et rendez-la privée si besoin, visible seulement par les amis que vous choisissez.' },
+        { targets: ['.topbar__settings', { sel: '.user-menu__mobile [data-open="list-settings-dialog"]', menu: true }], icon: 'gear', eyebrow: 'À votre image', title: 'Les paramètres de la liste', text: 'Choisissez le type de liste (anniversaire, Noël, naissance, mariage…), son titre, la date de l’événement, et rendez-la privée si besoin, visible seulement par les proches que vous invitez.' },
         { targets: ['.topbar__share', { sel: '.user-menu__mobile [data-open="share-dialog"]', menu: true }], icon: 'share-nodes', eyebrow: 'À partager', title: 'Envoyez votre liste', text: 'Copiez le lien ou partagez-le sur WhatsApp : vos proches voient votre liste sans avoir besoin de compte.' },
         { targets: ['.friends', '.friends-shortcut', '[data-mobile-friends]'], icon: 'users', eyebrow: 'Vos proches', title: 'Les listes de vos amis', text: 'Retrouvez ici les listes de vos amis, triées par prochain événement. Pour en ajouter un, ouvrez sa liste et touchez « Ajouter à mes amis ».' },
+        { targets: ['.friends', '.friends-shortcut', '[data-mobile-friends]'], icon: 'lightbulb', eyebrow: 'Vos proches', title: 'Suggérez-leur des idées', text: 'Sur la liste d’un ami, « Suggérer une idée » ajoute une idée qu’il ne verra jamais : seuls ses autres amis la voient, pour la lui offrir.' },
         { targets: ['.bell'], icon: 'bell', eyebrow: 'Ne rien rater', title: 'Les notifications', text: 'Nouvelles idées de vos amis, commentaires, réactions, rappels d’anniversaire : tout arrive ici.' },
         { targets: ['.profile__badges'], icon: 'crown', eyebrow: 'Récompenses', title: 'Vos badges', text: 'Ajouter des idées, offrir, commenter… chaque étape débloque des badges. Touchez la pastille pour voir les prochains.' },
-        { targets: ['.gem-pill'], icon: 'palette', eyebrow: 'Récompenses', title: 'Gemmes et boutique', text: 'Badges et actions rapportent des gemmes. Dépensez-les dans la boutique en habillages pour votre liste, et parrainez vos proches pour en gagner plus.' },
+        { targets: ['.gem-pill'], icon: 'palette', eyebrow: 'Récompenses', title: 'Gemmes et boutique', text: 'Badges et actions rapportent des gemmes. Dépensez-les dans la boutique : habillages pour votre liste, cadres pour votre photo, effets pour votre compte à rebours. Parrainez vos proches pour en gagner plus.' },
         { targets: [{ sel: '[data-user-menu] [data-open="child-new-dialog"]', menu: true }], icon: 'layer-group', eyebrow: 'Pour toute la famille', title: 'Les listes secondaires', text: 'Créez une liste pour un enfant ou un proche sans compte, et gérez-la à plusieurs. Ici, vous voyez ce qui est déjà offert pour éviter les doublons.' },
         { targets: [{ sel: '[data-user-menu] [data-open="my-gifts-dialog"]', menu: true }], icon: 'gift', eyebrow: 'Vos cadeaux', title: 'Les cadeaux que vous offrez', text: 'Tous les cadeaux que vous avez réservés pour les autres, rassemblés au même endroit.' },
         { targets: [{ sel: '[data-user-menu] [data-open="extension-dialog"]', menu: true }], icon: 'puzzle-piece', eyebrow: 'Encore plus rapide', title: 'L’extension Chrome', text: 'Ajoutez un produit à votre liste en un clic, depuis la page de la boutique.' },
@@ -879,6 +880,7 @@ const filters = {
     available: (card) => active(card) && card.dataset.gifted === '0',
     gifted: (card) => active(card) && card.dataset.gifted === '1',
     favorite: (card) => active(card) && card.dataset.favorite === '1',
+    suggestion: (card) => active(card) && card.dataset.suggestion === '1',
     received: (card) => !active(card),
 };
 let currentFilter = 'all';
@@ -916,17 +918,19 @@ function refreshFilters() {
     }
     const receivedTab = $('[data-filter="received"]', tabs);
     if (receivedTab) receivedTab.hidden = !cards().some(filters.received) && currentFilter !== 'received';
+    const suggestionTab = $('[data-filter="suggestion"]', tabs);
+    if (suggestionTab) suggestionTab.hidden = !cards().some(filters.suggestion) && currentFilter !== 'suggestion';
 
     $$('[data-filter]', tabs).forEach((tab) => tab.setAttribute('aria-pressed', tab.dataset.filter === currentFilter));
 
     // Menu de sélection (mobile) : mêmes filtres, mêmes compteurs.
     const select = $('[data-tabs-select]');
     if (select) {
-        const labels = { all: 'Toutes les idées', available: 'À offrir', gifted: 'Déjà offertes', favorite: 'Coups de cœur', received: 'Reçus' };
+        const labels = { all: 'Toutes les idées', available: 'À offrir', gifted: 'Déjà offertes', favorite: 'Coups de cœur', suggestion: 'Suggestions des amis', received: 'Reçus' };
         for (const option of select.options) {
             option.textContent = `${labels[option.value]} (${cards().filter(filters[option.value]).length})`;
             option.hidden = (['available', 'gifted'].includes(option.value) && !showGifted)
-                || (option.value === 'received' && !cards().some(filters.received));
+                || (['received', 'suggestion'].includes(option.value) && !cards().some(filters[option.value]));
         }
         select.value = currentFilter;
     }
@@ -1163,6 +1167,18 @@ $('[data-copy]')?.addEventListener('click', async () => {
     toast('Lien copié !', 'success');
 });
 
+// Lien d'invitation d'une liste privée (paramètres de la liste).
+$('[data-copy-invite]')?.addEventListener('click', async () => {
+    const field = $('[data-invite-url]');
+    try {
+        await navigator.clipboard.writeText(field.value);
+    } catch {
+        field.select();
+        document.execCommand('copy');
+    }
+    toast("Lien d'invitation copié !", 'success');
+});
+
 const nativeShare = $('[data-native-share]');
 if (nativeShare && navigator.share) {
     nativeShare.hidden = false;
@@ -1171,21 +1187,26 @@ if (nativeShare && navigator.share) {
     });
 }
 
-// Lien court en HTTPS (TinyURL) : certaines applis, dont WhatsApp, ouvrent les liens en HTTPS,
-// que Free ne gère pas. Le lien court redirige vers le site en HTTP.
-const shareBox = $('[data-share]');
-if (shareBox) {
-    fetch(`actions/shortUrl.php?user=${encodeURIComponent(shareBox.dataset.shareCode)}`, { headers: { Accept: 'application/json' } })
+// Liens courts en HTTPS (TinyURL) : certaines applis, dont WhatsApp, ouvrent les liens en HTTPS,
+// que Free ne gère pas. Le lien court redirige vers le site en HTTP. Chaque bloc [data-short]
+// (partage de la liste, parrainage, invitation) demande le sien après l'affichage (actions/shortUrl.php),
+// puis remplace le lien long dans ses champs et ses liens (pas dans un bloc [data-short] imbriqué).
+$$('[data-short]').forEach((box) => {
+    const params = new URLSearchParams({ type: box.dataset.short, user: box.dataset.shortUser || '' });
+    fetch(`actions/shortUrl.php?${params}`, { headers: { Accept: 'application/json' } })
         .then((response) => response.json())
         .then((data) => {
             if (!data.ok || data.url === data.long) return;
-            $('[data-share-url]').value = data.url;
-            $$('a[href]', shareBox).forEach((link) => {
+            const own = (el) => el.closest('[data-short]') === box;
+            $$('input', box).filter(own).forEach((field) => {
+                if (field.value === data.long) field.value = data.url;
+            });
+            $$('a[href]', box).filter(own).forEach((link) => {
                 link.href = link.href.replaceAll(encodeURIComponent(data.long), encodeURIComponent(data.url));
             });
         })
         .catch(() => {});
-}
+});
 
 /* ---------- Formulaire d'idée (ajout / modification) ---------- */
 
@@ -1256,8 +1277,8 @@ if (objectDialog) {
         if (fields.price) fields.price.value = object?.price ?? '';
         deleteForm.elements.id.value = object?.id ?? '';
         $('[data-delete-object]', form).hidden = !object;
-        $('[data-object-form-title]', form).textContent = object ? `Modifier : ${object.nom}` : 'Une nouvelle idée ?';
-        $('[data-object-form-submit]', form).textContent = object ? 'Enregistrer' : 'Ajouter';
+        $('[data-object-form-title]', form).textContent = object ? `Modifier : ${object.nom}` : form.dataset.addTitle;
+        $('[data-object-form-submit]', form).textContent = object ? 'Enregistrer' : form.dataset.addLabel;
         showPreview(object?.image);
         showChoices([]);
         setCollection(object?.items || []);
@@ -1726,6 +1747,23 @@ document.addEventListener('click', (event) => {
     if (!tab) return;
     $$('[data-badge-tab]').forEach((other) => other.setAttribute('aria-pressed', String(other === tab)));
     $$('[data-badge-section]').forEach((section) => { section.hidden = section.dataset.badgeSection !== tab.dataset.badgeTab; });
+});
+
+// Boutique : catégorie (habillages, cadres, compte à rebours) ; les types de liste ne concernent que les habillages.
+document.addEventListener('click', (event) => {
+    const cat = event.target.closest('[data-shop-cat]');
+    if (!cat) return;
+    $$('[data-shop-cat]').forEach((other) => other.setAttribute('aria-pressed', String(other === cat)));
+    $$('[data-shop-panel]').forEach((panel) => { panel.hidden = panel.dataset.shopPanel !== cat.dataset.shopCat; });
+    const subnav = $('[data-shop-subnav]');
+    if (subnav) subnav.hidden = cat.dataset.shopCat !== 'skins';
+});
+
+// « Plus de cadres » / « Plus d'effets » (paramètres, profil) : la boutique s'ouvre sur la bonne catégorie.
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-shop-open]');
+    const cat = link && $(`[data-shop-cat="${link.dataset.shopOpen}"]`);
+    if (cat) cat.click();
 });
 
 document.addEventListener('click', (event) => {

@@ -41,12 +41,12 @@ async function addIdea(page, name, price) {
     await owner.goto(`${B}?user=${ETIENNE}`);
     await owner.click('.topbar__settings');
     await owner.fill('#list-settings-dialog input[name=event_date]', inTwelveDays);
-    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
     check(await owner.locator('#list-settings-dialog input[name=theme]:checked').getAttribute('value') === 'birthday', 'paramètres de la liste : type de liste actuel coché');
     // Etienne a une question secrète personnalisée (« test ») : modifier le profil ne doit pas en redemander la réponse.
     await owner.click('.profile__action');
     await owner.setInputFiles('#profile-dialog input[name=pictureFile]', 'fixtures/photo.jpg');
-    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#profile-dialog .modal__footer button[type=submit]')]);
     check(await owner.locator('.toast--success').count() === 1 && await owner.locator('.toast--error').count() === 0,
         'profil (photo) enregistré sans redemander la question secrète personnalisée');
     const days = await owner.locator('[data-unit="d"]').innerText();
@@ -59,13 +59,13 @@ async function addIdea(page, name, price) {
     await owner.click('#list-settings-dialog .theme-field__option--naissance');
     await owner.fill('#list-settings-dialog input[name=list_title]', 'Les 40 ans de test');
     await owner.screenshot({ path: `${__dirname}/out/features-list-settings.png` });
-    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
     check(await owner.locator('body').getAttribute('data-theme') === 'naissance', 'paramètres : type de liste changé (naissance)');
     check(await owner.title() === 'Les 40 ans de test' && (await text(owner.locator('.topbar__title'))) === 'Les 40 ans de test', 'paramètres : titre de la liste affiché');
     await owner.click('.topbar__settings');
     await owner.click('#list-settings-dialog .theme-field__option--birthday');
     await owner.fill('#list-settings-dialog input[name=list_title]', '');
-    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
     check(await owner.locator('body').getAttribute('data-theme') === 'birthday' && (await owner.title()).startsWith('Anniversaire de'), 'paramètres : retour en anniversaire, titre par défaut');
 
     /* ---- Rappel d'événement chez les amis (Mallory est amie d'Etienne) ---- */
@@ -170,7 +170,7 @@ async function addIdea(page, name, price) {
     }
     await owner.click('.topbar__settings');
     await owner.fill('#list-settings-dialog input[name=event_date]', '');
-    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
 
     check(owner.errors.length + friend.errors.length === 0, 'aucune erreur JS ' + [...owner.errors, ...friend.errors].join(' | '));
     await browser.close();

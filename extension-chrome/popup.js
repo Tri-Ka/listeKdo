@@ -163,6 +163,23 @@ document.querySelectorAll('.gallery__nav').forEach((button) => {
     });
 });
 
+/* ---------- Liste choisie : la sienne, ou une suggestion pour un ami ---------- */
+
+const selectedList = () => fields.owner.selectedOptions[0];
+const isSuggestion = () => selectedList()?.dataset.suggest === '1';
+const submitLabel = () => (isSuggestion() ? `Suggérer à ${selectedList().textContent}` : 'Ajouter à la liste');
+
+function refreshTarget() {
+    const suggest = isSuggestion();
+    const note = $('[data-suggest-note]');
+    note.hidden = !suggest;
+    if (suggest) {
+        note.querySelector('span').textContent = `${selectedList().textContent} ne verra jamais cette idée. Ses autres amis la verront avec votre nom, et pourront la réserver.`;
+    }
+    $('[data-submit-label]').textContent = submitLabel();
+    $('[data-submit-icon]').setAttribute('href', suggest ? '#i-lightbulb' : '#i-gift');
+}
+
 /* ---------- Envoi ---------- */
 
 form.addEventListener('submit', async (event) => {
@@ -180,6 +197,8 @@ form.addEventListener('submit', async (event) => {
         body.append('image', fields.image.value);
         body.append('owner', fields.owner.value);
         body.append('price', fields.price.value.trim());
+        const suggest = isSuggestion();
+        if (suggest) body.append('suggest', '1');
 
         const response = await fetch(`${site}actions/addObject.php`, {
             method: 'POST',
@@ -198,13 +217,16 @@ form.addEventListener('submit', async (event) => {
         const doneImage = $('[data-done-image]');
         doneImage.hidden = !fields.image.value;
         if (fields.image.value) doneImage.src = fields.image.value;
-        $('[data-done-name]').textContent = fields.nom.value.trim();
+        $('[data-done-name]').textContent = suggest
+            ? `${fields.nom.value.trim()} : ${selectedList().textContent} ne la verra pas.`
+            : fields.nom.value.trim();
+        $('[data-done-title]').textContent = suggest ? "C'est suggéré !" : "C'est sur la liste !";
         show('done');
     } catch (error) {
         warn(error.message, true);
     } finally {
         submit.disabled = false;
-        $('[data-submit-label]').textContent = 'Ajouter à ma liste';
+        $('[data-submit-label]').textContent = submitLabel();
     }
 });
 
@@ -238,14 +260,36 @@ $('[data-open-site]').addEventListener('click', () => {
     // Mêmes couleurs que la liste de l'utilisateur sur le site.
     if (account.user.theme) document.body.dataset.theme = account.user.theme;
 
-    // Choix de la liste : la sienne ou celle d'un enfant géré (mémorisé pour la prochaine fois).
+    // Choix de la liste : la sienne ou celle d'un enfant géré, ou une suggestion pour un ami
+    // (mémorisé pour la prochaine fois).
     const lists = account.lists || [{ code: account.user.code, nom: 'Ma liste' }];
+    const friends = account.friends || [];
     const select = fields.owner;
-    for (const list of lists) select.add(new Option(list.nom, list.code));
+    const mine = friends.length ? document.createElement('optgroup') : select;
+    if (friends.length) {
+        mine.label = 'Mes listes';
+        select.append(mine);
+    }
+    for (const list of lists) mine.append(new Option(list.nom, list.code));
+    if (friends.length) {
+        const group = document.createElement('optgroup');
+        group.label = 'Suggérer à un ami (il ne la verra pas)';
+        for (const friend of friends) {
+            const option = new Option(friend.nom, friend.code);
+            option.dataset.suggest = '1';
+            group.append(option);
+        }
+        select.append(group);
+    }
+    const codes = lists.concat(friends).map((list) => list.code);
     const { lastList } = await chrome.storage.local.get('lastList');
-    if (lists.some((list) => list.code === lastList)) select.value = lastList;
-    select.addEventListener('change', () => chrome.storage.local.set({ lastList: select.value }));
-    $('[data-list-field]').hidden = lists.length < 2;
+    if (codes.includes(lastList)) select.value = lastList;
+    select.addEventListener('change', () => {
+        chrome.storage.local.set({ lastList: select.value });
+        refreshTarget();
+    });
+    $('[data-list-field]').hidden = codes.length < 2;
+    refreshTarget();
     $('[data-price-field]').hidden = !account.prices;
     $('[data-name-row]').classList.toggle('has-price', Boolean(account.prices));
     const avatar = $('[data-avatar]');

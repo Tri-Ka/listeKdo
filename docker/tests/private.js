@@ -25,7 +25,7 @@ async function setPrivate(page, on) {
     await page.goto(`${B}?user=${ETIENNE}`);
     await page.click('.topbar__settings');
     await page.locator('#list-settings-dialog input[name=is_private][type=checkbox]').setChecked(on);
-    await Promise.all([page.waitForNavigation(), page.click('#list-settings-dialog button[type=submit]')]);
+    await Promise.all([page.waitForNavigation(), page.click('#list-settings-dialog .modal__footer button[type=submit]')]);
 }
 
 (async () => {
@@ -83,7 +83,7 @@ async function setPrivate(page, on) {
         if (await option.locator('input').isChecked() !== on) {
             await option.click();
         }
-        await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog button[type=submit]')]);
+        await Promise.all([owner.waitForNavigation(), owner.click('#list-settings-dialog .modal__footer button[type=submit]')]);
     };
     await owner.goto(`${B}?user=${ETIENNE}`);
     await owner.click('.topbar__settings');
@@ -101,6 +101,37 @@ async function setPrivate(page, on) {
     await setViewer(false);
     await friend.goto(`${B}?user=${ETIENNE}`);
     check(await friend.locator('.private-notice').count() === 1, 'amie retirée des invités : de nouveau « Cette liste est privée »');
+
+    /* ---- Lien d'invitation : ouvert sans être connecté, accepté après la connexion ---- */
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    // Lien long et lien court (TinyURL) fabriqués par le serveur, comme pour le champ des paramètres.
+    const shortInvite = () => owner.evaluate(async (code) => (await fetch(`actions/shortUrl.php?type=invite&user=${code}`, { headers: { Accept: 'application/json' } })).json(), ETIENNE);
+    const invite = await shortInvite();
+    const inviteUrl = invite.long;
+    check(/[?&]invite=[0-9a-f]{20}$/.test(inviteUrl), 'paramètres : lien d\'invitation créé');
+    await owner.waitForFunction((url) => document.querySelector('#list-settings-dialog [data-invite-url]').value === url, invite.url);
+    console.log((invite.url.startsWith('https://tinyurl.com/') ? 'OK   ' : 'INFO ') + 'lien d\'invitation raccourci : ' + invite.url.replace(/invite=.*/, 'invite=…'));
+    const guest = await (await browser.newContext({ viewport: { width: 1366, height: 900 } })).newPage();
+    await guest.goto(inviteUrl.replace(/^https?:\/\/[^/]+\/listeKdo\//, B));
+    check((await guest.locator('.private-notice h1').innerText()).includes('invité'), 'invitation, non connectée : « Vous êtes invité à voir cette liste »');
+    await guest.click('.private-notice [data-open="login-dialog"]');
+    await guest.fill('#login-dialog input[name=nom]', 'Mallory');
+    await guest.fill('#login-dialog input[name=password]', 'test');
+    await Promise.all([guest.waitForNavigation(), guest.click('#login-dialog button[type=submit]')]);
+    await guest.waitForLoadState();
+    check(guest.url().includes(ETIENNE) && await guest.locator('.private-notice').count() === 0 && await guest.locator(`#idea-${secretId}`).count() === 1,
+        'invitation acceptée après connexion : la liste privée est visible');
+    await guest.context().close();
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    await owner.click('.topbar__settings');
+    check(await owner.locator('#list-settings-dialog .private-viewers__option', { hasText: 'Mallory' }).locator('input').isChecked(), 'paramètres : l\'invitée est cochée');
+    // Nouveau lien : l'ancien ne marche plus.
+    await owner.click('#list-settings-dialog .private-invite__reset');
+    await Promise.all([owner.waitForNavigation(), owner.click('#confirm-dialog [data-confirm-ok]')]);
+    check((await shortInvite()).long !== inviteUrl, 'nouveau lien d\'invitation créé');
+    await setViewer(false);
+    await friend.goto(inviteUrl.replace(/^https?:\/\/[^/]+\/listeKdo\//, B));
+    check(await friend.locator('.private-notice').count() === 1 && await friend.locator('.toast--error').count() === 1, 'ancien lien d\'invitation refusé');
     await owner.goto(`${B}?user=${ETIENNE}`);
     await owner.click('.topbar__settings');
     await owner.locator('#list-settings-dialog input[name=is_private][type=checkbox]').setChecked(false);

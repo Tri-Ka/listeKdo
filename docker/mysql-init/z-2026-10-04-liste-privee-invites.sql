@@ -1,5 +1,6 @@
--- Liste privée : amis choisis par le propriétaire (ou un gestionnaire) qui peuvent quand même la voir.
--- Une ligne = un ami autorisé à voir une liste privée. Sans effet tant que la liste est publique.
+-- Liste privée : personnes choisies par le propriétaire (ou un gestionnaire) qui peuvent quand même la voir.
+-- liste_viewer : une ligne = une personne autorisée à voir une liste privée. Sans effet tant que la liste est publique.
+-- liste_user.invite_token : jeton du lien d'invitation d'une liste privée (ouvert par quelqu'un, il l'ajoute aux invités).
 -- À exécuter une seule fois dans phpMyAdmin (http://sql.free.fr/phpMyAdmin/), base datcharrye, onglet SQL.
 -- Sans cette table, le site fonctionne : une liste privée reste visible seulement par ceux qui la gèrent.
 
@@ -9,3 +10,5 @@ CREATE TABLE `liste_viewer` (
   PRIMARY KEY (`list_id`, `user_id`),
   KEY `user_id` (`user_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+ALTER TABLE `liste_user` ADD `invite_token` varchar(40) DEFAULT NULL;

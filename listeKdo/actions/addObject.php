@@ -3,7 +3,16 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 $me = require_login();
 
-$owner = target_owner($me);
+// Suggestion : idée ajoutée sur la liste d'un ami, que son propriétaire ne verra jamais.
+$isSuggestion = '1' === input('suggest');
+if ($isSuggestion) {
+    $owner = user_find_by_code(input('owner'));
+    if (!can_suggest($me, $owner)) {
+        fail('Vous ne pouvez pas suggérer d\'idée sur cette liste.', list_url($me['code']), 403);
+    }
+} else {
+    $owner = target_owner($me);
+}
 $back = list_url($owner['code']);
 $name = input('nom');
 
@@ -41,6 +50,9 @@ $values = array(
 if (prices_enabled()) {
     $values['price'] = parse_amount(input('price'));
 }
+if ($isSuggestion) {
+    $values['suggested_by'] = (int) $me['id'];
+}
 
 // L'idée est ajoutée à la liste de l'utilisateur connecté, ou à celle d'un enfant qu'il gère.
 $id = db_insert('liste_noel', $values);
@@ -53,11 +65,16 @@ if ($isCollection) {
     items_save(array('id' => $id), $itemNames, array());
 }
 
+if ($isSuggestion) {
+    notify($me['id'], $id, NOTIF_SUGGESTION);
+    succeed(array('id' => $id), $back . '#new-' . $id, 'Suggestion ajoutée ! ' . $owner['nom'] . ' ne la verra pas.');
+}
+
 notify($me['id'], $id, NOTIF_NEW_IDEA);
 
 // Parrainage : première idée d'un filleul, son parrain en est averti (ses gemmes sont comptées par gems_of()).
 if (referral_enabled() && !empty($me['referred_by'])) {
-    $ideas = db_one('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ?', array((int) $me['id']));
+    $ideas = db_one('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ?' . own_ideas_sql(), array((int) $me['id']));
     if ($ideas && 1 === (int) $ideas['n']) {
         db_insert('notification', array('author_id' => (int) $me['id'], 'product_id' => 0, 'type' => NOTIF_REFERRAL, 'created_at' => db_now()));
     }

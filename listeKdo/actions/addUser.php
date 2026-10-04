@@ -52,13 +52,14 @@ if ($secret) {
     secret_set(array('id' => $userId), $secret[0], $secret[1]);
 }
 
+$user = user_find($userId);
+
 if ($sponsor) {
     db_update('liste_user', array('referred_by' => (int) $sponsor['id']), array('id' => (int) $userId));
-    // Ils deviennent amis, pour que le filleul voie tout de suite la liste de son parrain.
-    db_insert('user_friend', array('user_id' => (int) $userId, 'friend_code' => $sponsor['code']));
+    // Ils deviennent amis dans les deux sens : chacun voit tout de suite la liste de l'autre.
+    friend_add($user, $sponsor);
 }
 
-$user = user_find($userId);
 login($user);
 if (secret_enabled() && !$secret) {
     $_SESSION['kdo_ask_secret'] = true;

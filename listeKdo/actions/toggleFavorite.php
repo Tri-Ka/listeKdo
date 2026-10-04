@@ -4,6 +4,10 @@ require_post();
 $me = require_login();
 
 list($object, $owner) = managed_object($me, input_int('id'));
+// Les coups de cœur sont ceux du propriétaire : jamais sur une suggestion, qu'il ne voit pas.
+if (is_suggestion($object)) {
+    fail("Une suggestion ne peut pas être un coup de cœur.", list_url($owner['code']), 403);
+}
 
 $favorite = empty($object['favorite']);
 

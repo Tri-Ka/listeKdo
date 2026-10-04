@@ -5,7 +5,8 @@
  *   liste_noel    idées cadeaux (« objets »)
  *   comment       commentaires sur une idée
  *   reaction      réactions (type 1 à 6) sur une idée
- *   notification  type 1 = commentaire, 2 = nouvelle idée, 3 = réaction, 4 = rappel, 5 = réservation, 6 = participation
+ *   notification  type 1 = commentaire, 2 = nouvelle idée, 3 = réaction, 4 = rappel, 5 = réservation, 6 = participation,
+ *                 7 = badges, 8 = parrainage, 9 = suggestion
  *   user_friend   amitiés (user_id -> friend_code)
  */
 
@@ -23,6 +24,9 @@ define('NOTIF_PARTICIPATION', 6);
 define('NOTIF_BADGE', 7);
 // Parrainage : author_id = le filleul, product_id = 0. Montrée seulement au parrain (« X a ajouté sa première idée : +200 »).
 define('NOTIF_REFERRAL', 8);
+// Un ami suggère une idée sur la liste de quelqu'un d'autre : author_id = l'ami, product_id = la suggestion.
+// Montrée aux amis de la liste, jamais à son propriétaire (voir notifications_where()).
+define('NOTIF_SUGGESTION', 9);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
@@ -362,6 +366,58 @@ function list_viewers_set($owner, $ids)
             db_query('REPLACE INTO liste_viewer (list_id, user_id) VALUES (?, ?)', array((int) $owner['id'], (int) $id));
         }
     }
+}
+
+/**
+ * La colonne liste_user.invite_token existe-t-elle ? (lien d'invitation d'une liste privée)
+ */
+function invites_enabled()
+{
+    return viewers_enabled() && db_has_column('liste_user', 'invite_token');
+}
+
+/**
+ * Lien d'invitation d'une liste privée : la personne qui l'ouvre (une fois connectée) devient invitée et amie.
+ * Le jeton est créé à la première demande, et remplacé par list_invite_reset() (l'ancien lien ne marche plus).
+ */
+function list_invite_url($owner)
+{
+    $token = isset($owner['invite_token']) ? (string) $owner['invite_token'] : '';
+    if ('' === $token) {
+        $token = list_invite_reset($owner);
+    }
+
+    return share_url($owner) . '&invite=' . $token;
+}
+
+function list_invite_reset($owner)
+{
+    $token = substr(random_token(), 0, 20);
+    db_update('liste_user', array('invite_token' => $token), array('id' => (int) $owner['id']));
+
+    return $token;
+}
+
+/**
+ * Le jeton d'invitation donné correspond-il à cette liste ?
+ */
+function list_invite_valid($owner, $token)
+{
+    return $owner && invites_enabled() && '' !== (string) $token
+        && '' !== (string) $owner['invite_token'] && secure_equals((string) $owner['invite_token'], (string) $token);
+}
+
+/**
+ * Accepte une invitation : la personne voit la liste privée et devient amie de la liste.
+ */
+function list_invite_accept($me, $owner)
+{
+    if (can_manage($me, $owner)) {
+        return;
+    }
+
+    db_query('REPLACE INTO liste_viewer (list_id, user_id) VALUES (?, ?)', array((int) $owner['id'], (int) $me['id']));
+    friend_add($owner, $me);
 }
 
 /**
@@ -798,6 +854,9 @@ function objects_for_user($userId)
     }
     foreach ($objects as $object) {
         $userIds[] = $object['gifted_by'];
+        if (is_suggestion($object)) {
+            $userIds[] = $object['suggested_by'];
+        }
     }
     foreach ($items as $item) {
         $userIds[] = $item['gifted_by'];
@@ -812,6 +871,7 @@ function objects_for_user($userId)
         $object['comments'] = array();
         $object['reactions'] = array();
         $object['gifted_by_user'] = isset($users[$object['gifted_by']]) ? $users[$object['gifted_by']] : null;
+        $object['suggested_by_user'] = is_suggestion($object) && isset($users[$object['suggested_by']]) ? $users[$object['suggested_by']] : null;
         $byId[$object['id']] = object_prepare($object);
     }
 
@@ -850,6 +910,81 @@ function objects_for_user($userId)
     return $byId;
 }
 
+/* ---------- Idées suggérées par les amis (colonne liste_noel.suggested_by) ---------- */
+
+/**
+ * La colonne liste_noel.suggested_by existe-t-elle ? (migration sql/2026-10-04-idees-suggerees.sql)
+ */
+function suggestions_enabled()
+{
+    return db_has_column('liste_noel', 'suggested_by');
+}
+
+/**
+ * Suggestion : idée ajoutée par un ami sur la liste de quelqu'un d'autre. Le propriétaire ne la voit jamais.
+ */
+function is_suggestion($object)
+{
+    return !empty($object['suggested_by']);
+}
+
+/**
+ * Condition SQL « idées du propriétaire » (sans les suggestions), pour tout ce qu'il peut voir de près ou de loin :
+ * badges, gemmes, compteurs. $alias : préfixe de la table liste_noel dans la requête (« n. »).
+ */
+function own_ideas_sql($alias = '')
+{
+    return suggestions_enabled() ? ' AND ' . $alias . 'suggested_by IS NULL' : '';
+}
+
+/**
+ * Peut-on suggérer une idée sur cette liste ? Il faut être ami de la liste, la voir, et ne pas la gérer
+ * (le propriétaire et les gestionnaires ajoutent directement leurs idées).
+ */
+function can_suggest($me, $owner)
+{
+    return suggestions_enabled() && $me && $owner
+        && !can_manage($me, $owner) && can_view($me, $owner) && user_has_friend($me['id'], $owner['code']);
+}
+
+/**
+ * Listes où l'on peut suggérer une idée (extension Chrome) : les mêmes que can_suggest(), en trois requêtes.
+ * Ses amis, sans les listes privées où l'on n'est pas invité, ni les listes secondaires qu'on gère.
+ */
+function suggestion_targets($me)
+{
+    if (!$me || !suggestions_enabled()) {
+        return array();
+    }
+
+    $managed = array((int) $me['id']);
+    foreach (user_children($me['id']) as $child) {
+        $managed[] = (int) $child['id'];
+    }
+
+    $targets = array();
+    foreach (visible_lists($me, user_friends($me['id'])) as $friend) {
+        if (!in_array((int) $friend['id'], $managed)) {
+            $targets[] = $friend;
+        }
+    }
+
+    return $targets;
+}
+
+/**
+ * Modifier ou supprimer une suggestion : son auteur tant qu'il est ami de la liste, ou un gestionnaire
+ * qui n'en est pas le propriétaire (les gestionnaires d'une liste secondaire voient les suggestions, comme les dons).
+ */
+function suggestion_editable($me, $object, $owner)
+{
+    if (!$me || !$owner || (int) $me['id'] === (int) $owner['id']) {
+        return false;
+    }
+
+    return can_manage($me, $owner) || ((int) $object['suggested_by'] === (int) $me['id'] && can_suggest($me, $owner));
+}
+
 function object_prepare($object)
 {
     $object['nom'] = legacy_text($object['nom']);
@@ -865,6 +1000,7 @@ function object_prepare($object)
     }
     $object['price'] = isset($object['price']) && null !== $object['price'] && 0 < (float) $object['price'] ? (float) $object['price'] : null;
     $object['received'] = !empty($object['received_at']);
+    $object['suggestion'] = is_suggestion($object);
 
     return $object;
 }
@@ -1280,10 +1416,10 @@ function my_gifts_count($grouped)
 /**
  * Notifications visibles par un utilisateur :
  *   - toute activité des autres sur ses propres idées ;
- *   - les nouvelles idées de ses amis ;
+ *   - les nouvelles idées de ses amis, et les suggestions faites sur leurs listes ;
  *   - les commentaires de ses amis sur les idées de ses amis ;
  *   - les dons de ses amis (réservations, participations) sur les listes de ses autres amis.
- * Les dons ne sont jamais montrés au propriétaire de la liste.
+ * Les dons et les suggestions ne sont jamais montrés au propriétaire de la liste.
  * Retourne array(condition SQL, paramètres), pour la liste paginée et le compteur.
  */
 function notifications_where($user, $friends)
@@ -1310,6 +1446,9 @@ function notifications_where($user, $friends)
         array_push($params, $friendIds, NOTIF_NEW_IDEA, $friendIds, NOTIF_COMMENT, $friendIds);
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         array_push($params, $friendIds, NOTIF_EVENT);
+        /* Suggestion : visible de tous les amis de la liste, même sans être ami avec son auteur. */
+        $where .= ' OR (n.type = ? AND p.user_id IN (?))';
+        array_push($params, NOTIF_SUGGESTION, $friendIds);
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         array_push($params, $friendIds, NOTIF_BADGE);
         $where .= ' OR (n.author_id IN (?) AND n.type IN (?) AND p.user_id IN (?) AND p.user_id <> ?)';
@@ -1325,6 +1464,12 @@ function notifications_where($user, $friends)
     }
 
     $where .= ')';
+
+    // Rien de ce qui touche une suggestion n'arrive à son propriétaire (ni la suggestion, ni ses commentaires, réactions, dons).
+    if (suggestions_enabled()) {
+        $where .= ' AND (p.suggested_by IS NULL OR p.user_id <> ?)';
+        $params[] = $userId;
+    }
 
     // Rien des listes privées des autres : ni leurs idées, ni leurs rappels d'événement.
     $hidden = hidden_list_ids($user);
@@ -1426,7 +1571,7 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
     $rows = db_all(
         'SELECT n.id, n.type, n.created_at, n.product_id,
                 a.id AS author_id, a.nom AS author_nom, a.pictureFile AS author_pictureFile, a.pictureFileUrl AS author_pictureFileUrl,
-                a.theme AS author_theme,
+                a.theme AS author_theme,' . (accessories_enabled() ? ' a.frame AS author_frame,' : '') . '
                 p.user_id AS owner_id, COALESCE(o.code, a.code) AS owner_code, o.nom AS owner_nom, p.nom AS product_nom, r.type AS reaction_type,
                 (' . $unread . ') AS is_unread
             FROM notification n
@@ -1450,6 +1595,8 @@ function notifications_for($user, $friends, $offset = 0, $limit = NOTIFICATIONS_
             'pictureFile' => $row['author_pictureFile'],
             'pictureFileUrl' => $row['author_pictureFileUrl'],
             'theme' => $row['author_theme'],
+            // Cadre acheté dans la boutique : anneau autour de la photo (avatar()).
+            'frame' => isset($row['author_frame']) ? $row['author_frame'] : '',
         );
         $row['new'] = (bool) $row['is_unread'];
         $row['mine'] = (int) $row['owner_id'] === (int) $user['id'];

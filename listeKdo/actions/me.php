@@ -18,10 +18,17 @@ foreach (user_children($me['id']) as $child) {
     $lists[] = array('code' => $child['code'], 'nom' => $child['nom'], 'avatar' => avatar_url($child));
 }
 
+// Amis à qui suggérer une idée (ils ne la verront pas, leurs autres amis oui) : voir can_suggest().
+$friends = array();
+foreach (suggestion_targets($me) as $friend) {
+    $friends[] = array('code' => $friend['code'], 'nom' => $friend['nom'], 'avatar' => avatar_url($friend));
+}
+
 send_json(array(
     'ok' => true,
     'token' => csrf_token(),
     'lists' => $lists,
+    'friends' => $friends,
     'prices' => prices_enabled(),
     'user' => array(
         'nom' => $me['nom'],

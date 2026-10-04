@@ -13,6 +13,17 @@ $me = $ctx['me'];
             <img class="detail__image" src="<?php echo e('' !== $object['image'] ? $object['image'] : 'img/idea-default.svg'); ?>" alt="" loading="lazy" decoding="async" data-fallback="img/idea-default.svg">
         </div>
 
+        <?php if (!empty($object['suggestion'])) : ?>
+            <p class="detail__suggestion">
+                <?php if (!empty($object['suggested_by_user'])) : ?>
+                    <span class="suggester"><?php echo avatar($object['suggested_by_user'], 'suggester__avatar'); ?><?php echo icon('lightbulb', 'suggester__bulb'); ?></span>
+                <?php else : ?>
+                    <?php echo icon('lightbulb'); ?>
+                <?php endif; ?>
+                <span>Suggérée par <strong><?php echo !empty($object['suggested_by_user']) ? e($object['suggested_by_user']['nom']) : 'un ami'; ?></strong>.
+                <?php echo e($ctx['owner']['nom']); ?> ne voit pas cette idée : la surprise reste entière.</span></p>
+        <?php endif; ?>
+
         <?php if (null !== $object['price']) : ?>
             <p class="detail__price"><?php echo e(format_price($object['price'])); ?> <small>prix indicatif</small></p>
         <?php endif; ?>

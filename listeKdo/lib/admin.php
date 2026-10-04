@@ -198,7 +198,9 @@ function admin_table($params)
     }
 
     $childSql = children_enabled() ? 'EXISTS (SELECT 1 FROM liste_manager m WHERE m.child_id = u.id)' : '0';
-    $ideasSql = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id)';
+    // Sans les suggestions des amis : un admin ne doit pas deviner celles faites sur sa propre liste.
+    $ownSql = own_ideas_sql('n.');
+    $ideasSql = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id' . $ownSql . ')';
 
     switch ($params['filter']) {
         case 'admin':
@@ -230,10 +232,10 @@ function admin_table($params)
     $columns[] = roles_enabled() ? 'u.role' : "'user' AS role";
 
     if ($isLists) {
-        $columns[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.gifted_by IS NOT NULL) AS gifted';
+        $columns[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.gifted_by IS NOT NULL' . $ownSql . ') AS gifted';
         $columns[] = '(SELECT COUNT(DISTINCT f.user_id) FROM user_friend f WHERE f.friend_code = u.code) AS followers';
-        $columns[] = '(SELECT MAX(n.created_at) FROM liste_noel n WHERE n.user_id = u.id) AS last_idea';
-        $columns[] = received_enabled() ? '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.received_at IS NOT NULL) AS received' : '0 AS received';
+        $columns[] = '(SELECT MAX(n.created_at) FROM liste_noel n WHERE n.user_id = u.id' . $ownSql . ') AS last_idea';
+        $columns[] = received_enabled() ? '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.received_at IS NOT NULL' . $ownSql . ') AS received' : '0 AS received';
         $columns[] = event_dates_enabled() ? 'u.event_date' : 'NULL AS event_date';
         $columns[] = children_enabled()
             ? "(SELECT GROUP_CONCAT(p.nom ORDER BY p.nom SEPARATOR ', ') FROM liste_manager m INNER JOIN liste_user p ON p.id = m.user_id WHERE m.child_id = u.id) AS managers"
@@ -348,6 +350,9 @@ function admin_insights()
     if (participations_enabled()) {
         $counterQueries['participations'] = array('Participations', 'liste_participation');
     }
+    if (suggestions_enabled()) {
+        $counterQueries['suggestions'] = array('Suggestions des amis', 'liste_noel WHERE suggested_by IS NOT NULL');
+    }
     foreach ($counterQueries as $key => $info) {
         $row = db_one('SELECT COUNT(*) AS n FROM ' . $info[1]);
         $insights['counters'][] = array('key' => $key, 'label' => $info[0], 'value' => $row ? (int) $row['n'] : 0);
@@ -400,7 +405,7 @@ function admin_insights()
 
     if (referral_enabled()) {
         $insights['referrals']['enabled'] = true;
-        $row = db_one('SELECT COUNT(*) AS total, SUM(EXISTS (SELECT 1 FROM liste_noel n WHERE n.user_id = u.id)) AS active FROM liste_user u WHERE referred_by IS NOT NULL');
+        $row = db_one('SELECT COUNT(*) AS total, SUM(EXISTS (SELECT 1 FROM liste_noel n WHERE n.user_id = u.id' . own_ideas_sql('n.') . ')) AS active FROM liste_user u WHERE referred_by IS NOT NULL');
         $insights['referrals']['total'] = $row ? (int) $row['total'] : 0;
         $insights['referrals']['active'] = $row ? (int) $row['active'] : 0;
     }
@@ -591,7 +596,7 @@ function reset_link_create($user)
 
     $url = site_base_url() . 'reset.php?t=' . (int) $user['id'] . '-' . $token;
 
-    return array('url' => $url, 'short' => KDO_DEV ? $url : tinyurl_create($url), 'expires' => $expires);
+    return array('url' => $url, 'short' => short_link($url), 'expires' => $expires);
 }
 
 /**
@@ -628,26 +633,6 @@ function reset_link_use($user, $password)
     }
 
     return db_update('liste_user', $changes, array('id' => (int) $user['id']));
-}
-
-/**
- * Lien court HTTPS (TinyURL), comme short_share_url() : certaines applis ouvrent les liens en HTTPS,
- * que Free ne gère pas. En cas d'échec, le lien long est rendu.
- */
-function tinyurl_create($long)
-{
-    if (!function_exists('curl_init')) {
-        return $long;
-    }
-
-    $curl = curl_init('http://tinyurl.com/api-create.php?url=' . rawurlencode($long));
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 4);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 6);
-    $response = trim((string) curl_exec($curl));
-    curl_close($curl);
-
-    return preg_match('#^https://tinyurl\.com/[A-Za-z0-9-]+$#', $response) ? $response : $long;
 }
 
 /**

@@ -85,6 +85,26 @@ async function openPopup(context, id) {
     check(await card.count() === 1, 'idée visible sur la liste');
     check((await card.locator('.card__image img').getAttribute('src')).endsWith('product-2.jpg'), 'image choisie enregistrée');
 
+    // Suggestion pour un ami (le premier du groupe « Suggérer à un ami ») : il ne la verra pas.
+    popup = await openPopup(context, id);
+    popup.on('pageerror', (e) => errors.push(e.message));
+    await popup.waitForSelector('[data-view="form"]:not([hidden])');
+    check(await popup.locator('[data-lists] optgroup').count() === 2, 'choix : « Mes listes » et « Suggérer à un ami »');
+    check(await popup.isHidden('[data-suggest-note]'), 'sa propre liste : pas de message de suggestion');
+    const target = await popup.locator('[data-lists] optgroup').nth(1).locator('option').first()
+        .evaluate((option) => ({ code: option.value, nom: option.textContent }));
+    await popup.selectOption('[data-lists]', target.code);
+    check((await popup.textContent('[data-suggest-note]')).includes('ne verra jamais'), 'ami choisi : « … ne verra jamais cette idée »');
+    check((await popup.textContent('[data-submit-label]')) === `Suggérer à ${target.nom}`, `bouton « Suggérer à ${target.nom} »`);
+    await popup.screenshot({ path: `${__dirname}/out/extension-suggest.png` });
+    await popup.click('[data-submit]');
+    await popup.waitForSelector('[data-view="done"]:not([hidden])');
+    check((await popup.textContent('[data-done-title]')) === "C'est suggéré !", 'suggestion envoyée');
+
+    await site.goto(`${B}?user=${target.code}`);
+    const suggested = site.locator('.card--suggestion', { hasText: 'Produit test extension' });
+    check(await suggested.count() === 1, `suggestion visible sur la liste de ${target.nom}, avec son étiquette`);
+
     check(errors.length === 0, 'aucune erreur JS ' + errors.join(' | '));
     await context.close();
     console.log(failures ? `\n${failures} échec(s)` : '\nExtension OK');

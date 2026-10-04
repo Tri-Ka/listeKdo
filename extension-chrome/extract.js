@@ -11,7 +11,22 @@ function extractProduct() {
             return '';
         }
     };
-    const clean = (text) => (text || '').replace(/\s+/g, ' ').trim();
+    // Certains sites renvoient un texte encore encodé comme une URL (« Four%20Seasons ») ou en entités HTML (« &amp; »).
+    const decode = (text) => {
+        let value = String(text || '');
+        if (/%[0-9a-f]{2}/i.test(value)) {
+            try {
+                value = decodeURIComponent(value);
+            } catch {
+                // « 50% de réduction » : pas un encodage, on garde le texte.
+            }
+        }
+        if (/&(#\d+|#x[0-9a-f]+|[a-z]+);/i.test(value)) {
+            value = new DOMParser().parseFromString(value, 'text/html').documentElement.textContent;
+        }
+        return value;
+    };
+    const clean = (text) => decode(text).replace(/\s+/g, ' ').trim();
     const meta = (...names) => {
         for (const name of names) {
             const element = document.querySelector(`meta[property="${name}"], meta[name="${name}"], meta[itemprop="${name}"]`);

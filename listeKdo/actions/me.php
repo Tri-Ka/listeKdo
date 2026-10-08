@@ -14,8 +14,24 @@ if (!$me) {
 
 // Listes où l'extension peut ajouter une idée : la sienne, puis celles des enfants gérés.
 $lists = array(array('code' => $me['code'], 'nom' => 'Ma liste', 'avatar' => avatar_url($me)));
+$listIds = array((int) $me['id']);
+$listCodes = array((int) $me['id'] => $me['code']);
 foreach (user_children($me['id']) as $child) {
     $lists[] = array('code' => $child['code'], 'nom' => $child['nom'], 'avatar' => avatar_url($child));
+    $listIds[] = (int) $child['id'];
+    $listCodes[$child['id']] = $child['code'];
+}
+
+// Une seule requête pour toutes les collections des listes gérées, sans réservation.
+$collections = array();
+if (items_enabled()) {
+    $sql = 'SELECT n.id, n.nom, n.user_id FROM liste_noel n WHERE n.user_id IN (?)' . own_ideas_sql('n.')
+        . (received_enabled() ? ' AND n.received_at IS NULL' : '')
+        . ' AND EXISTS (SELECT 1 FROM liste_item i WHERE i.product_id = n.id'
+        . (items_received_enabled() ? ' AND i.received_at IS NULL' : '') . ') ORDER BY n.nom ASC, n.id ASC';
+    foreach (db_all($sql, array($listIds)) as $collection) {
+        $collections[] = array('id' => (int) $collection['id'], 'nom' => legacy_text($collection['nom']), 'owner' => $listCodes[$collection['user_id']]);
+    }
 }
 
 // Amis à qui suggérer une idée (ils ne la verront pas, leurs autres amis oui) : voir can_suggest().
@@ -29,6 +45,7 @@ send_json(array(
     'token' => csrf_token(),
     'lists' => $lists,
     'friends' => $friends,
+    'collections' => $collections,
     'prices' => prices_enabled(),
     'user' => array(
         'nom' => $me['nom'],

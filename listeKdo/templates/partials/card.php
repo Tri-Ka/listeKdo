@@ -40,7 +40,7 @@ if ($suggestion) {
                 Suggestion<?php echo $suggester ? ' de ' . e($suggester['nom']) : ''; ?></span>
         <?php else : ?>
             <span class="card__badge card__badge--idea"><?php echo icon($object['is_group'] ? 'users' : 'gift'); ?>
-                <?php echo $object['is_collection'] ? 'Collection · ' . (int) $object['items_total'] : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
+                <?php echo $object['is_collection'] ? 'Collection · ' . ($ctx['canEdit'] ? count($object['items']) : (int) $object['items_total']) : ($object['is_group'] && $ctx['canGift'] ? 'À plusieurs' : 'Idée cadeau'); ?></span>
         <?php endif; ?>
         <?php if ($ctx['canGift']) : ?>
             <span class="card__badge card__badge--gifted gift-only"><?php echo icon('circle-check'); ?> Déjà offert</span>

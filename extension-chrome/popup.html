@@ -80,12 +80,19 @@
             <select name="owner" data-lists></select>
         </label>
 
+        <label class="field" data-collection-field hidden>
+            <span class="field__label">Dans cette liste</span>
+            <select name="collection_id" data-collections>
+                <option value="">Nouvelle idée</option>
+            </select>
+        </label>
+
         <!-- Suggestion sur la liste d'un ami : il ne la verra jamais. -->
         <p class="suggest-note" data-suggest-note hidden><svg><use href="#i-lightbulb"/></svg><span></span></p>
 
         <div class="row" data-name-row>
             <label class="field">
-                <span class="field__label">Nom du Kdo</span>
+                <span class="field__label" data-name-label>Nom du Kdo</span>
                 <input type="text" name="nom" required maxlength="255" placeholder="Ex. Lego Batcave">
             </label>
 
@@ -96,7 +103,7 @@
             </label>
         </div>
 
-        <label class="field">
+        <label class="field" data-description-field>
             <span class="field__label">Description</span>
             <textarea name="description" rows="3" placeholder="Taille, couleur, modèle…"></textarea>
         </label>

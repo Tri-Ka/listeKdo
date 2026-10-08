@@ -300,7 +300,7 @@ function badge_metric_values($user)
     $values['ideas_link'] = badge_count("SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND link <> ''" . $own, array($id));
     $values['ideas_price'] = prices_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND price IS NOT NULL' . $own, array($id)) : 0;
     $values['favorites'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND favorite = 1' . $own, array($id));
-    $values['received'] = received_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND received_at IS NOT NULL' . $own, array($id)) : 0;
+    $values['received'] = received_enabled() ? badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE user_id = ? AND ' . received_objects_sql() . $own, array($id)) : 0;
     $values['collections'] = items_enabled()
         ? badge_count('SELECT COUNT(DISTINCT i.product_id) AS n FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ?' . $ownN, array($id)) : 0;
 

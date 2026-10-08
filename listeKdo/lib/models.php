@@ -1037,6 +1037,22 @@ function object_reactions($objectId)
 
 function object_set_received($object, $received)
 {
+    if ($received && items_received_enabled()) {
+        db_query('UPDATE liste_item SET received_at = ? WHERE product_id = ? AND received_at IS NULL', array(db_now(), (int) $object['id']));
+    }
+    // Une collection entièrement reçue peut être remise dans la liste en une fois.
+    if (!$received && items_received_enabled()) {
+        $items = object_items($object['id']);
+        $allReceived = 0 < count($items);
+        foreach ($items as $item) {
+            if (empty($item['received_at'])) {
+                $allReceived = false;
+            }
+        }
+        if ($allReceived) {
+            db_query('UPDATE liste_item SET received_at = NULL WHERE product_id = ?', array((int) $object['id']));
+        }
+    }
     return db_update('liste_noel', array('received_at' => $received ? db_now() : null), array('id' => (int) $object['id']));
 }
 
@@ -1075,6 +1091,16 @@ function items_enabled()
     return db_has_table('liste_item');
 }
 
+function items_links_enabled()
+{
+    return db_has_column('liste_item', 'link');
+}
+
+function items_received_enabled()
+{
+    return db_has_column('liste_item', 'received_at');
+}
+
 /* Fonctionnalités de la migration sql/2026-10-01-prix-participations-enfants.sql */
 
 function prices_enabled()
@@ -1085,6 +1111,17 @@ function prices_enabled()
 function received_enabled()
 {
     return db_has_column('liste_noel', 'received_at');
+}
+
+/** État reçu pour les compteurs SQL, y compris les collections entièrement reçues. */
+function received_objects_sql($alias = 'liste_noel.')
+{
+    $sql = received_enabled() ? $alias . 'received_at IS NOT NULL' : '0';
+    if (items_received_enabled()) {
+        $sql .= ' OR (EXISTS (SELECT 1 FROM liste_item ri WHERE ri.product_id = ' . $alias . 'id)'
+            . ' AND NOT EXISTS (SELECT 1 FROM liste_item ri WHERE ri.product_id = ' . $alias . 'id AND ri.received_at IS NULL))';
+    }
+    return '(' . $sql . ')';
 }
 
 function event_dates_enabled()
@@ -1134,9 +1171,12 @@ function object_collection_state($object)
     $object['is_collection'] = 0 < count($object['items']);
     $object['items_total'] = count($object['items']);
     $object['items_gifted'] = 0;
+    $object['items_received'] = 0;
 
     foreach ($object['items'] as $item) {
-        if (null !== $item['gifted_by']) {
+        if (!empty($item['received_at'])) {
+            $object['items_received']++;
+        } elseif (null !== $item['gifted_by']) {
             $object['items_gifted']++;
         }
     }
@@ -1149,7 +1189,9 @@ function object_collection_state($object)
     }
 
     if ($object['is_collection']) {
+        $object['items_total'] -= $object['items_received'];
         $object['complete'] = $object['items_gifted'] === $object['items_total'];
+        $object['received'] = $object['received'] || 0 === $object['items_total'];
     } elseif ($object['is_group']) {
         $object['complete'] = null !== $object['price'] && $object['group_total'] >= $object['price'];
     } else {
@@ -1231,10 +1273,10 @@ function parse_amount($value)
 
 /**
  * Enregistre les éléments d'une idée depuis le formulaire.
- * $names et $ids viennent des champs items[] et item_ids[] (même ordre) ;
+ * $names, $ids et $links viennent des champs du formulaire (même ordre) ;
  * les éléments existants gardent leur réservation, ceux retirés du formulaire sont supprimés.
  */
-function items_save($object, $names, $ids)
+function items_save($object, $names, $ids, $links = array())
 {
     if (!items_enabled()) {
         return;
@@ -1251,12 +1293,17 @@ function items_save($object, $names, $ids)
         }
         $name = substr($name, 0, 255);
         $id = isset($ids[$i]) ? (int) $ids[$i] : 0;
+        $values = array('nom' => $name, 'position' => $position);
+        if (items_links_enabled() && isset($links[$i])) {
+            $values['link'] = safe_url($links[$i]);
+        }
 
         if ($id && isset($existing[$id])) {
-            db_update('liste_item', array('nom' => $name, 'position' => $position), array('id' => $id));
+            db_update('liste_item', $values, array('id' => $id));
             $kept[$id] = true;
         } else {
-            db_insert('liste_item', array('product_id' => (int) $object['id'], 'nom' => $name, 'position' => $position));
+            $values['product_id'] = (int) $object['id'];
+            db_insert('liste_item', $values);
         }
         $position++;
     }
@@ -1275,6 +1322,7 @@ function items_from_request()
 {
     $names = isset($_POST['items']) && is_array($_POST['items']) ? array_values($_POST['items']) : array();
     $ids = isset($_POST['item_ids']) && is_array($_POST['item_ids']) ? array_values($_POST['item_ids']) : array();
+    $links = isset($_POST['item_links']) && is_array($_POST['item_links']) ? array_values($_POST['item_links']) : array();
     $filled = array();
 
     foreach ($names as $name) {
@@ -1283,7 +1331,7 @@ function items_from_request()
         }
     }
 
-    return array($names, $ids, count($filled));
+    return array($names, $ids, count($filled), $links);
 }
 
 function reaction_set($objectId, $userId, $type)
@@ -1356,7 +1404,7 @@ function my_gifts($me)
     if (items_enabled()) {
         $items = db_all(
             'SELECT n.*, i.nom AS item_nom FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id
-                WHERE i.gifted_by = ?' . $notReceived . ' ORDER BY i.position ASC',
+                WHERE i.gifted_by = ?' . $notReceived . (items_received_enabled() ? ' AND i.received_at IS NULL' : '') . ' ORDER BY i.position ASC',
             array((int) $me['id'])
         );
         foreach ($items as $object) {

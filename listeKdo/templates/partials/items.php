@@ -7,18 +7,27 @@
 $id = (int) $object['id'];
 $me = $ctx['me'];
 $canGift = $ctx['canGift'];
-$items = $limit ? array_slice($object['items'], 0, $limit) : $object['items'];
-$hidden = count($object['items']) - count($items);
+$canEdit = !empty($ctx['canEdit']);
+$visibleItems = array();
+foreach ($object['items'] as $item) {
+    if ($canEdit || empty($item['received_at'])) {
+        $visibleItems[] = $item;
+    }
+}
+$items = $limit ? array_slice($visibleItems, 0, $limit) : $visibleItems;
+$hidden = count($visibleItems) - count($items);
 ?>
 <ul class="items" data-items-slot="<?php echo $id; ?>" data-items-mode="<?php echo $limit ? 'card' : 'detail'; ?>">
     <?php foreach ($items as $item) : ?>
         <?php
         $taken = null !== $item['gifted_by'];
         $mine = $taken && $me && (int) $item['gifted_by'] === (int) $me['id'];
+        $received = !empty($item['received_at']);
+        $link = isset($item['link']) ? safe_url($item['link']) : '';
         $state = $canGift ? ($mine ? ' item--mine' : ($taken ? ' item--taken' : '')) : '';
         ?>
-        <li class="item<?php echo $state; ?>">
-            <?php if ($canGift) : ?>
+        <li class="item<?php echo $state; ?><?php echo $received ? ' item--received' : ''; ?>">
+            <?php if ($canGift && !$received && !$object['received']) : ?>
                 <form method="post" action="actions/itemGifted.php" data-ajax="item" class="item__form">
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
@@ -30,8 +39,21 @@ $hidden = count($object['items']) - count($items);
                     </button>
                 </form>
             <?php endif; ?>
-            <span class="item__name"><?php echo e($item['nom']); ?></span>
-            <?php if ($canGift && $taken) : ?>
+            <?php if ('' !== $link) : ?>
+                <a class="item__name item__link" href="<?php echo e($link); ?>" target="_blank" rel="noopener noreferrer"><?php echo e($item['nom']); ?> <?php echo icon('arrow-up-right-from-square'); ?></a>
+            <?php else : ?>
+                <span class="item__name"><?php echo e($item['nom']); ?></span>
+            <?php endif; ?>
+            <?php if ($canEdit && items_received_enabled()) : ?>
+                <form method="post" action="actions/itemReceived.php" data-ajax="received" class="item__received-form">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
+                    <button type="submit" class="round-btn round-btn--sm item__received" aria-pressed="<?php echo $received ? 'true' : 'false'; ?>" aria-label="<?php echo e(($received ? 'Remettre dans la liste : ' : 'Je l\'ai reçu : ') . $item['nom']); ?>" data-tip="<?php echo $received ? 'Reçu · remettre dans la liste' : 'Je l\'ai reçu'; ?>">
+                        <?php echo icon($received ? 'check' : 'box-archive'); ?>
+                    </button>
+                </form>
+            <?php endif; ?>
+            <?php if ($canGift && $taken && !$received && !$object['received']) : ?>
                 <span class="item__by">
                     <?php echo avatar($mine ? $me : $item['gifted_by_user'], 'item__avatar'); ?>
                     <?php echo $mine ? 'Vous' : e($item['gifted_by_user'] ? $item['gifted_by_user']['nom'] : 'Réservé'); ?>

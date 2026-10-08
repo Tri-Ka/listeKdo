@@ -234,6 +234,9 @@ $addLabel = $suggestMode ? 'Suggérer' : 'Ajouter';
                                 <input type="hidden" name="item_ids[]" value="">
                                 <input type="text" name="items[]" maxlength="255" placeholder="Nom de l'élément (ex. Tome 3)" aria-label="Nom de l'élément">
                                 <button type="button" class="round-btn round-btn--sm" data-collection-remove aria-label="Retirer cet élément"><?php echo icon('xmark'); ?></button>
+                                <?php if (items_links_enabled()) : ?>
+                                    <input type="text" name="item_links[]" inputmode="url" placeholder="Lien de l'élément (facultatif)" aria-label="Lien de l'élément">
+                                <?php endif; ?>
                             </li>
                         </template>
                     </div>

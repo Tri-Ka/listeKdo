@@ -127,6 +127,7 @@ if (onboarding) {
         { icon: 'gift', eyebrow: 'Bienvenue', title: `Bienvenue ${firstName} !`, text: 'Votre liste de cadeaux est prête. En une minute, faisons le tour de tout ce que vous pouvez y faire.', next: "C'est parti", prev: 'Plus tard' },
         { targets: ['.card--add'], icon: 'plus', eyebrow: 'Votre liste', title: 'Ajoutez vos idées', text: "Collez le lien d'un produit, de n'importe quelle boutique : le nom, l'image et le prix se remplissent tout seuls. Une idée peut aussi regrouper plusieurs éléments (une collection)." },
         { targets: ['.grid .card[data-object]'], icon: 'image', eyebrow: 'Vos idées', title: 'Chaque idée a sa vignette', text: 'Vos proches y voient la photo et le prix, réagissent et laissent des commentaires pour se mettre d’accord.' },
+        { targets: ['.grid .card .items'], icon: 'list', eyebrow: 'Vos collections', title: 'Complétez vos collections', text: 'Chaque élément peut avoir un lien vers une boutique et rapporte autant de gemmes qu’une idée. Marquez chaque élément comme reçu avec son bouton. Depuis l’extension Chrome, choisissez une collection existante pour y ajouter un produit.' },
         { targets: ['.grid .card[data-object] .heart-btn'], icon: 'heart', eyebrow: 'Vos envies', title: 'Vos coups de cœur', text: 'Touchez le cœur sur les idées qui vous font le plus envie : vos proches les repèrent tout de suite.' },
         { targets: ['.grid .card[data-object] [data-card-menu] > summary'], icon: 'ellipsis', eyebrow: 'Vos idées', title: 'Modifier, marquer comme reçu', text: 'Ce menu sert à modifier une idée, à la supprimer, ou à indiquer que vous l’avez reçue : elle passe alors dans l’onglet « Reçus ».' },
         { targets: ['[data-tabs]', '.tabs-select'], icon: 'list', eyebrow: 'Vos idées', title: 'Filtrer et trier', text: 'Retrouvez vos coups de cœur ou vos cadeaux reçus. Dès qu’un prix est indiqué, on peut aussi filtrer par budget et trier par prix.' },
@@ -514,7 +515,7 @@ const ajaxHandlers = {
     },
 
     async received(form, data) {
-        const card = form.closest('.card');
+        const card = form.closest('.card') || (data.id ? document.getElementById(`idea-${data.id}`) : null);
         form.closest('details')?.removeAttribute('open');
         // Rangée dans le carton d'archives quand elle quitte l'onglet affiché.
         if (card && data.received && currentFilter !== 'received' && !card.hidden) await fileInArchive(card);
@@ -527,7 +528,10 @@ const ajaxHandlers = {
             gridObserver?.observe(fresh);
         }
         const dialog = data.dialog && card ? document.getElementById(`object-${card.dataset.object}`) : null;
-        if (dialog && !dialog.open) dialog.replaceWith(html(data.dialog));
+        if (dialog) {
+            if (dialog.open) dialog.replaceChildren(...html(data.dialog).firstElementChild.childNodes);
+            else dialog.replaceWith(html(data.dialog));
+        }
         toast(data.message, 'success');
         refreshFilters();
     },
@@ -1285,7 +1289,7 @@ if (objectDialog) {
         openDialog(objectDialog);
     });
 
-    // Collection : liste d'éléments (juste un nom), ajoutés avec « + ».
+    // Collection : nom et lien facultatif de chaque élément, ajoutés avec « + ».
     const collection = $('[data-collection]', form);
 
     function addCollectionRow(item = null, focus = false) {
@@ -1293,6 +1297,8 @@ if (objectDialog) {
         row.querySelector('[name="item_ids[]"]').value = item?.id ?? '';
         const input = row.querySelector('[name="items[]"]');
         input.value = item?.nom ?? '';
+        const link = row.querySelector('[name="item_links[]"]');
+        if (link) link.value = item?.link ?? '';
         $('[data-collection-list]', collection).append(row);
         if (focus) input.focus();
         return input;
@@ -1300,6 +1306,7 @@ if (objectDialog) {
 
     function toggleCollection(enabled) {
         $('[data-collection-editor]', collection).hidden = !enabled;
+        $$('[data-collection-list] input', collection).forEach((input) => { input.disabled = !enabled; });
         $$('[name="items[]"]', collection).forEach((input) => { input.required = false; });
         if (enabled && !$('[data-collection-list] li', collection)) addCollectionRow(null, true);
     }

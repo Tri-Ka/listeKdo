@@ -16,6 +16,10 @@ if (!$object || (int) $object['user_id'] === (int) $me['id']) {
 $owner = user_find($object['user_id']);
 $back = list_url($owner['code'], '#idea-' . (int) $object['id']);
 
+if (!empty($item['received_at']) || !empty($object['received_at'])) {
+    fail('Cet élément a déjà été reçu.', $back, 409);
+}
+
 if ('1' === input('gift')) {
     if (null !== $item['gifted_by'] && (int) $item['gifted_by'] !== (int) $me['id']) {
         fail("Quelqu'un a déjà prévu d'offrir cet élément.", $back, 409);
@@ -33,7 +37,7 @@ $stillGifting = db_one('SELECT id FROM liste_item WHERE product_id = ? AND gifte
 notify_gift($me['id'], $object['id'], NOTIF_GIFT, (bool) $stillGifting);
 
 $object = object_full($object);
-$ctx = array('me' => $me, 'owner' => $owner, 'isOwner' => false, 'canGift' => true);
+$ctx = array('me' => $me, 'owner' => $owner, 'isOwner' => false, 'canGift' => true, 'canEdit' => can_manage($me, $owner));
 
 succeed(array(
     'id' => (int) $object['id'],

@@ -64,7 +64,7 @@ function badge_gems_sql()
 function gem_actions()
 {
     return array(
-        'ideas' => array('Idée ajoutée', 2),
+        'ideas' => array('Idée ou élément de collection ajouté', 2),
         'comments' => array('Commentaire écrit', 1),
         'reactions' => array('Réaction donnée', 1),
         'gifts' => array('Cadeau réservé (idée ou élément)', 3),
@@ -124,7 +124,8 @@ function gem_action_counts($userId)
 {
     $id = (int) $userId;
     $sql = 'SELECT
-        (SELECT COUNT(*) FROM liste_noel WHERE user_id = ' . $id . own_ideas_sql() . ') AS ideas,
+        (SELECT COUNT(*) FROM liste_noel WHERE user_id = ' . $id . own_ideas_sql() . ')'
+        . (items_enabled() ? ' + (SELECT COUNT(*) FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ' . $id . own_ideas_sql('n.') . ')' : '') . ' AS ideas,
         (SELECT COUNT(*) FROM comment WHERE user_id = ' . $id . ') AS comments,
         (SELECT COUNT(*) FROM reaction WHERE user_id = ' . $id . ') AS reactions,
         (SELECT COUNT(*) FROM liste_noel WHERE gifted_by = ' . $id . ')'

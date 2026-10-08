@@ -235,7 +235,7 @@ function admin_table($params)
         $columns[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.gifted_by IS NOT NULL' . $ownSql . ') AS gifted';
         $columns[] = '(SELECT COUNT(DISTINCT f.user_id) FROM user_friend f WHERE f.friend_code = u.code) AS followers';
         $columns[] = '(SELECT MAX(n.created_at) FROM liste_noel n WHERE n.user_id = u.id' . $ownSql . ') AS last_idea';
-        $columns[] = received_enabled() ? '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND n.received_at IS NOT NULL' . $ownSql . ') AS received' : '0 AS received';
+        $columns[] = received_enabled() ? '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id = u.id AND ' . received_objects_sql('n.') . $ownSql . ') AS received' : '0 AS received';
         $columns[] = event_dates_enabled() ? 'u.event_date' : 'NULL AS event_date';
         $columns[] = children_enabled()
             ? "(SELECT GROUP_CONCAT(p.nom ORDER BY p.nom SEPARATOR ', ') FROM liste_manager m INNER JOIN liste_user p ON p.id = m.user_id WHERE m.child_id = u.id) AS managers"
@@ -327,9 +327,9 @@ function admin_insights()
     // Une idée reçue peut aussi avoir été réservée avant : les catégories du
     // graphique doivent rester exclusives pour former un anneau cohérent.
     $giftedSql = received_enabled()
-        ? 'SUM(gifted_by IS NOT NULL AND received_at IS NULL) AS gifted'
+        ? 'SUM(gifted_by IS NOT NULL AND NOT ' . received_objects_sql() . ') AS gifted'
         : 'SUM(gifted_by IS NOT NULL) AS gifted';
-    $ideaRow = db_one('SELECT COUNT(*) AS total, ' . $giftedSql . (received_enabled() ? ', SUM(received_at IS NOT NULL) AS received' : '') . ' FROM liste_noel');
+    $ideaRow = db_one('SELECT COUNT(*) AS total, ' . $giftedSql . (received_enabled() ? ', SUM(' . received_objects_sql() . ') AS received' : '') . ' FROM liste_noel');
     if ($ideaRow) {
         $insights['ideas']['total'] = (int) $ideaRow['total'];
         $insights['ideas']['gifted'] = (int) $ideaRow['gifted'];

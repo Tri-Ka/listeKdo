@@ -12,7 +12,7 @@ if ('' === $name) {
 }
 
 $isCollection = '1' === input('collection') && items_enabled();
-list($itemNames, $itemIds, $itemCount) = items_from_request();
+list($itemNames, $itemIds, $itemCount, $itemLinks) = items_from_request();
 if ($isCollection && 0 === $itemCount) {
     fail('Ajoutez au moins un élément à la collection.', $back);
 }
@@ -49,6 +49,6 @@ if (upload_present('file')) {
 db_update('liste_noel', $changes, array('id' => (int) $object['id']));
 
 // Décocher « collection » supprime les éléments.
-items_save($object, $isCollection ? $itemNames : array(), $itemIds);
+items_save($object, $isCollection ? $itemNames : array(), $itemIds, $itemLinks);
 
 succeed(array(), $back . '#card-' . (int) $object['id'], 'Idée modifiée.');

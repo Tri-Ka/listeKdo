@@ -123,6 +123,7 @@ $sections = array(
             <li><strong>Cagnotte :</strong> chacun indique sa participation (facultative). Une barre montre où en est le total par rapport au prix, et le cadeau est complet quand la somme est atteinte.</li>
             <li>Les participants se retrouvent dans la fiche de l'idée, pour s'organiser en commentaire.</li>
             <li><strong>Collection :</strong> chaque élément se réserve un par un. On voit tout de suite ce qui reste à offrir (« 2 / 4 réservés »).</li>
+            <li>Chaque élément peut avoir son <strong>lien vers la boutique</strong> et rapporte autant de gemmes qu'une idée. Vous pouvez le <strong>marquer comme reçu</strong>, puis le remettre dans la liste si besoin. Quand tous les éléments sont reçus, la collection passe dans « Reçus ».</li>
             <li>Le menu de votre compte › <strong>« Les cadeaux que j'offre »</strong> récapitule tout ce que vous avez prévu, liste par liste, avec la date de chaque événement.</li>
         </ul>
     </div>
@@ -242,6 +243,7 @@ $sections = array(
         <ul class="guide-list">
             <li>Sur la page d'un produit, cliquez sur l'icône de l'extension : le nom, les photos, le prix et le lien sont déjà remplis.</li>
             <li>Choisissez la photo, la liste (la vôtre ou une liste secondaire), et c'est ajouté.</li>
+            <li>Pour compléter une collection, choisissez-la dans <strong>« Dans cette liste »</strong> : le produit y est ajouté comme élément avec son nom et son lien.</li>
             <li>Elle fonctionne avec Chrome, Edge, Brave et Opera, sur ordinateur. La fenêtre d'installation explique tout pas à pas.</li>
         </ul>
         <p><button type="button" class="btn btn--light" data-open="extension-dialog"><?php echo icon('download'); ?> Installer l'extension</button></p>

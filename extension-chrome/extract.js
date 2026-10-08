@@ -11,7 +11,8 @@ function extractProduct() {
             return '';
         }
     };
-    // Certains sites renvoient un texte encore encodé comme une URL (« Four%20Seasons ») ou en entités HTML (« &amp; »).
+    // Certains sites renvoient un texte encore encodé comme une URL (« Four%20Seasons »),
+    // en entités HTML (« &amp; ») ou avec des balises (« <p>… »). Fins de paragraphe et <br> deviennent des retours à la ligne.
     const decode = (text) => {
         let value = String(text || '');
         if (/%[0-9a-f]{2}/i.test(value)) {
@@ -21,12 +22,16 @@ function extractProduct() {
                 // « 50% de réduction » : pas un encodage, on garde le texte.
             }
         }
-        if (/&(#\d+|#x[0-9a-f]+|[a-z]+);/i.test(value)) {
-            value = new DOMParser().parseFromString(value, 'text/html').documentElement.textContent;
+        // Deux passes : des balises échappées (« &lt;p&gt; ») redeviennent des balises à la première.
+        for (let pass = 0; pass < 2 && /<\/?[a-z][^>]*>|&(#\d+|#x[0-9a-f]+|[a-z]+);/i.test(value); pass++) {
+            const html = value.replace(/<br\s*\/?>|<\/(p|div|li|h[1-6])>/gi, '$&\n');
+            value = new DOMParser().parseFromString(html, 'text/html').body.textContent;
         }
         return value;
     };
     const clean = (text) => decode(text).replace(/\s+/g, ' ').trim();
+    // Comme clean(), en gardant les retours à la ligne (une ligne vide au plus) : pour la description.
+    const cleanLines = (text) => decode(text).replace(/[^\S\n]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     const meta = (...names) => {
         for (const name of names) {
             const element = document.querySelector(`meta[property="${name}"], meta[name="${name}"], meta[itemprop="${name}"]`);
@@ -88,7 +93,7 @@ function extractProduct() {
 
     return {
         title: clean(product?.name) || meta('og:title', 'twitter:title') || clean(document.title),
-        description: clean(product?.description) || meta('og:description', 'twitter:description', 'description'),
+        description: cleanLines(product?.description) || meta('og:description', 'twitter:description', 'description'),
         images,
         price: price ? String(price) : '',
         currency,

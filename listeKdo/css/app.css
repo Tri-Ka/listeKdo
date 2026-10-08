@@ -3878,6 +3878,49 @@ body[data-page="guide"]:not([data-theme="home"]) {
     overflow-wrap: anywhere;
 }
 
+.item__link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.item__link:hover {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.item__link .icon {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    margin-left: 4px;
+    vertical-align: -1px;
+    color: var(--text-muted);
+}
+
+.item--received .item__name { color: var(--text-muted); }
+.item__received-form { flex: none; margin: 0; }
+
+.item__received {
+    width: 32px;
+    height: 32px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.item__received:hover {
+    background: var(--surface);
+    color: var(--brand-strong);
+    box-shadow: none;
+}
+
+.item__received[aria-pressed="true"] {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.item__received .icon { width: 14px; height: 14px; }
+
 /* Cases et réservations : seulement quand « Voir les idées offertes » est activé. */
 .item__form,
 .item__by {
@@ -4091,6 +4134,12 @@ body[data-page="guide"]:not([data-theme="home"]) {
 
 .collection__row .round-btn {
     margin-left: 6px;
+}
+
+.collection__row input[name="item_links[]"] {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
 }
 
 /* ---------- Date de l'événement : compte à rebours ---------- */
@@ -5583,6 +5632,8 @@ button.collection-pill {
     position: absolute;
     left: 24px;
     bottom: 4px;
+    /* Par-dessus la photo, même entourée d'un cadre de la boutique (.mini-frame, positionné). */
+    z-index: 2;
     display: grid;
     place-items: center;
     width: 14px;

@@ -354,7 +354,7 @@ function referral_url($user)
  */
 function item_for_form($item)
 {
-    return array('id' => (int) $item['id'], 'nom' => $item['nom']);
+    return array('id' => (int) $item['id'], 'nom' => $item['nom'], 'link' => isset($item['link']) ? safe_url($item['link']) : '');
 }
 
 /**

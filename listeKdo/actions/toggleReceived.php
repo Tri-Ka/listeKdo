@@ -16,7 +16,8 @@ if (!received_enabled()) {
     fail("L'archivage n'est pas encore activé (voir sql/2026-10-01-prix-participations-enfants.sql).", list_url($owner['code']), 500);
 }
 
-$received = empty($object['received_at']);
+$full = object_full($object);
+$received = !$full['received'];
 object_set_received($object, $received);
 
 // La vignette et sa fiche sont renvoyées entières : « Je l'offre », étiquettes et menu changent avec l'état.

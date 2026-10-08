@@ -167,16 +167,33 @@ document.querySelectorAll('.gallery__nav').forEach((button) => {
 
 const selectedList = () => fields.owner.selectedOptions[0];
 const isSuggestion = () => selectedList()?.dataset.suggest === '1';
-const submitLabel = () => (isSuggestion() ? `Suggérer à ${selectedList().textContent}` : 'Ajouter à la liste');
+const selectedCollection = () => !isSuggestion() && fields.collection_id.value;
+const submitLabel = () => (selectedCollection() ? 'Ajouter à la collection' : isSuggestion() ? `Suggérer à ${selectedList().textContent}` : 'Ajouter à la liste');
+
+function refreshDestination() {
+    const item = Boolean(selectedCollection());
+    $('[data-name-label]').textContent = item ? "Nom de l'élément" : 'Nom du Kdo';
+    $('.gallery').hidden = item;
+    $('[data-description-field]').hidden = item;
+    $('[data-price-field]').hidden = item || !account.prices;
+    $('[data-name-row]').classList.toggle('has-price', !item && Boolean(account.prices));
+    $('[data-submit-label]').textContent = submitLabel();
+}
+
+fields.collection_id.addEventListener('change', refreshDestination);
 
 function refreshTarget() {
     const suggest = isSuggestion();
+    const collections = (account.collections || []).filter((collection) => !suggest && collection.owner === fields.owner.value);
+    fields.collection_id.replaceChildren(new Option('Nouvelle idée', ''));
+    for (const collection of collections) fields.collection_id.append(new Option(collection.nom, String(collection.id)));
+    $('[data-collection-field]').hidden = collections.length === 0;
     const note = $('[data-suggest-note]');
     note.hidden = !suggest;
     if (suggest) {
         note.querySelector('span').textContent = `${selectedList().textContent} ne verra jamais cette idée. Ses autres amis la verront avec votre nom, et pourront la réserver.`;
     }
-    $('[data-submit-label]').textContent = submitLabel();
+    refreshDestination();
     $('[data-submit-icon]').setAttribute('href', suggest ? '#i-lightbulb' : '#i-gift');
 }
 
@@ -198,9 +215,11 @@ form.addEventListener('submit', async (event) => {
         body.append('owner', fields.owner.value);
         body.append('price', fields.price.value.trim());
         const suggest = isSuggestion();
+        const collection = selectedCollection();
+        if (collection) body.append('object_id', collection);
         if (suggest) body.append('suggest', '1');
 
-        const response = await fetch(`${site}actions/addObject.php`, {
+        const response = await fetch(`${site}actions/${collection ? 'addCollectionItem' : 'addObject'}.php`, {
             method: 'POST',
             body,
             credentials: 'include',
@@ -211,16 +230,16 @@ form.addEventListener('submit', async (event) => {
         if (!data?.ok) throw new Error(data?.message || "L'ajout a échoué, réessayez.");
 
         $('[data-open-list]').onclick = () => {
-            chrome.tabs.create({ url: `${site}index.php?user=${encodeURIComponent(fields.owner.value)}#new-${data.id}` });
+            chrome.tabs.create({ url: `${site}index.php?user=${encodeURIComponent(fields.owner.value)}#${collection ? 'card' : 'new'}-${data.id}` });
             window.close();
         };
         const doneImage = $('[data-done-image]');
-        doneImage.hidden = !fields.image.value;
+        doneImage.hidden = Boolean(collection) || !fields.image.value;
         if (fields.image.value) doneImage.src = fields.image.value;
         $('[data-done-name]').textContent = suggest
             ? `${fields.nom.value.trim()} : ${selectedList().textContent} ne la verra pas.`
             : fields.nom.value.trim();
-        $('[data-done-title]').textContent = suggest ? "C'est suggéré !" : "C'est sur la liste !";
+        $('[data-done-title]').textContent = collection ? "C'est dans la collection !" : suggest ? "C'est suggéré !" : "C'est sur la liste !";
         show('done');
     } catch (error) {
         warn(error.message, true);
@@ -290,8 +309,6 @@ $('[data-open-site]').addEventListener('click', () => {
     });
     $('[data-list-field]').hidden = codes.length < 2;
     refreshTarget();
-    $('[data-price-field]').hidden = !account.prices;
-    $('[data-name-row]').classList.toggle('has-price', Boolean(account.prices));
     const avatar = $('[data-avatar]');
     avatar.src = /^(https?|data):/.test(account.user.avatar) ? account.user.avatar : site + account.user.avatar;
     avatar.hidden = false;

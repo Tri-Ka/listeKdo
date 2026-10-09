@@ -1,28 +1,21 @@
 <?php
-$pageTitle = $isHowItWorks ? 'Comment ça marche ?' : ($owner ? theme_text($theme, 'heading', $owner) : $theme['title']);
-if ($owner && !$ctx['canView']) {
-    $pageTitle = 'Liste privée';
-}
+$meta = social_metadata($ctx, $theme, $isHowItWorks);
+$pageTitle = $meta['title'];
 ?><!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo e($pageTitle); ?></title>
-    <meta name="description" content="<?php echo e($pageTitle); ?>">
+    <?php echo render('partials/social_meta', array('meta' => $meta)); ?>
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <meta name="theme-color" content="<?php echo e(!empty($theme['colors']) ? $theme['colors']['hero-from'] : $theme['color']); ?>">
-    <meta property="og:title" content="<?php echo e($pageTitle); ?>">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="http://datcharrye.free.fr/listeKdo/img/<?php echo $owner ? e($theme['key']) . '/' : ''; ?>metaOg.jpg">
-    <?php if ($owner) : ?>
-        <meta property="og:url" content="<?php echo e(share_url($owner)); ?>">
-    <?php endif; ?>
-    <link rel="icon" href="favicon.ico">
+    <?php echo render('partials/favicons'); ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
     <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
+    <script type="importmap"><?php echo javascript_import_map(); ?></script>
     <script type="module" src="<?php echo e(asset('js/app.js')); ?>"></script>
 </head>
 

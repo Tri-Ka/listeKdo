@@ -25,5 +25,7 @@ if (!$link) {
 succeed(array(
     'name' => $user['nom'],
     'url' => $link['short'],
+    'long' => $link['url'],
+    'browser' => short_link_browser($link['url']),
     'expires' => date('d/m/Y à H:i', $link['expires']),
 ), '../admin.php', 'Lien de secours pour ' . $user['nom'] . ' : ' . $link['short']);

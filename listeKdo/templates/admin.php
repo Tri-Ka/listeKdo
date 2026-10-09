@@ -1,21 +1,24 @@
 <?php
-$params = $table['params'];
-$onBadges = null !== $badgesAdmin;
+$params = $table ? $table['params'] : array();
+$section = $sections[$tab];
 ?><!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Administration · Liste de Kdo</title>
+    <title><?php echo e($section['label']); ?> · Administration · Liste de Kdo</title>
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
-    <link rel="icon" href="favicon.ico">
+    <?php echo render('partials/favicons'); ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
     <link rel="stylesheet" href="<?php echo e(asset('css/admin.css')); ?>">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/6.1.0/echarts.min.js" crossorigin="anonymous"></script>
+    <?php if ('analytics' === $tab) : ?>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/6.1.0/echarts.min.js" crossorigin="anonymous"></script>
+    <?php endif; ?>
+    <script type="importmap"><?php echo javascript_import_map(); ?></script>
     <script type="module" src="<?php echo e(asset('js/admin.js')); ?>"></script>
 </head>
 
@@ -28,12 +31,25 @@ $onBadges = null !== $badgesAdmin;
         <span class="admin-bar__me"><?php echo avatar($me, 'admin-bar__avatar', false); ?> <span><?php echo e($me['nom']); ?></span></span>
     </header>
 
-    <main class="admin">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <p class="admin-sidebar__label">Gestion du site</p>
+            <nav class="admin-nav" aria-label="Administration">
+                <?php foreach ($sections as $key => $item) : ?>
+                    <a href="<?php echo e(admin_url(array(), array('tab' => $key))); ?>"<?php echo $tab === $key ? ' aria-current="page"' : ''; ?>>
+                        <?php echo 'gems' === $key ? gem_icon('admin-nav__gem') : icon($item['icon']); ?>
+                        <span><?php echo e($item['label']); ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
+        </aside>
+    <main class="admin" id="admin-content">
         <div class="admin__intro">
-            <h1>Tableau de bord</h1>
-            <p>Gérez les comptes, les rôles et les listes de Liste de Kdo.</p>
+            <h1><?php echo e($section['label']); ?></h1>
+            <p><?php echo e($section['description']); ?></p>
         </div>
 
+        <?php if ('analytics' === $tab) : ?>
         <ul class="stats">
             <li class="stat stat--users"><span class="stat__icon"><?php echo icon('users'); ?></span><strong><?php echo (int) $stats['users']; ?></strong><span>utilisateurs</span></li>
             <li class="stat stat--children"><span class="stat__icon"><?php echo icon('layer-group'); ?></span><strong><?php echo (int) $stats['children']; ?></strong><span>listes secondaires</span></li>
@@ -42,31 +58,21 @@ $onBadges = null !== $badgesAdmin;
         </ul>
 
         <?php echo render('partials/admin_insights', array('insights' => $insights)); ?>
+        <?php else : ?>
 
+        <?php if ('gems' === $tab) : ?>
+            <?php echo render('partials/admin_gems', array('badges' => $badgesAdmin, 'me' => $me)); ?>
+        <?php elseif ('badges' === $tab) : ?>
+            <?php echo render('partials/admin_badges', array('badges' => $badgesAdmin)); ?>
+        <?php else : ?>
         <section class="panel">
-            <div class="panel__head">
-                <nav class="panel__tabs" aria-label="Tableaux">
-                    <a href="<?php echo e(admin_url(array(), array('tab' => 'users'))); ?>"<?php echo !$onBadges && 'users' === $params['tab'] ? ' aria-current="page"' : ''; ?>><?php echo icon('users'); ?> Utilisateurs</a>
-                    <a href="<?php echo e(admin_url(array(), array('tab' => 'lists'))); ?>"<?php echo 'lists' === $params['tab'] ? ' aria-current="page"' : ''; ?>><?php echo icon('list'); ?> Listes</a>
-                    <?php if (badges_enabled()) : ?>
-                        <a href="admin.php?tab=badges"<?php echo $onBadges ? ' aria-current="page"' : ''; ?>><?php echo icon('gift'); ?> Badges</a>
-                    <?php endif; ?>
-                </nav>
+            <?php if ($table) : ?>
+                <?php echo render('partials/admin_table_head', array('params' => $params, 'caption' => 'Rechercher dans les ' . ('lists' === $tab ? 'listes' : 'utilisateurs'), 'placeholder' => 'Rechercher un nom…')); ?>
+            <?php endif; ?>
 
-                <?php if (!$onBadges) : ?>
-                <form class="search" method="get" action="admin.php" role="search" data-dt-search>
-                    <?php foreach (array('tab', 'sort', 'dir', 'filter', 'per') as $key) : ?>
-                        <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($params[$key]); ?>">
-                    <?php endforeach; ?>
-                    <?php echo icon('magnifying-glass', 'search__icon'); ?>
-                    <input type="search" name="q" value="<?php echo e($params['q']); ?>" placeholder="Rechercher un nom…" aria-label="Rechercher" autocomplete="off">
-                </form>
-                <?php endif; ?>
-            </div>
-
-            <?php if ($onBadges) : ?>
+            <?php if ('settings' === $tab) : ?>
                 <div class="panel__body">
-                    <?php echo render('partials/admin_badges', array('badges' => $badgesAdmin)); ?>
+                    <?php echo render('partials/admin_settings'); ?>
                 </div>
             <?php else : ?>
                 <div class="panel__body" data-dt>
@@ -74,7 +80,10 @@ $onBadges = null !== $badgesAdmin;
                 </div>
             <?php endif; ?>
         </section>
+        <?php endif; ?>
+        <?php endif; ?>
     </main>
+    </div>
 
     <dialog class="modal modal--small" id="admin-confirm" aria-labelledby="admin-confirm-title">
         <form method="dialog">
@@ -86,6 +95,31 @@ $onBadges = null !== $badgesAdmin;
             <footer class="modal__footer">
                 <button type="button" class="btn btn--ghost" data-close>Annuler</button>
                 <button type="submit" class="btn btn--primary" value="ok" data-confirm-ok></button>
+            </footer>
+        </form>
+    </dialog>
+
+    <dialog class="modal modal--small" id="admin-role" aria-labelledby="admin-role-title">
+        <form method="post" action="actions/adminRole.php" data-admin-role>
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="id" value="">
+            <header class="modal__header">
+                <h2 id="admin-role-title">Modifier le rôle</h2>
+                <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
+            </header>
+            <div class="modal__body">
+                <strong data-role-name></strong>
+                <label class="badge-admin__field"><span>Rôle</span>
+                    <select name="role" class="dt__select">
+                        <?php foreach (roles() as $key => $label) : ?>
+                            <option value="<?php echo e($key); ?>"><?php echo e($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <button type="button" class="btn btn--light" data-close>Annuler</button>
+                <button type="submit" class="btn btn--primary">Enregistrer</button>
             </footer>
         </form>
     </dialog>

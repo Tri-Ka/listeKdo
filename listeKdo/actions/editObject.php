@@ -6,6 +6,16 @@ $me = require_login();
 list($object, $owner) = managed_object($me, input_int('object_id'));
 $back = list_url($owner['code']);
 
+$destination = $owner;
+$destinationCode = input('list_owner');
+if ('' !== $destinationCode && $destinationCode !== $owner['code']) {
+    $destination = user_find_by_code($destinationCode);
+    // Une suggestion reste sur sa liste pour ne pas la révéler à son destinataire.
+    if (is_suggestion($object) || !can_manage($me, $destination)) {
+        fail("Vous ne pouvez pas déplacer cette idée vers cette liste.", $back, 403);
+    }
+}
+
 $name = input('nom');
 if ('' === $name) {
     fail("Donnez un nom à l'idée.", $back);
@@ -21,6 +31,7 @@ $changes = array(
     'nom' => $name,
     'description' => input('description'),
     'link' => safe_url(input('link')),
+    'user_id' => (int) $destination['id'],
 );
 if (prices_enabled()) {
     $changes['price'] = parse_amount(input('price'));
@@ -46,9 +57,13 @@ if (upload_present('file')) {
     }
 }
 
-db_update('liste_noel', $changes, array('id' => (int) $object['id']));
+if (!db_update('liste_noel', $changes, array('id' => (int) $object['id']))) {
+    fail("L'idée n'a pas pu être enregistrée.", $back);
+}
 
 // Décocher « collection » supprime les éléments.
 items_save($object, $isCollection ? $itemNames : array(), $itemIds, $itemLinks);
 
-succeed(array(), $back . '#card-' . (int) $object['id'], 'Idée modifiée.');
+notify_object_move($me, $object, $owner, $destination);
+
+succeed(array(), list_url($destination['code']) . '#card-' . (int) $object['id'], 'Idée modifiée.');

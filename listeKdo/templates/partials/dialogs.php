@@ -191,6 +191,17 @@ $addLabel = $suggestMode ? 'Suggérer' : 'Ajouter';
                 <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
             </header>
             <div class="modal__body form">
+                <?php if ($ctx['canEdit'] && count($ctx['children']) > 0) : ?>
+                    <label class="field" data-object-list hidden>
+                        <span>Liste</span>
+                        <select name="list_owner" disabled>
+                            <option value="<?php echo e($me['code']); ?>"<?php echo $ctx['isOwner'] ? ' selected' : ''; ?>>Ma liste — <?php echo e($me['nom']); ?></option>
+                            <?php foreach ($ctx['children'] as $child) : ?>
+                                <option value="<?php echo e($child['code']); ?>"<?php echo $child['code'] === $ctx['owner']['code'] ? ' selected' : ''; ?>><?php echo e($child['nom']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
                 <?php if ($suggestMode) : ?>
                     <p class="form__notice"><?php echo icon('lightbulb'); ?>
                         <span><strong><?php echo e($ctx['owner']['nom']); ?> ne verra jamais cette idée.</strong>

@@ -32,6 +32,7 @@ async function setPrivate(page, on) {
     const browser = await chromium.launch();
     const owner = await session(browser, 'Etienne');
     const friend = await session(browser, 'Mallory');
+    await owner.route('https://da.gd/s?*', (route) => route.abort());
 
     await owner.goto(`${B}?user=${ETIENNE}`);
     const ideaId = await owner.locator('.card[data-object][data-received="0"]').first().getAttribute('data-object');
@@ -47,7 +48,20 @@ async function setPrivate(page, on) {
     /* ---- Rendre la liste privée ---- */
     await setPrivate(owner, true);
     check(await owner.locator('.profile__private').count() === 1, 'propriétaire : pastille « Privée »');
-    check(await owner.locator('[data-share]').count() === 0, 'propriétaire : bloc de partage masqué');
+    check(await owner.locator('[data-share][data-short=invite]').count() === 1, 'propriétaire : partage privé par invitation');
+    await owner.click('.topbar__share');
+    check(await owner.locator('#share-dialog').isVisible(), 'propriétaire : bouton de partage disponible');
+    check((await owner.locator('#share-dialog .share__label').innerText()).includes('liste privée'), 'partage : explication de l’accès privé après connexion');
+    const sharedInvite = await owner.locator('[data-share-url]').inputValue();
+    check(/[?&]invite=[0-9a-f]{20}$/.test(sharedInvite), 'partage : lien qui accorde l’accès à la liste');
+    check(sharedInvite === await owner.locator('[data-invite-url]').inputValue(), 'partage et paramètres : même invitation valide');
+    await owner.locator('#share-dialog [data-close]').click();
+    await owner.setViewportSize({ width: 390, height: 844 });
+    await owner.locator('[data-user-menu] > summary').click();
+    await owner.locator('.user-menu__mobile [data-open="share-dialog"]').click();
+    check(await owner.locator('#share-dialog').isVisible(), 'mobile : partage de la liste privée depuis le menu');
+    await owner.locator('#share-dialog [data-close]').click();
+    await owner.setViewportSize({ width: 1366, height: 900 });
     check(await owner.locator('.card[data-object]').count() > 0, 'propriétaire : voit toujours ses idées');
     await owner.screenshot({ path: `${__dirname}/out/private-owner.png` });
 
@@ -96,6 +110,11 @@ async function setPrivate(page, on) {
     check(await friend.locator('.private-notice').count() === 0 && await friend.locator(`#idea-${secretId}`).count() === 1, 'amie invitée : voit la liste privée');
     check(await friend.locator(`.friends a[href*="${ETIENNE}"]`).count() === 1, 'amie invitée : la liste est dans ses amis');
     check(await friend.locator('[data-share]').count() === 0, 'amie invitée : pas de bloc de partage');
+    const inviteDenied = await friend.evaluate(async (code) => {
+        const response = await fetch('actions/shortUrl.php?type=invite&user=' + code);
+        return { status: response.status, data: await response.json() };
+    }, ETIENNE);
+    check(inviteDenied.status === 404 && !inviteDenied.data.long, 'amie invitée : ne peut pas obtenir le lien qui accorde l’accès');
     check(await post(`${B}actions/addReaction.php`, { object: ideaId, value: 1 }) === 200, 'amie invitée : réaction acceptée');
     await post(`${B}actions/addReaction.php`, { object: ideaId, value: 1 });
     await setViewer(false);
@@ -104,10 +123,11 @@ async function setPrivate(page, on) {
 
     /* ---- Lien d'invitation : ouvert sans être connecté, accepté après la connexion ---- */
     await owner.goto(`${B}?user=${ETIENNE}`);
-    // Lien long et lien court (TinyURL) fabriqués par le serveur, comme pour le champ des paramètres.
+    // L'invitation est la même dans le partage et dans les paramètres.
     const shortInvite = () => owner.evaluate(async (code) => (await fetch(`actions/shortUrl.php?type=invite&user=${code}`, { headers: { Accept: 'application/json' } })).json(), ETIENNE);
     const invite = await shortInvite();
     const inviteUrl = invite.long;
+    check(await owner.locator('[data-share-url]').inputValue() === inviteUrl, 'partage : invitation reconnue par le serveur');
     check(/[?&]invite=[0-9a-f]{20}$/.test(inviteUrl), 'paramètres : lien d\'invitation créé');
     await owner.waitForFunction((url) => document.querySelector('#list-settings-dialog [data-invite-url]').value === url, invite.url);
     console.log((invite.url.startsWith('https://tinyurl.com/') ? 'OK   ' : 'INFO ') + 'lien d\'invitation raccourci : ' + invite.url.replace(/invite=.*/, 'invite=…'));
@@ -154,6 +174,7 @@ async function setPrivate(page, on) {
     const childUrl = owner.url().split('#')[0];
     check(await owner.locator('.profile__private').count() === 1 && await owner.locator('.card--add').count() === 1, 'liste secondaire privée : le gestionnaire la voit et la modifie');
     check(await owner.locator('#list-settings-dialog input[name=is_private][type=checkbox]').isChecked(), 'liste secondaire : case cochée dans sa fiche');
+    check(await owner.locator('.topbar__share').count() === 1 && await owner.locator('[data-share][data-short=invite]').count() === 1, 'gestionnaire : peut partager la liste privée par invitation');
     // Gestionnaire : « Je l'ai reçu » retire « Je l'offre » sans recharger, « Remettre dans la liste » le remet.
     await owner.click('.card--add');
     await owner.fill('#object-form-dialog input[name=nom]', 'Idée reçue test');

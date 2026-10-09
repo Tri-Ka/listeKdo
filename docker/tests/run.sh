@@ -5,11 +5,19 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 COMPOSE="docker compose -f ../compose.yml"
+$COMPOSE exec -T -u site php /usr/local/bin/php -q /var/www/site/docker/tests/short-url.php
+$COMPOSE exec -T -u site php /usr/local/bin/php -q /var/www/site/docker/tests/private-sharing.php
+$COMPOSE exec -T -u site php /usr/local/bin/php -q /var/www/site/docker/tests/social-meta.php
+$COMPOSE exec -T -u site -e LISTEKDO_LOCAL_TEST=1 php /usr/local/bin/php -q /var/www/site/docker/tests/move-notifications.php
+bash run-gem-rewards.sh
+bash run-gem-tables.sh
+ADMIN_TABLE_TEST=badge-table.js bash run-gem-tables.sh
 sql() { $COMPOSE exec -T mysql mysql -uroot -proot datcharrye -e "$1" 2>/dev/null; }
 
 # Sauvegarde des vrais mots de passe, restaurés à la fin même si le test échoue.
 saved=$(sql "SELECT CONCAT('UPDATE liste_user SET password=', QUOTE(password), ', secret_question=', QUOTE(secret_question), ', secret_answer=', QUOTE(secret_answer), ', pictureFile=', QUOTE(pictureFile), ' WHERE id=', id, ';') FROM liste_user WHERE id IN (1, 141);" | tail -n +2)
-trap 'sql "$saved"' EXIT
+saved_short_provider=$(sql "SELECT CONCAT('REPLACE INTO kdo_setting (name,value) VALUES (', QUOTE(name), ',', QUOTE(value), ');') FROM kdo_setting WHERE name='short_link_provider';" | tail -n +2)
+trap 'sql "$saved"; sql "DELETE FROM kdo_setting WHERE name='\''short_link_provider'\''; $saved_short_provider"' EXIT
 # Une question secrète factice, pour que la fenêtre d'invitation ne s'ouvre pas pendant les tests.
 sql "UPDATE liste_user SET password = MD5('test'), secret_question = 'test', secret_answer = 'test' WHERE id IN (1, 141);"
 # Rappels d'événement d'Etienne et Mallory recréés à neuf : sinon un ancien rappel peut être repoussé
@@ -20,7 +28,7 @@ mkdir -p out && touch out/.start
 status=0
 docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     -v "$PWD/../../extension-chrome":/ext:ro mcr.microsoft.com/playwright:v1.63.0-noble \
-    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node shop.js && node referral.js && node account.js && node private.js && node suggestions.js && node tour.js && node extension.js' || status=$?
+    sh -c 'npm install --silent --no-save playwright-core@1.63 >/dev/null 2>&1 && node short-links.js && node e2e.js && node collections.js && node features.js && node secret.js && node admin.js && node badges.js && node gems.js && node shop.js && node referral.js && node account.js && node private.js && node suggestions.js && node tour.js && node extension.js' || status=$?
 
 # Nettoyage : comptes de test et images envoyées pendant le test.
 for id in $(sql "SELECT id FROM liste_user WHERE nom LIKE 'Test1%';" | tail -n +2); do rm -rf "../../listeKdo/uploads/$id"; done

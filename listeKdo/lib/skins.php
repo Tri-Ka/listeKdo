@@ -25,15 +25,15 @@ function skins_enabled()
 
 /**
  * Gemmes rapportées par défaut par un badge, selon son type et son niveau.
- * Un nouveau venu gagne une vingtaine de gemmes avec ses premières actions ; un habitué très actif, quelques centaines.
+ * Barème aligné sur une idée à 40 gemmes : de 40 à 640 pour un badge, de 400 à 1600 pour un trophée.
  */
 function badge_default_gems($kind, $tier)
 {
-    $badge = array('bronze' => 5, 'silver' => 15, 'gold' => 40, 'legend' => 80);
-    $trophy = array('bronze' => 50, 'silver' => 50, 'gold' => 100, 'legend' => 200);
+    $badge = array('bronze' => 40, 'silver' => 120, 'gold' => 320, 'legend' => 640);
+    $trophy = array('bronze' => 400, 'silver' => 400, 'gold' => 800, 'legend' => 1600);
     $values = 'trophy' === $kind ? $trophy : $badge;
 
-    return isset($values[$tier]) ? $values[$tier] : 5;
+    return isset($values[$tier]) ? $values[$tier] : 40;
 }
 
 /**
@@ -48,13 +48,13 @@ function badge_gems($badge)
 function badge_gems_sql()
 {
     return "CASE WHEN b.gems > 0 THEN b.gems
-        WHEN b.kind = 'trophy' AND b.tier = 'legend' THEN 200
-        WHEN b.kind = 'trophy' AND b.tier = 'gold' THEN 100
-        WHEN b.kind = 'trophy' THEN 50
-        WHEN b.tier = 'legend' THEN 80
-        WHEN b.tier = 'gold' THEN 40
-        WHEN b.tier = 'silver' THEN 15
-        ELSE 5 END";
+        WHEN b.kind = 'trophy' AND b.tier = 'legend' THEN 1600
+        WHEN b.kind = 'trophy' AND b.tier = 'gold' THEN 800
+        WHEN b.kind = 'trophy' THEN 400
+        WHEN b.tier = 'legend' THEN 640
+        WHEN b.tier = 'gold' THEN 320
+        WHEN b.tier = 'silver' THEN 120
+        ELSE 40 END";
 }
 
 /**
@@ -64,13 +64,48 @@ function badge_gems_sql()
 function gem_actions()
 {
     return array(
-        'ideas' => array('Idée ou élément de collection ajouté', 2),
-        'comments' => array('Commentaire écrit', 1),
-        'reactions' => array('Réaction donnée', 1),
-        'gifts' => array('Cadeau réservé (idée ou élément)', 3),
-        'groups' => array('Participation à une cagnotte', 3),
-        'friends' => array('Ami ajouté', 1),
+        'ideas' => array('Idée ou élément de collection ajouté', 40),
+        'comments' => array('Commentaire écrit', 10),
+        'reactions' => array('Réaction donnée', 5),
+        'gifts' => array('Cadeau réservé (idée ou élément)', 60),
+        'groups' => array('Participation à une cagnotte', 60),
+        'friends' => array('Ami ajouté', 20),
+        'suggestions' => array('Idée suggérée à un ami', 40),
+        'suggestions_gifted' => array('Sa suggestion réservée par quelqu’un d’autre', 100),
+        'gifts_received' => array('Son cadeau confirmé reçu par le destinataire', 100),
+        'groups_completed' => array('Participation à une cagnotte ayant atteint son objectif', 100),
+        'profile_complete' => array('Profil complet', 200),
     );
+}
+
+/** Passage unique au nouveau barème ; les montants personnalisés sont conservés. */
+function gem_rewards_upgrade($settings)
+{
+    if (isset($settings['gem_rewards_version']) && '2' === $settings['gem_rewards_version']) return $settings;
+    $legacy = array('ideas' => 2, 'comments' => 1, 'reactions' => 1, 'gifts' => 3, 'groups' => 3, 'friends' => 1);
+    $actions = gem_actions();
+    $cases = array();
+    $conditions = array();
+    $caseParams = array();
+    $conditionParams = array();
+    foreach ($legacy as $key => $old) {
+        $name = 'gems_' . $key;
+        if (isset($settings[$name]) && (string) $old === $settings[$name]) {
+            $cases[] = 'WHEN ? THEN ?';
+            $caseParams[] = $name;
+            $caseParams[] = (string) $actions[$key][1];
+            $conditions[] = '(name = ? AND value = ?)';
+            $conditionParams[] = $name;
+            $conditionParams[] = (string) $old;
+        }
+    }
+    if (count($cases) && !db_query('UPDATE kdo_setting SET value = CASE name ' . implode(' ', $cases) . ' ELSE value END WHERE ' . implode(' OR ', $conditions), array_merge($caseParams, $conditionParams))) return $settings;
+    // Les quatre badges de visite livrés avec l’ancien barème avaient un montant explicite.
+    if (badges_enabled() && db_has_column('badge', 'gems') && !db_query("UPDATE badge SET gems = CASE code WHEN 'visit-1' THEN 40 WHEN 'visit-7' THEN 120 WHEN 'visit-30' THEN 320 WHEN 'trophy-visit-100' THEN 1600 ELSE gems END WHERE (code = 'visit-1' AND gems = 5) OR (code = 'visit-7' AND gems = 15) OR (code = 'visit-30' AND gems = 40) OR (code = 'trophy-visit-100' AND gems = 200)")) return $settings;
+    setting_save('gem_rewards_version', '2');
+    // Relire le résultat : une éventuelle modification simultanée en admin reste prioritaire.
+    foreach (db_all('SELECT name, value FROM kdo_setting') as $row) $settings[$row['name']] = $row['value'];
+    return $settings;
 }
 
 /**
@@ -93,6 +128,7 @@ function setting($name, $default)
             foreach (db_all('SELECT name, value FROM kdo_setting') as $row) {
                 $settings[$row['name']] = $row['value'];
             }
+            $settings = gem_rewards_upgrade($settings);
         }
     }
 
@@ -118,26 +154,85 @@ function gem_action_rates()
 }
 
 /**
- * Nombre de chaque action faite par une personne (une seule requête). Les éléments supprimés ne comptent plus.
+ * Nombre de chaque action faite par une personne (requête groupée et lecture du profil). Chaque élément compte une fois ; annulations et suppressions retirent les gains correspondants.
  */
 function gem_action_counts($userId)
 {
     $id = (int) $userId;
-    $sql = 'SELECT
-        (SELECT COUNT(*) FROM liste_noel WHERE user_id = ' . $id . own_ideas_sql() . ')'
-        . (items_enabled() ? ' + (SELECT COUNT(*) FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ' . $id . own_ideas_sql('n.') . ')' : '') . ' AS ideas,
-        (SELECT COUNT(*) FROM comment WHERE user_id = ' . $id . ') AS comments,
-        (SELECT COUNT(*) FROM reaction WHERE user_id = ' . $id . ') AS reactions,
-        (SELECT COUNT(*) FROM liste_noel WHERE gifted_by = ' . $id . ')'
-        . (items_enabled() ? ' + (SELECT COUNT(*) FROM liste_item WHERE gifted_by = ' . $id . ')' : '') . ' AS gifts,
-        ' . (participations_enabled() ? '(SELECT COUNT(*) FROM liste_participation WHERE user_id = ' . $id . ')' : '0') . ' AS groups,
-        (SELECT COUNT(DISTINCT u.id) FROM user_friend f INNER JOIN liste_user u ON u.code = f.friend_code WHERE f.user_id = ' . $id . ') AS friends';
-    $row = db_one($sql);
-    $counts = array();
-    foreach (array_keys(gem_actions()) as $key) {
-        $counts[$key] = $row ? (int) $row[$key] : 0;
+    $items = items_enabled();
+    $groups = participations_enabled();
+    $columns = array();
+    $params = array();
+    $ideas = '(SELECT COUNT(*) FROM liste_noel WHERE user_id = ?' . own_ideas_sql() . ')';
+    $params[] = $id;
+    if ($items) {
+        $ideas .= ' + (SELECT COUNT(*) FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE n.user_id = ?' . own_ideas_sql('n.') . ')';
+        $params[] = $id;
+    }
+    $columns[] = $ideas . ' AS ideas';
+    $columns[] = '(SELECT COUNT(*) FROM comment WHERE user_id = ?) AS comments';
+    $params[] = $id;
+    $columns[] = '(SELECT COUNT(*) FROM reaction WHERE user_id = ?) AS reactions';
+    $params[] = $id;
+    $gifts = '(SELECT COUNT(*) FROM liste_noel WHERE gifted_by = ?)';
+    $params[] = $id;
+    if ($items) {
+        $gifts .= ' + (SELECT COUNT(*) FROM liste_item WHERE gifted_by = ?)';
+        $params[] = $id;
+    }
+    $columns[] = $gifts . ' AS gifts';
+    $columns[] = $groups ? '(SELECT COUNT(*) FROM liste_participation WHERE user_id = ?) AS groups' : '0 AS groups';
+    if ($groups) $params[] = $id;
+    $columns[] = '(SELECT COUNT(DISTINCT u.id) FROM user_friend f INNER JOIN liste_user u ON u.code = f.friend_code WHERE f.user_id = ?) AS friends';
+    $params[] = $id;
+
+    // Suggestions : uniquement leur auteur, jamais le propriétaire de la liste qui les ignore.
+    if (suggestions_enabled()) {
+        $columns[] = '(SELECT COUNT(*) FROM liste_noel WHERE suggested_by = ? AND user_id <> ?) AS suggestions';
+        $params[] = $id;
+        $params[] = $id;
+        $columns[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.suggested_by = ? AND n.user_id <> ? AND ' . suggestion_reserved_sql('n.') . ') AS suggestions_gifted';
+        $params[] = $id;
+        $params[] = $id;
+    } else {
+        $columns[] = '0 AS suggestions';
+        $columns[] = '0 AS suggestions_gifted';
     }
 
+    // Une seule récompense par cadeau/élément reçu, attribuée à celui qui l’a offert.
+    $received = array('0');
+    $notCollection = $items ? ' AND NOT EXISTS (SELECT 1 FROM liste_item gi WHERE gi.product_id = n.id)' : '';
+    if (received_enabled()) {
+        $received[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.gifted_by = ? AND n.user_id <> ? AND n.received_at IS NOT NULL' . $notCollection . ')';
+        $params[] = $id;
+        $params[] = $id;
+    }
+    if ($items && (items_received_enabled() || received_enabled())) {
+        $itemReceived = array();
+        if (items_received_enabled()) $itemReceived[] = 'i.received_at IS NOT NULL';
+        if (received_enabled()) $itemReceived[] = 'n.received_at IS NOT NULL';
+        $received[] = '(SELECT COUNT(*) FROM liste_item i INNER JOIN liste_noel n ON n.id = i.product_id WHERE i.gifted_by = ? AND n.user_id <> ? AND (' . implode(' OR ', $itemReceived) . '))';
+        $params[] = $id;
+        $params[] = $id;
+    }
+    if ($groups && (received_enabled() || items_received_enabled())) {
+        $received[] = '(SELECT COUNT(DISTINCT n.id) FROM liste_noel n INNER JOIN liste_participation p ON p.product_id = n.id WHERE p.user_id = ? AND n.user_id <> ? AND ' . received_objects_sql('n.') . $notCollection . ')';
+        $params[] = $id;
+        $params[] = $id;
+    }
+    $columns[] = implode(' + ', $received) . ' AS gifts_received';
+    if ($groups && prices_enabled()) {
+        $columns[] = '(SELECT COUNT(*) FROM liste_noel n WHERE n.user_id <> ? AND n.price > 0 AND EXISTS (SELECT 1 FROM liste_participation p WHERE p.product_id = n.id AND p.user_id = ?) AND (SELECT SUM(amount) FROM liste_participation p WHERE p.product_id = n.id) >= n.price) AS groups_completed';
+        $params[] = $id;
+        $params[] = $id;
+    } else $columns[] = '0 AS groups_completed';
+
+    $row = db_one('SELECT ' . implode(', ', $columns), $params);
+    $profile = badge_profile_values(user_find($id));
+    $counts = array();
+    foreach (array_keys(gem_actions()) as $key) {
+        $counts[$key] = 'profile_complete' === $key ? (5 === $profile['profile_complete'] ? 1 : 0) : ($row ? (int) $row[$key] : 0);
+    }
     return $counts;
 }
 

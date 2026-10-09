@@ -44,8 +44,8 @@ $kinds = accessory_kinds();
         <div class="shop__wallet">
             <?php echo gem_icon('shop__wallet-gem'); ?>
             <span class="shop__wallet-text">
-                <strong><?php echo (int) $gems['balance']; ?></strong>
-                <span>gemme<?php echo 1 < $gems['balance'] ? 's' : ''; ?></span>
+                <strong data-gems-balance><?php echo (int) $gems['balance']; ?></strong>
+                <span data-gems-unit>gemme<?php echo 1 < $gems['balance'] ? 's' : ''; ?></span>
             </span>
         </div>
     </header>
@@ -308,7 +308,7 @@ $kinds = accessory_kinds();
                         <li><?php echo e($actions[$key][0]); ?> <b>+<?php echo (int) $rate; ?> <?php echo gem_icon(); ?></b></li>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <li><a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>#badges">Chaque badge</a> <b>+5 à +200 <?php echo gem_icon(); ?></b></li>
+                <li><a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>#badges">Chaque badge</a> <b>+<?php echo (int) badge_default_gems('badge', 'bronze'); ?> à +<?php echo number_format(badge_default_gems('trophy', 'legend'), 0, ',', ' '); ?> <?php echo gem_icon(); ?></b></li>
             </ul>
         </div>
     </div>

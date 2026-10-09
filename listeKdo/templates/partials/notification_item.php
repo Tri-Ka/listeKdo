@@ -18,6 +18,9 @@
                 <?php if ('' !== (string) $notification['product_nom']) : ?>
                     <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?></small>
                 <?php endif; ?>
+            <?php elseif (NOTIF_MOVE == $notification['type']) : ?>
+                a changé la liste de cette idée
+                <small class="notification__hint"><?php echo e(legacy_text($notification['product_nom'])); ?> · Liste de <?php echo e($notification['owner_nom']); ?></small>
             <?php elseif (NOTIF_SUGGESTION == $notification['type']) : ?>
                 a suggéré une idée pour <strong><?php echo e($notification['owner_nom']); ?></strong> 💡
                 <?php if ('' !== (string) $notification['product_nom']) : ?>

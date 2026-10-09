@@ -6,7 +6,7 @@
  *   comment       commentaires sur une idée
  *   reaction      réactions (type 1 à 6) sur une idée
  *   notification  type 1 = commentaire, 2 = nouvelle idée, 3 = réaction, 4 = rappel, 5 = réservation, 6 = participation,
- *                 7 = badges, 8 = parrainage, 9 = suggestion
+ *                 7 = badges, 8 = parrainage, 9 = suggestion, 10 = changement de liste
  *   user_friend   amitiés (user_id -> friend_code)
  */
 
@@ -27,6 +27,8 @@ define('NOTIF_REFERRAL', 8);
 // Un ami suggère une idée sur la liste de quelqu'un d'autre : author_id = l'ami, product_id = la suggestion.
 // Montrée aux amis de la liste, jamais à son propriétaire (voir notifications_where()).
 define('NOTIF_SUGGESTION', 9);
+// L'idée a changé de liste ; son lien pointe toujours vers sa liste actuelle.
+define('NOTIF_MOVE', 10);
 
 /**
  * Thèmes de liste. %s est remplacé par le nom du propriétaire.
@@ -384,7 +386,11 @@ function list_invite_url($owner)
 {
     $token = isset($owner['invite_token']) ? (string) $owner['invite_token'] : '';
     if ('' === $token) {
-        $token = list_invite_reset($owner);
+        // Plusieurs fenêtres peuvent demander le lien pendant le même affichage.
+        // La première peut avoir créé le jeton après le chargement de $owner.
+        $current = db_one('SELECT invite_token FROM liste_user WHERE id = ?', array((int) $owner['id']));
+        $token = $current && '' !== (string) $current['invite_token']
+            ? (string) $current['invite_token'] : list_invite_reset($owner);
     }
 
     return share_url($owner) . '&invite=' . $token;
@@ -432,6 +438,14 @@ function can_view($me, $owner)
 
     return $me && viewers_enabled()
         && null !== db_one('SELECT list_id FROM liste_viewer WHERE list_id = ? AND user_id = ?', array((int) $owner['id'], (int) $me['id']));
+}
+
+/**
+ * Une liste privée ne peut être partagée par invitation que par ceux qui la gèrent.
+ */
+function can_share($me, $owner)
+{
+    return $owner && (!is_private_list($owner) || (invites_enabled() && can_manage($me, $owner)));
 }
 
 /**
@@ -937,6 +951,21 @@ function own_ideas_sql($alias = '')
     return suggestions_enabled() ? ' AND ' . $alias . 'suggested_by IS NULL' : '';
 }
 
+/** Une suggestion réservée par quelqu’un d’autre que son auteur et son destinataire. */
+function suggestion_reserved_sql($alias = 'n.')
+{
+    $other = $alias . 'suggested_by';
+    $owner = $alias . 'user_id';
+    $sql = '(' . $alias . 'gifted_by IS NOT NULL AND ' . $alias . 'gifted_by <> ' . $other . ' AND ' . $alias . 'gifted_by <> ' . $owner . ')';
+    if (items_enabled()) {
+        $sql .= ' OR EXISTS (SELECT 1 FROM liste_item si WHERE si.product_id = ' . $alias . 'id AND si.gifted_by IS NOT NULL AND si.gifted_by <> ' . $other . ' AND si.gifted_by <> ' . $owner . ')';
+    }
+    if (participations_enabled()) {
+        $sql .= ' OR EXISTS (SELECT 1 FROM liste_participation sp WHERE sp.product_id = ' . $alias . 'id AND sp.user_id <> ' . $other . ' AND sp.user_id <> ' . $owner . ')';
+    }
+    return '(' . $sql . ')';
+}
+
 /**
  * Peut-on suggérer une idée sur cette liste ? Il faut être ami de la liste, la voir, et ne pas la gérer
  * (le propriétaire et les gestionnaires ajoutent directement leurs idées).
@@ -1360,6 +1389,13 @@ function notify($authorId, $objectId, $type)
     ));
 }
 
+function notify_object_move($author, $object, $source, $destination)
+{
+    if ((int) $source['id'] !== (int) $destination['id']) {
+        notify($author['id'], $object['id'], NOTIF_MOVE);
+    }
+}
+
 /**
  * Notification de don (NOTIF_GIFT ou NOTIF_PARTICIPATION) : une seule par ami et par idée.
  * $on = true la crée si besoin (en gardant sa date d'origine), false la supprime.
@@ -1492,6 +1528,9 @@ function notifications_where($user, $friends)
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         $where .= ' OR (n.author_id IN (?) AND n.type = ? AND p.user_id IN (?))';
         array_push($params, $friendIds, NOTIF_NEW_IDEA, $friendIds, NOTIF_COMMENT, $friendIds);
+        // Déplacement : amis de l'auteur ou de la liste d'arrivée.
+        $where .= ' OR (n.type = ? AND (n.author_id IN (?) OR p.user_id IN (?)))';
+        array_push($params, NOTIF_MOVE, $friendIds, $friendIds);
         $where .= ' OR (n.author_id IN (?) AND n.type = ?)';
         array_push($params, $friendIds, NOTIF_EVENT);
         /* Suggestion : visible de tous les amis de la liste, même sans être ami avec son auteur. */
@@ -1511,7 +1550,33 @@ function notifications_where($user, $friends)
         array_push($params, NOTIF_PARTICIPATION, $userId, $userId);
     }
 
+    // Les personnes qui offrent déjà ce cadeau doivent pouvoir retrouver sa nouvelle liste.
+    $moveRecipients = 'p.gifted_by = ?';
+    $moveParams = array($userId);
+    if (items_enabled()) {
+        $moveRecipients .= ' OR p.id IN (SELECT product_id FROM liste_item WHERE gifted_by = ?)';
+        $moveParams[] = $userId;
+    }
+    if (participations_enabled()) {
+        $moveRecipients .= ' OR p.id IN (SELECT product_id FROM liste_participation WHERE user_id = ?)';
+        $moveParams[] = $userId;
+    }
+    $where .= ' OR (n.type = ? AND (' . $moveRecipients . '))';
+    $params[] = NOTIF_MOVE;
+    $params = array_merge($params, $moveParams);
+
     $where .= ')';
+
+    // Une idée archivée reste visible seulement aux personnes qui gèrent sa liste.
+    if (received_enabled()) {
+        $where .= ' AND (n.type <> ? OR p.received_at IS NULL OR p.user_id = ?';
+        array_push($params, NOTIF_MOVE, $userId);
+        if (children_enabled()) {
+            $where .= ' OR p.user_id IN (SELECT child_id FROM liste_manager WHERE user_id = ?)';
+            $params[] = $userId;
+        }
+        $where .= ')';
+    }
 
     // Rien de ce qui touche une suggestion n'arrive à son propriétaire (ni la suggestion, ni ses commentaires, réactions, dons).
     if (suggestions_enabled()) {

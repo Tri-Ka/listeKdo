@@ -72,6 +72,7 @@ $sections = array(
             <li><strong>Une collection</strong> regroupe plusieurs éléments à offrir séparément : les tomes d'une BD, des figurines, des livres d'une série…</li>
             <li>Le <?php echo icon('heart'); ?> sur une idée en fait un <strong>coup de cœur</strong>, pour montrer ce qui vous ferait le plus plaisir.</li>
             <li>Le menu <strong>« ⋯ »</strong> d'une idée permet de la modifier, de la supprimer, ou d'indiquer <strong>« Je l'ai reçu »</strong> : elle passe alors dans l'onglet « Reçus », que vous êtes seul à voir.</li>
+            <li>Si vous gérez plusieurs listes, le champ <strong>« Liste »</strong> dans <strong>« Modifier »</strong> permet de déplacer une idée vers votre liste personnelle ou une liste secondaire. Ses commentaires et ses réservations sont conservés. Une notification prévient les proches concernés et les personnes qui l’offrent, avec un lien vers sa nouvelle liste.</li>
         </ul>
     </div>
     <figure class="guide-feature__media">
@@ -88,7 +89,7 @@ $sections = array(
             <li>Un <strong>lien court</strong> à copier, ou à envoyer directement par WhatsApp, Facebook ou X.</li>
             <li>N'importe qui peut <strong>consulter</strong> la liste avec ce lien. Pour réserver un cadeau, commenter ou réagir, il faut un compte (gratuit, et prêt en une minute).</li>
             <li>Votre <strong>code de parrainage</strong> est juste en dessous : un proche qui s'inscrit avec lui reçoit des gemmes de bienvenue, et vous aussi dès qu'il ajoute sa première idée.</li>
-            <li>Besoin de discrétion ? Rendez votre liste <strong>privée</strong> dans les paramètres : elle n'est plus visible, même avec le lien, sauf par les <strong>personnes que vous choisissez</strong> : cochez vos amis juste en dessous de l'option, ou envoyez le <strong>lien d'invitation</strong> à ceux qui ne le sont pas encore.</li>
+            <li>Besoin de discrétion ? Rendez votre liste <strong>privée</strong> dans les paramètres : cochez les amis autorisés, ou utilisez <strong>« Partager la liste »</strong> pour envoyer un lien d'invitation. Ce lien donne accès à la liste après connexion ou création d'un compte.</li>
         </ul>
     </div>
     <figure class="guide-feature__media">
@@ -224,6 +225,7 @@ $sections = array(
         <h2>Badges, gemmes et boutique</h2>
         <ul class="guide-list">
             <li>Chaque action vous rapproche d'un <strong>badge</strong> : première idée, premier cadeau réservé, commentaires, amis, ancienneté… Certains sont secrets !</li>
+            <li>Ouvrez <strong>« Mes badges »</strong> dans le menu de votre compte pour retrouver vos récompenses et votre progression, depuis n'importe quelle liste.</li>
             <li>Les badges et vos actions sur le site rapportent des <strong>gemmes</strong>. Le parrainage aussi.</li>
             <li>Dépensez-les dans la <strong>boutique</strong>, rangée en trois catégories : un nouvel <strong>habillage</strong> pour votre liste (pirate, pastel, far west, cosmique…), un <strong>cadre</strong> autour de votre photo, ou un <strong>effet</strong> sur votre compte à rebours.</li>
             <li>Plus un article est rare, plus il en jette : du simple anneau aux cadres holographiques, des bulles à la galaxie.</li>

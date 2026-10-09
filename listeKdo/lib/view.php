@@ -13,6 +13,21 @@ function asset($path)
     return file_exists($file) ? $path . '?v=' . filemtime($file) : $path;
 }
 
+/** Modules ES : chaque import utilise la date du fichier pour invalider son cache. */
+function javascript_import_map()
+{
+    $imports = array();
+    $files = glob(KDO_ROOT . '/js/modules/*.js');
+    if (is_array($files)) {
+        foreach ($files as $file) {
+            $path = 'js/modules/' . basename($file);
+            $imports['./' . $path] = './' . asset($path);
+        }
+    }
+
+    return kdo_json(array('imports' => $imports));
+}
+
 /**
  * Capture d'écran de la page « Comment ça marche ? » (img/guide/), cliquable pour l'ouvrir en grand.
  * Largeur et hauteur en pixels CSS (les fichiers sont en double résolution).
@@ -95,7 +110,7 @@ function avatar($user, $class = 'avatar', $lazy = true, $tip = null)
 {
     $name = $user ? $user['nom'] : '';
 
-    // data-tip : le nom s'affiche au survol (infobulle gérée par js/app.js).
+    // data-tip : le nom s'affiche au survol (infobulle gérée par js/modules/ui.js).
     // data-fallback : avatar à l'initiale si la photo envoyée est introuvable.
     $frame = accessory_worn($user, 'frame');
     $img = '<img class="' . e('' !== $frame ? 'mini-frame__img' : $class) . '" src="' . e(avatar_url($user)) . '" alt="' . e($name) . '"'
@@ -284,12 +299,13 @@ function share_url($user)
 }
 
 /**
- * Lien court en HTTPS (TinyURL) d'un lien du site : partage d'une liste, parrainage, invitation, lien de secours…
+ * Lien court en HTTPS d'un lien du site : partage d'une liste, parrainage, invitation, lien de secours…
  * Certaines applications (WhatsApp…) ouvrent les liens en HTTPS, que Free ne gère pas :
  * le lien court, lui, est en HTTPS puis redirige vers le site en HTTP.
- * Créé une seule fois par lien et gardé dans cache/ ; en cas d'échec, nouvel essai après un jour (le lien long reste).
+ * Les services serveur gardent leurs liens dans cache/ ; en cas d'échec, reprise après cinq minutes.
+ * Le mode automatique récupère les anciens liens ou délègue la création à da.gd dans le navigateur.
  * Seuls les liens du site en ligne sont raccourcis : en local (localhost), le lien long est rendu tel quel.
- * Trop lent pour l'affichage : les pages appellent actions/shortUrl.php en arrière-plan (js/app.js, [data-short]).
+ * Trop lent pour l'affichage : les pages appellent actions/shortUrl.php en arrière-plan (js/modules/sharing.js, [data-short]).
  */
 function short_link($long)
 {
@@ -297,33 +313,42 @@ function short_link($long)
         return $long;
     }
 
+    $provider = short_link_provider();
+    if ('none' === $provider) return $long;
     $dir = KDO_ROOT . '/cache';
-    $file = $dir . '/short-' . sha1($long) . '.txt';
+    $prefix = 'tinyurl' === $provider ? 'short-' : 'short-' . $provider . '-';
+    $file = $dir . '/' . $prefix . sha1($long) . '.txt';
+    $retry = $dir . '/' . $prefix . sha1($long) . '.retry';
 
-    if (file_exists($file)) {
-        $cached = trim(implode('', file($file)));
-        if ('' !== $cached) {
-            return $cached;
-        }
-        if (filemtime($file) > time() - 86400) {
-            return $long;
-        }
-    }
-
-    $short = '';
-    if (function_exists('curl_init')) {
-        // API en HTTP simple : le SSL de PHP 4 chez Free est trop ancien pour certains sites.
-        $curl = curl_init('http://tinyurl.com/api-create.php?url=' . rawurlencode($long));
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 4);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 6);
-        $response = trim((string) curl_exec($curl));
-        curl_close($curl);
-
-        if (preg_match('#^https://tinyurl\.com/[A-Za-z0-9-]+$#', $response)) {
-            $short = $response;
+    $files = array($file);
+    if ('auto' === $provider) {
+        $files[] = $dir . '/short-' . sha1($long) . '.txt';
+        foreach (short_link_services() as $key => $service) {
+            if ('tinyurl' !== $key) $files[] = $dir . '/short-' . $key . '-' . sha1($long) . '.txt';
         }
     }
+    // Avant la généralisation aux invitations et au parrainage, le cache des listes
+    // utilisait sha1(code) : garder ces liens, car Free peut ne plus joindre TinyURL.
+    if (in_array($provider, array('auto', 'tinyurl')) && preg_match('#^http://datcharrye\.free\.fr/listeKdo/\?user=([a-f0-9]{32})$#D', $long, $matches)) {
+        $files[] = $dir . '/short-' . sha1($matches[1]) . '.txt';
+    }
+    foreach ($files as $cachedFile) {
+        if (file_exists($cachedFile)) {
+            $cached = short_link_normalize(implode('', file($cachedFile)), 'auto' === $provider ? '' : $provider);
+            if ('' !== $cached) {
+                return $cached;
+            }
+        }
+    }
+    // da.gd accepte CORS : le navigateur contourne les sorties bloquées de Free.
+    if (in_array($provider, array('auto', 'dagd'))) return $long;
+    // Les anciens fichiers .txt vides ne doivent plus bloquer un lien pendant 24 h.
+    if (file_exists($retry) && filemtime($retry) > time() - 300) {
+        return $long;
+    }
+
+    $result = short_link_request($provider, $long);
+    $short = $result['url'];
 
     if (!is_dir($dir) && @mkdir($dir, 0755)) {
         $htaccess = @fopen($dir . '/.htaccess', 'w');
@@ -332,13 +357,88 @@ function short_link($long)
             fclose($htaccess);
         }
     }
-    $handle = @fopen($file, 'w');
+    $handle = @fopen('' !== $short ? $file : $retry, 'w');
     if ($handle) {
         fwrite($handle, $short);
         fclose($handle);
     }
+    if ('' !== $short && file_exists($retry)) {
+        @unlink($retry);
+    }
 
     return '' !== $short ? $short : $long;
+}
+
+/**
+ * Accepte uniquement les domaines des services proposés, toujours partagés en HTTPS.
+ */
+function short_link_normalize($response, $provider = '')
+{
+    $response = trim((string) $response);
+    if (preg_match('#^https?://(tinyurl\.com|is\.gd|v\.gd|da\.gd)/([A-Za-z0-9_-]+)$#D', $response, $matches)) {
+        $services = short_link_services();
+        if ('' !== $provider && (!isset($services[$provider]) || $services[$provider]['domain'] !== $matches[1])) return '';
+        return 'https://' . $matches[1] . '/' . $matches[2];
+    }
+
+    return '';
+}
+
+function short_link_services()
+{
+    return array(
+        'tinyurl' => array('label' => 'TinyURL', 'domain' => 'tinyurl.com', 'api' => 'http://tinyurl.com/api-create.php?url='),
+        'isgd' => array('label' => 'is.gd', 'domain' => 'is.gd', 'api' => 'https://is.gd/create.php?format=simple&url='),
+        'vgd' => array('label' => 'v.gd', 'domain' => 'v.gd', 'api' => 'https://v.gd/create.php?format=simple&url='),
+        'dagd' => array('label' => 'da.gd', 'domain' => 'da.gd', 'api' => 'https://da.gd/s?url='),
+    );
+}
+
+function short_link_options()
+{
+    return array(
+        'auto' => 'Automatique (recommandé)',
+        'dagd' => 'da.gd — depuis le navigateur',
+        'tinyurl' => 'TinyURL — depuis le serveur',
+        'isgd' => 'is.gd — depuis le serveur',
+        'vgd' => 'v.gd — depuis le serveur',
+        'none' => 'Désactivé — lien complet',
+    );
+}
+
+function short_link_provider()
+{
+    $provider = setting('short_link_provider', 'auto');
+    $options = short_link_options();
+    return isset($options[$provider]) ? $provider : 'auto';
+}
+
+function short_link_browser($long, $provider = null)
+{
+    if (null === $provider) $provider = short_link_provider();
+    if (0 !== strpos($long, 'http://datcharrye.free.fr/') || !in_array($provider, array('auto', 'dagd'))) return null;
+    $services = short_link_services();
+    return array('provider' => 'dagd', 'endpoint' => $services['dagd']['api']);
+}
+
+/**
+ * Test sans cache d'un service côté serveur. Les adresses sont limitées au site.
+ */
+function short_link_request($provider, $long)
+{
+    $failed = array('url' => '', 'message' => 'Ce service ne répond pas depuis le serveur. Le lien complet reste disponible.');
+    $services = short_link_services();
+    if (!isset($services[$provider]) || 0 !== strpos($long, 'http://datcharrye.free.fr/') || !function_exists('curl_init')) return $failed;
+    $curl = curl_init($services[$provider]['api'] . rawurlencode($long));
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 6);
+    $response = curl_exec($curl);
+    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+    $short = short_link_normalize($response, $provider);
+    if ($status < 200 || $status >= 300 || '' === $short) return $failed;
+    return array('url' => $short, 'message' => 'Le service fonctionne depuis le serveur.');
 }
 
 /**

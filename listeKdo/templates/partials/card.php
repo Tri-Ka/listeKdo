@@ -92,6 +92,7 @@ if ($suggestion) {
                 <?php
                 $editData = kdo_json(array(
                     'id' => $id,
+                    'suggestion' => $suggestion,
                     'nom' => $object['nom'],
                     'description' => $object['description'],
                     'image' => $object['image'],

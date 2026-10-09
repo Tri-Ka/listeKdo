@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex">
     <meta name="referrer" content="no-referrer">
     <title>Nouveau mot de passe · Liste de Kdo</title>
-    <link rel="icon" href="favicon.ico">
+    <?php echo render('partials/favicons'); ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">

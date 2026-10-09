@@ -7,7 +7,22 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 require_admin();
 
-$back = '../admin.php?tab=badges';
+$back = '../admin.php?tab=gems';
+if (!skins_enabled()) {
+    fail('Les gemmes ne sont pas disponibles.', $back);
+}
+
+// La récompense d'un badge se règle ici, indépendamment de ses conditions d'obtention.
+if ('badge' === input('op')) {
+    $badge = db_one('SELECT id FROM badge WHERE id = ?', array(input_int('badge_id')));
+    if (!$badge) {
+        fail('Badge introuvable.', $back, 404);
+    }
+    db_update('badge', array('gems' => max(0, min(10000, input_int('badge_gems')))), array('id' => (int) $badge['id']));
+    unset($_SESSION['kdo_badges_at']);
+    succeed(array(), $back, 'Récompense du badge enregistrée.');
+}
+
 if (!settings_enabled()) {
     fail("La table des réglages n'existe pas (sql/2026-10-03-gemmes-actions.sql).", $back);
 }

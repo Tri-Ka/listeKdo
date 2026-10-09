@@ -39,6 +39,8 @@ $withGems = skins_enabled();
             $trophies[] = $badge;
         }
     }
+    // Obtenus : les plus récents d'abord.
+    usort($earnedList, 'badge_compare_earned');
     // À débloquer : les plus avancés d'abord.
     usort($lockedList, 'badge_compare_progress');
     $tabs = array('earned' => array('Obtenus', $earnedList));

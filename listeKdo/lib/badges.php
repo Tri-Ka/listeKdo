@@ -153,11 +153,11 @@ function badge_fixtures()
 
         // Visites (jours distincts, après l'installation de statistiques-visites.sql)
         // Les récompenses sont explicites afin que la fidélité soit visible dans l'administration :
-        // 5, 15 et 40 gemmes pour les badges, puis 200 pour le trophée.
-        array('visit-1', 'badge', 'bronze', 'visits', 1, '👋', 'Première visite', 'Se connecter un premier jour.', 0, 5),
-        array('visit-7', 'badge', 'silver', 'visits', 7, '🗓️', 'Rendez-vous pris', 'Se connecter 7 jours différents.', 0, 15),
-        array('visit-30', 'badge', 'gold', 'visits', 30, '📆', 'Habitué des lieux', 'Se connecter 30 jours différents.', 0, 40),
-        array('trophy-visit-100', 'trophy', 'legend', 'visits', 100, '🏆', 'Centenaire des visites', 'Se connecter 100 jours différents.', 0, 200),
+        // Barème par défaut aligné sur badge_default_gems().
+        array('visit-1', 'badge', 'bronze', 'visits', 1, '👋', 'Première visite', 'Se connecter un premier jour.', 0, 40),
+        array('visit-7', 'badge', 'silver', 'visits', 7, '🗓️', 'Rendez-vous pris', 'Se connecter 7 jours différents.', 0, 120),
+        array('visit-30', 'badge', 'gold', 'visits', 30, '📆', 'Habitué des lieux', 'Se connecter 30 jours différents.', 0, 320),
+        array('trophy-visit-100', 'trophy', 'legend', 'visits', 100, '🏆', 'Centenaire des visites', 'Se connecter 100 jours différents.', 0, 1600),
 
         // Encore plus
         array('described-10', 'badge', 'bronze', 'ideas_described', 10, '🖋️', 'Plume précise', '10 idées avec une description.', 0),
@@ -284,6 +284,21 @@ function badge_count($sql, $params)
     return $row ? (int) $row['n'] : 0;
 }
 
+/** Profil : mêmes critères pour les badges et le bonus de gemmes. */
+function badge_profile_values($user)
+{
+    if (!$user) return array('profile_complete' => 0);
+    $profile = array();
+    $profile['has_photo'] = '' !== (string) $user['pictureFile'] || '' !== (string) $user['pictureFileUrl'] ? 1 : 0;
+    $profile['has_secret'] = isset($user['secret_question']) && '' !== (string) $user['secret_question'] ? 1 : 0;
+    $profile['has_message'] = isset($user['message']) && '' !== trim((string) $user['message']) ? 1 : 0;
+    $profile['has_event_date'] = null !== birth_date($user) ? 1 : 0;
+    $profile['has_title'] = '' !== list_title($user) ? 1 : 0;
+    $profile['profile_complete'] = $profile['has_photo'] + $profile['has_secret'] + $profile['has_message'] + $profile['has_event_date'] + $profile['has_title'];
+
+    return $profile;
+}
+
 /**
  * Valeur de chaque indicateur pour une personne (une requête par indicateur, seulement à la mise à jour).
  */
@@ -353,12 +368,7 @@ function badge_metric_values($user)
     $values['managed'] = children_enabled()
         ? badge_count('SELECT COUNT(*) AS n FROM liste_manager m INNER JOIN liste_user u ON u.id = m.child_id WHERE m.user_id = ?', array($id)) : 0;
 
-    $values['has_photo'] = '' !== (string) $user['pictureFile'] || '' !== (string) $user['pictureFileUrl'] ? 1 : 0;
-    $values['has_secret'] = isset($user['secret_question']) && '' !== (string) $user['secret_question'] ? 1 : 0;
-    $values['has_message'] = isset($user['message']) && '' !== trim((string) $user['message']) ? 1 : 0;
-    $values['has_event_date'] = null !== birth_date($user) ? 1 : 0;
-    $values['has_title'] = '' !== list_title($user) ? 1 : 0;
-    $values['profile_complete'] = $values['has_photo'] + $values['has_secret'] + $values['has_message'] + $values['has_event_date'] + $values['has_title'];
+    foreach (badge_profile_values($user) as $key => $value) $values[$key] = $value;
 
     // Un achat correspond à un article « habillage/type de liste » dans user_skin.
     // La table est absente tant que la migration de la boutique n'a pas été appliquée.
@@ -381,17 +391,7 @@ function badge_metric_values($user)
     if (suggestions_enabled()) {
         $values['suggestions'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel WHERE suggested_by = ?', array($id));
         $values['suggestions_lists'] = badge_count('SELECT COUNT(DISTINCT user_id) AS n FROM liste_noel WHERE suggested_by = ?', array($id));
-        $sql = 'SELECT COUNT(*) AS n FROM liste_noel n WHERE n.suggested_by = ? AND ((n.gifted_by IS NOT NULL AND n.gifted_by <> ?)';
-        $params = array($id, $id);
-        if (items_enabled()) {
-            $sql .= ' OR EXISTS (SELECT 1 FROM liste_item i WHERE i.product_id = n.id AND i.gifted_by IS NOT NULL AND i.gifted_by <> ?)';
-            $params[] = $id;
-        }
-        if (participations_enabled()) {
-            $sql .= ' OR EXISTS (SELECT 1 FROM liste_participation p WHERE p.product_id = n.id AND p.user_id <> ?)';
-            $params[] = $id;
-        }
-        $values['suggestions_gifted'] = badge_count($sql . ')', $params);
+        $values['suggestions_gifted'] = badge_count('SELECT COUNT(*) AS n FROM liste_noel n WHERE n.suggested_by = ? AND ' . suggestion_reserved_sql('n.'), array($id));
     }
 
     $values['activity'] = $values['ideas'] + $values['suggestions'] + $values['comments'] + $values['reactions_given'] + $values['gifts'];
@@ -522,6 +522,20 @@ function badges_count($owner)
     );
 
     return $row ? (int) $row['n'] : 0;
+}
+
+/* Tri « obtenus » : date décroissante ; ordre habituel pour les badges du même lot. */
+function badge_compare_earned($a, $b)
+{
+    $date = strcmp((string) $b['earned'], (string) $a['earned']);
+    if (0 !== $date) {
+        return $date;
+    }
+    if ((int) $a['position'] !== (int) $b['position']) {
+        return (int) $a['position'] < (int) $b['position'] ? -1 : 1;
+    }
+
+    return (int) $a['id'] === (int) $b['id'] ? 0 : ((int) $a['id'] < (int) $b['id'] ? -1 : 1);
 }
 
 /* Tri « à débloquer » : les plus avancés d'abord (les secrets à la fin). */

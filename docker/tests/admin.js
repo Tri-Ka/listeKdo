@@ -56,8 +56,24 @@ const waitTable = (page) => page.waitForFunction(() => !document.querySelector('
     await admin.click('.user-menu summary');
     await Promise.all([admin.waitForNavigation(), admin.click('.user-menu__panel a[href="admin.php"]')]);
     check(admin.url().endsWith('admin.php'), 'lien Administration dans le menu');
-    check(await admin.locator('.stat').count() === 4, 'chiffres clés');
+    check(await admin.locator('.admin-nav a').count() === 6, 'menu : six parties distinctes');
+    check(await admin.locator('.admin-nav [aria-current=page]').innerText() === 'Utilisateurs', 'menu : partie Utilisateurs active');
+    check(await admin.locator('.insights, .stat, [data-chart]').count() === 0, 'utilisateurs : analyse séparée du tableau');
     check(await rows(admin).count() === 25, '25 lignes par page');
+    await Promise.all([admin.waitForNavigation(), admin.locator('.admin-nav a', { hasText: 'Analyse' }).click()]);
+    check(await admin.locator('.stat').count() === 4 && await admin.locator('[data-chart]').count() > 0, 'Analyse : chiffres clés et graphiques');
+    check(await admin.locator('[data-dt], [data-dt-search]').count() === 0, 'Analyse : pas de tableau ni de recherche de comptes');
+    check(await admin.locator('.admin-nav [aria-current=page]').innerText() === 'Analyse', 'menu : partie Analyse active');
+    await admin.screenshot({ path: __dirname + '/out/admin-analysis.png', fullPage: true });
+    await Promise.all([admin.waitForNavigation(), admin.locator('.admin-nav a', { hasText: 'Gemmes' }).click()]);
+    check(await admin.locator('[data-gem-table]').count() === 3, 'Gemmes : actions, boutique et récompenses des badges');
+    check(await admin.locator('.badge-admin, .insights').count() === 0, 'Gemmes : conditions des badges et analyse séparées');
+    await admin.screenshot({ path: __dirname + '/out/admin-gems.png', fullPage: true });
+    await Promise.all([admin.waitForNavigation(), admin.locator('.admin-nav a', { hasText: 'Badges' }).click()]);
+    check(await admin.locator('.badge-admin').count() === 1 && await admin.locator('input[name=gems]').count() > 0 && await admin.locator('[data-gem-table]').count() === 0, 'Badges : conditions et récompense dans le formulaire d’édition');
+    await Promise.all([admin.waitForNavigation(), admin.locator('.admin-nav a', { hasText: 'Réglages' }).click()]);
+    check(await admin.locator('[data-short-link-settings]').count() === 1 && await admin.locator('.insights').count() === 0, 'Réglages : services dans leur propre partie');
+    await Promise.all([admin.waitForNavigation(), admin.locator('.admin-nav a', { hasText: 'Utilisateurs' }).click()]);
     await admin.screenshot({ path: `${__dirname}/out/admin-users.png`, fullPage: true });
 
     // Recherche instantanée.
@@ -110,13 +126,17 @@ const waitTable = (page) => page.waitForFunction(() => !document.querySelector('
     const row = rows(admin).first();
     check((await row.innerText()).includes(name), 'compte de test trouvé');
 
-    await row.locator('select[name=role]').selectOption('admin');
+    await row.locator('[data-admin-edit-role]').click();
+    await admin.locator('#admin-role [name=role]').selectOption('admin');
+    await admin.locator('#admin-role button[type=submit]').click();
     await admin.waitForSelector('.toast--success');
     check((await admin.locator('.toast--success').last().innerText()).includes('administrateur'), 'rôle admin donné');
     await admin.reload();
-    check(await rows(admin).first().locator('select[name=role]').inputValue() === 'admin', 'rôle enregistré');
+    check(await rows(admin).first().locator('[data-admin-edit-role]').getAttribute('data-role') === 'admin', 'rôle enregistré');
     check(await rows(admin).first().locator('[data-admin-confirm="delete"]').count() === 0, 'un admin ne peut pas être supprimé');
-    await rows(admin).first().locator('select[name=role]').selectOption('user');
+    await rows(admin).first().locator('[data-admin-edit-role]').click();
+    await admin.locator('#admin-role [name=role]').selectOption('user');
+    await admin.locator('#admin-role button[type=submit]').click();
     await admin.waitForFunction(() => [...document.querySelectorAll('.toast--success')].some((t) => t.textContent.includes('utilisateur')));
 
     await rows(admin).first().locator('[data-admin-confirm="password"] button').click();
@@ -214,6 +234,16 @@ const waitTable = (page) => page.waitForFunction(() => !document.querySelector('
     const mobile = await session(browser, 'Etienne', 'test', { width: 390, height: 844 });
     await mobile.goto(B + 'admin.php?per=10');
     check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'pas de défilement horizontal sur mobile');
+    check(await mobile.locator('.admin-nav a').count() === 6, 'mobile : toutes les parties du menu accessibles');
+    for (const tab of ['analytics', 'lists', 'badges', 'gems', 'settings']) {
+        await mobile.goto(B + 'admin.php?tab=' + tab);
+        check(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'mobile : partie ' + tab + ' sans débordement');
+        check(await mobile.locator('.admin-nav [aria-current=page]').count() === 1, 'mobile : une seule partie active (' + tab + ')');
+        if (tab === 'analytics' || tab === 'gems') {
+            await mobile.screenshot({ path: __dirname + '/out/admin-' + tab + '-mobile.png', fullPage: true });
+        }
+    }
+    await mobile.goto(B + 'admin.php?per=10');
     await mobile.screenshot({ path: `${__dirname}/out/admin-mobile.png`, fullPage: true });
 
     const errors = [...admin.errors, ...mallory.errors, ...mobile.errors];

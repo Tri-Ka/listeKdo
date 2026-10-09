@@ -31,15 +31,18 @@ const balance = async (page) => Number((await page.locator('.user-menu__count--g
     /* ---- Gemmes par action, réglées dans l'administration (Etienne est admin) ---- */
     await owner.goto(`${B}?user=${ETIENNE}`);
     const start = await balance(owner);
-    await owner.goto(B + 'admin.php?tab=badges');
-    const ideasRate = Number(await owner.inputValue('input[name="rate[ideas]"]'));
-    await owner.fill('input[name="rate[ideas]"]', String(ideasRate + 10));
-    await Promise.all([owner.waitForNavigation(), owner.click('.gem-rates button[type=submit]')]);
+    await owner.goto(B + 'admin.php?tab=gems');
+    const ideasRow = owner.locator('[data-gem-definition*=\'"name":"rate[ideas]"\']');
+    await ideasRow.locator('[data-gem-edit]').click();
+    const ideasRate = Number(await owner.inputValue('#gem-edit-dialog [name=amount]'));
+    await owner.fill('#gem-edit-dialog [name=amount]', String(ideasRate + 10));
+    await Promise.all([owner.waitForResponse((r) => r.url().includes('actions/adminGems.php') && r.request().method() === 'POST'), owner.locator('#gem-edit-dialog button[type=submit]').click()]);
     await owner.goto(`${B}?user=${ETIENNE}`);
     check(await balance(owner) > start, 'admin : gemmes par idée augmentées, le solde augmente (' + start + ' -> ' + await balance(owner) + ')');
-    await owner.goto(B + 'admin.php?tab=badges');
-    await owner.fill('input[name="rate[ideas]"]', String(ideasRate));
-    await Promise.all([owner.waitForNavigation(), owner.click('.gem-rates button[type=submit]')]);
+    await owner.goto(B + 'admin.php?tab=gems');
+    await ideasRow.locator('[data-gem-edit]').click();
+    await owner.fill('#gem-edit-dialog [name=amount]', String(ideasRate));
+    await Promise.all([owner.waitForResponse((r) => r.url().includes('actions/adminGems.php') && r.request().method() === 'POST'), owner.locator('#gem-edit-dialog button[type=submit]').click()]);
 
     await owner.goto(`${B}?user=${ETIENNE}`);
     const before = await balance(owner);

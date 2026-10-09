@@ -4,6 +4,7 @@ $children = isset($ctx['children']) && is_array($ctx['children']) ? $ctx['childr
 $myGifts = isset($myGifts) && is_array($myGifts) ? $myGifts : array();
 // Liste privée qu'on ne peut pas voir : ni son nom ni sa photo dans la barre.
 $owner = $ctx['canView'] ? $ctx['owner'] : null;
+$canShare = can_share($me, $owner);
 ?>
 <header class="topbar">
     <?php // Sur mobile, la carte de la liste ouvre « Mes amis » (js/app.js) : c'est l'accès aux autres listes. ?>
@@ -72,7 +73,7 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
             </button>
         <?php endif; ?>
 
-        <?php if ($owner && $ctx['canView'] && !$ctx['private']) : ?>
+        <?php if ($canShare) : ?>
             <button type="button" class="round-btn topbar__share" data-open="share-dialog" aria-label="Partager la liste" data-tip="Partager la liste"><?php echo icon('share-nodes'); ?></button>
         <?php endif; ?>
         <?php if ($owner && $ctx['canEdit']) : ?>
@@ -93,13 +94,14 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
             </button>
 
             <details class="user-menu" data-user-menu>
-                <summary aria-label="Mon compte">
+                <summary aria-label="Menu de mon compte">
                     <?php echo avatar($me, 'user-menu__avatar', false); ?>
+                    <span class="user-menu__label">Menu <?php echo icon('chevron-right', 'user-menu__chevron'); ?></span>
                 </summary>
                 <div class="user-menu__panel">
                     <p class="user-menu__name"><?php echo e($me['nom']); ?></p>
                     <?php // Petits écrans : actions retirées de la barre du haut, regroupées ici. ?>
-                    <?php $menuShare = $owner && $ctx['canView'] && !$ctx['private']; ?>
+                    <?php $menuShare = $canShare; ?>
                     <?php if ($menuShare || ($owner && $ctx['canEdit'])) : ?>
                         <div class="user-menu__group user-menu__mobile">
                             <?php if ($menuShare) : ?>
@@ -126,6 +128,10 @@ $owner = $ctx['canView'] ? $ctx['owner'] : null;
                         <?php if (isset($shop) && $shop) : ?>
                             <button type="button" data-open="shop-dialog"><?php echo gem_icon('user-menu__gem'); ?> Boutique
                                 <span class="user-menu__count user-menu__count--gems"><?php echo (int) $shop['gems']['balance']; ?></span></button>
+                        <?php endif; ?>
+                        <?php if (badges_enabled()) : ?>
+                            <a href="index.php?user=<?php echo e(rawurlencode($me['code'])); ?>#badges" data-my-badges><?php echo icon('crown'); ?> Mes badges
+                                <span class="user-menu__count"><?php echo (int) badges_count($me); ?></span></a>
                         <?php endif; ?>
                         <button type="button" data-open="profile-dialog"><?php echo icon('user'); ?> Mon profil</button>
                     </div>

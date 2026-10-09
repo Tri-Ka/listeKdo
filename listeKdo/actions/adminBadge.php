@@ -35,10 +35,9 @@ $values = array(
     'active' => '1' === input('active') ? 1 : 0,
     'secret' => '1' === input('secret') ? 1 : 0,
 );
-if (skins_enabled()) {
-    // Valeur par défaut du type et du niveau : on garde « automatique » (0), qui suivra un changement de niveau.
-    $gems = max(0, min(10000, input_int('gems')));
-    $values['gems'] = $gems === badge_default_gems($values['kind'], $values['tier']) ? 0 : $gems;
+if (skins_enabled() && isset($_POST['gems'])) {
+    // Seul 0 demande une récompense automatique ; un montant saisi reste fixe même si le niveau change.
+    $values['gems'] = max(0, min(10000, input_int('gems')));
 }
 
 if ('' === $values['name'] || '' === $values['emoji']) {

@@ -50,7 +50,7 @@ foreach ($skinPurchases as $skin) {
     $skinData['values'][] = (int) $skin['purchases'];
     $maxSkinPurchases = max($maxSkinPurchases, (int) $skin['purchases']);
 }
-$skinChartWidth = max(360, count($skinPurchases) * 74);
+$skinChartHeight = 30 + count($skinPurchases) * 30;
 $referralPercent = $insights['referrals']['total'] ? round(100 * $insights['referrals']['active'] / $insights['referrals']['total']) : 0;
 ?>
 <section class="insights" aria-labelledby="insights-title">
@@ -168,7 +168,7 @@ $referralPercent = $insights['referrals']['total'] ? round(100 * $insights['refe
         </article>
         <article class="insight-card insight-card--skins">
             <div class="insight-card__head"><div><h3>Achats d’habillages</h3><p>Tous les articles de boutique achetés, par popularité.</p></div></div>
-            <?php if (count($skinPurchases)) : ?><div class="chart-wrap chart-wrap--skins" style="--chart-width: <?php echo (int) $skinChartWidth; ?>px" data-chart="skins" data-chart-values="<?php echo e(kdo_json($skinData)); ?>">
+            <?php if (count($skinPurchases)) : ?><div class="chart-wrap chart-wrap--skins" style="--chart-height: <?php echo (int) $skinChartHeight; ?>px" data-chart="skins" data-chart-values="<?php echo e(kdo_json($skinData)); ?>">
                 <div class="chart-canvas" hidden aria-label="Tous les habillages achetés"></div>
                 <ol class="badge-chart chart-wrap__fallback">
                     <?php foreach ($skinPurchases as $skin) : ?><li><span class="badge-chart__name"><?php echo e($skin['label']); ?></span><span class="badge-chart__track"><i style="width: <?php echo (int) round(100 * $skin['purchases'] / $maxSkinPurchases); ?>%"></i></span><strong><?php echo (int) $skin['purchases']; ?></strong></li><?php endforeach; ?>

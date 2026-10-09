@@ -1,6 +1,6 @@
 <?php
 /*
- * Lien court TinyURL d'un lien à partager (voir short_link() dans lib/view.php).
+ * Lien court d'un lien à partager (voir short_link() dans lib/view.php).
  * Appelé par js/app.js après l'affichage de la page ([data-short]), pour ne pas la ralentir.
  * Le lien long est toujours fabriqué ici : on ne raccourcit jamais une adresse envoyée par le navigateur.
  *   type=list     : lien de la liste (?user=CODE), si on peut la voir ;
@@ -32,4 +32,4 @@ if ('' === $long) {
     send_json(array('ok' => false, 'message' => "Ce lien n'existe pas."), 404);
 }
 
-send_json(array('ok' => true, 'url' => short_link($long), 'long' => $long));
+send_json(array('ok' => true, 'url' => short_link($long), 'long' => $long, 'browser' => short_link_browser($long)));

@@ -130,7 +130,7 @@ async function session(browser, name) {
     await owner.waitForFunction((i) => !document.querySelector(`#idea-${i} .item--received`), id);
 
     // Les gemmes de chaque élément utilisent exactement le taux des idées.
-    await owner.goto(B + 'admin.php?tab=badges');
+    await owner.goto(B + 'admin.php?tab=gems');
     const rate = Number(await owner.inputValue('input[name="rate[ideas]"]'));
     await owner.goto(`${B}?user=${OWNER}`);
     const balance = async () => (await owner.evaluate(async () => (await (await fetch('actions/gems.php')).json()).balance));

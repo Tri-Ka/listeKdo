@@ -8,6 +8,13 @@ const ETIENNE = 'e3370a0bb2c2ea49f93b68c0649d57b6';
 let failures = 0;
 const check = (ok, label) => { console.log((ok ? 'OK   ' : 'FAIL ') + label); if (!ok) failures++; };
 const text = async (locator) => (await locator.innerText()).replace(/\s+/g, ' ').trim();
+const post = (page, action, values, csrf = true) => page.evaluate(async ({ action, values, csrf }) => {
+    const response = await fetch(`actions/${action}.php`, {
+        method: 'POST', headers: { Accept: 'application/json', ...(csrf ? { 'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content } : {}) },
+        body: new URLSearchParams(values),
+    });
+    return { status: response.status, data: await response.json() };
+}, { action, values, csrf });
 
 async function session(browser, name) {
     const page = await (await browser.newContext({ viewport: { width: 1366, height: 900 } })).newPage();
@@ -144,6 +151,48 @@ async function addIdea(page, name, price) {
 
     await friend.goto(childUrl);
     check(await friend.locator(`#idea-${childIdeaId} [data-open-object-form]`).count() === 0, 'amie : pas encore gestionnaire');
+
+    /* ---- Déplacement d'une idée entre listes gérées ---- */
+    const childCode = new URL(childUrl).searchParams.get('user');
+    const forbiddenCode = await owner.evaluate(async () => (await (await fetch('actions/me.php')).json()).friends[0].code);
+    const moveValues = { object_id: childIdeaId, nom: 'Test idée enfant', list_owner: ETIENNE };
+    check((await post(friend, 'editObject', moveValues)).status === 404, 'déplacement : droit sur la liste source obligatoire');
+    check((await post(owner, 'editObject', moveValues, false)).status === 419, 'déplacement : jeton CSRF obligatoire');
+    check((await post(owner, 'editObject', { ...moveValues, list_owner: forbiddenCode })).status === 403, 'déplacement : liste d’un ami refusée');
+    check((await post(owner, 'editObject', { ...moveValues, list_owner: 'liste-inexistante' })).status === 403, 'déplacement : destination inexistante refusée');
+    await post(friend, 'objectGifted', { id: childIdeaId });
+    await post(friend, 'addComment', { productId: childIdeaId, content: 'Commentaire conservé après déplacement' });
+    await owner.reload();
+    await owner.locator(`#idea-${childIdeaId} [data-card-menu] summary`).click();
+    await owner.locator(`#idea-${childIdeaId} [data-open-object-form]`).click();
+    const listSelect = owner.locator('#object-form-dialog select[name=list_owner]');
+    check(await listSelect.inputValue() === childCode, 'modification : liste actuelle pré-sélectionnée');
+    check(await listSelect.locator(`option[value="${forbiddenCode}"]`).count() === 0, 'sélecteur : seules les listes gérées sont proposées');
+    await listSelect.selectOption(ETIENNE);
+    await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-object-form-submit]')]);
+    check(new URL(owner.url()).searchParams.get('user') === ETIENNE && await owner.locator(`#idea-${childIdeaId}`).count() === 1, 'déplacement vers la liste personnelle, redirection vers l’idée');
+    check((await owner.locator(`#object-${childIdeaId}`).textContent()).includes('Commentaire conservé après déplacement'), 'déplacement : commentaire conservé');
+    check(await owner.locator(`#idea-${childIdeaId} .gift-slot`).count() === 0, 'liste personnelle : réservation masquée au propriétaire');
+    await friend.goto(`${B}?user=${ETIENNE}`);
+    check(await friend.locator(`#idea-${childIdeaId} .gifted-pill--mine`).count() === 1, 'déplacement : réservation conservée');
+    await owner.locator(`#idea-${childIdeaId} [data-card-menu] summary`).click();
+    await owner.locator(`#idea-${childIdeaId} [data-open-object-form]`).click();
+    check(await listSelect.inputValue() === ETIENNE, 'modification après déplacement : nouvelle liste pré-sélectionnée');
+    await listSelect.selectOption(childCode);
+    await owner.keyboard.press('Escape');
+    await owner.click('.card--add');
+    check(await listSelect.isDisabled() && await listSelect.isHidden(), 'ajout : choix de déplacement désactivé');
+    await owner.keyboard.press('Escape');
+    await owner.locator(`#idea-${childIdeaId} [data-card-menu] summary`).click();
+    await owner.locator(`#idea-${childIdeaId} [data-open-object-form]`).click();
+    check(await listSelect.inputValue() === ETIENNE, 'réouverture : un choix annulé est réinitialisé');
+    await listSelect.selectOption(childCode);
+    await Promise.all([owner.waitForNavigation(), owner.click('#object-form-dialog [data-object-form-submit]')]);
+    check(new URL(owner.url()).searchParams.get('user') === childCode, 'déplacement vers une liste secondaire');
+    await friend.goto(`${B}?user=${ETIENNE}`);
+    check(await friend.locator(`#idea-${childIdeaId}`).count() === 0, 'déplacement : idée retirée de la liste source');
+    await friend.goto(childUrl);
+
     await owner.click('.profile__action');
     await owner.selectOption('#child-dialog select[name=manager_id]', { label: 'Mallory' });
     await Promise.all([owner.waitForNavigation(), owner.click('#child-dialog button[name=manager_add]')]);

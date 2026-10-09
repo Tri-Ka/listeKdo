@@ -106,23 +106,10 @@ $to = min($table['total'], $params['page'] * $params['per']);
                         </td>
                     <?php else : ?>
                         <td data-label="Rôle">
-                            <?php if ($isMe || $isChild || !roles_enabled()) : ?>
-                                <span class="dt__role dt__role--<?php echo e($row['role']); ?>">
-                                    <?php echo 'admin' === $row['role'] ? icon('crown') : ''; ?>
-                                    <?php echo e(isset($roles[$row['role']]) ? $roles[$row['role']] : $row['role']); ?>
-                                </span>
-                            <?php else : ?>
-                                <form method="post" action="actions/adminRole.php" class="dt__role-form" data-admin-role>
-                                    <?php echo csrf_field(); ?>
-                                    <input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
-                                    <select name="role" class="dt__select dt__select--<?php echo e($row['role']); ?>" aria-label="Rôle de <?php echo e($row['nom']); ?>">
-                                        <?php foreach ($roles as $key => $label) : ?>
-                                            <option value="<?php echo e($key); ?>"<?php echo $key === $row['role'] ? ' selected' : ''; ?>><?php echo e($label); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <noscript><button type="submit" class="btn btn--sm">OK</button></noscript>
-                                </form>
-                            <?php endif; ?>
+                            <span class="dt__role dt__role--<?php echo e($row['role']); ?>">
+                                <?php echo 'admin' === $row['role'] ? icon('crown') : ''; ?>
+                                <?php echo e(isset($roles[$row['role']]) ? $roles[$row['role']] : $row['role']); ?>
+                            </span>
                         </td>
                         <td class="dt__num" data-label="Idées"><?php echo (int) $row['ideas']; ?></td>
                         <td class="dt__num" data-label="Amis"><?php echo (int) $row['friends']; ?></td>
@@ -158,6 +145,9 @@ $to = min($table['total'], $params['page'] * $params['per']);
                                 <?php if (children_enabled()) : ?>
                                     <button type="button" class="round-btn round-btn--sm" data-admin-managers="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-tip="Gestionnaires (liste secondaire)" aria-label="Gestionnaires de <?php echo e($row['nom']); ?>"><?php echo icon('layer-group'); ?></button>
                                 <?php endif; ?>
+                            <?php if (!$isMe && !$isChild && roles_enabled()) : ?>
+                                <button type="button" class="round-btn round-btn--sm" data-admin-edit-role="<?php echo (int) $row['id']; ?>" data-name="<?php echo e($row['nom']); ?>" data-role="<?php echo e($row['role']); ?>" data-tip="Modifier le rôle" aria-label="Modifier le rôle de <?php echo e($row['nom']); ?>" aria-haspopup="dialog" aria-controls="admin-role"><?php echo icon('pen'); ?></button>
+                            <?php endif; ?>
                             <?php if (!admin_is_child_account($row) && reset_links_enabled()) : ?>
                                 <form method="post" action="actions/adminResetLink.php" data-admin-link>
                                     <?php echo csrf_field(); ?>

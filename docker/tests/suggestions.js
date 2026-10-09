@@ -65,6 +65,9 @@ const post = (page, url, data) => page.evaluate(async ([url, data]) => {
     const menu = await card.locator('.card-menu__panel').innerText();
     check(menu.includes('Modifier') && menu.includes('Supprimer') && !menu.includes('reçu'), 'auteur : modifier, supprimer, pas « reçu »');
     await card.locator('button[data-open-object-form]').click();
+    check(await friend.locator('#object-form-dialog [data-object-list]').isHidden(), 'suggestion : choix de déplacement masqué');
+    const suggestionAuthor = await friend.evaluate(async () => (await (await fetch('actions/me.php')).json()).user);
+    check((await post(friend, 'editObject.php', { object_id: id, nom: name, list_owner: suggestionAuthor.code })).status === 403, 'suggestion : déplacement refusé pour préserver la surprise');
     await friend.fill('#object-form-dialog input[name=nom]', name + ' modifiée');
     await Promise.all([friend.waitForNavigation(), friend.click('#object-form-dialog [data-object-form-submit]')]);
     check(await friend.locator('.card', { hasText: name + ' modifiée' }).count() === 1, 'auteur : suggestion modifiée');

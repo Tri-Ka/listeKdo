@@ -122,15 +122,17 @@ $themes = themes();
         <?php endforeach; ?>
     </div>
 
-        <?php if ($owner && !$ctx['private']) : ?>
-            <?php $url = share_url($owner); ?>
+        <?php if (can_share($ctx['me'], $owner)) : ?>
+            <?php $url = $ctx['private'] ? list_invite_url($owner) : share_url($owner); ?>
             <dialog class="modal modal--small share-dialog" id="share-dialog" aria-labelledby="share-title">
                 <header class="modal__header">
                     <h2 id="share-title">Partager la liste</h2>
                     <button type="button" class="modal__close" data-close aria-label="Fermer"><?php echo icon('xmark'); ?></button>
                 </header>
-                <div class="modal__body share" data-share data-short="list" data-short-user="<?php echo e($owner['code']); ?>">
-                <p class="share__label">Envoyez ce lien à vos proches : ils verront la liste sans avoir besoin de compte.</p>
+                <div class="modal__body share" data-share data-short="<?php echo $ctx['private'] ? 'invite' : 'list'; ?>" data-short-user="<?php echo e($owner['code']); ?>">
+                <p class="share__label"><?php echo $ctx['private']
+                    ? 'Ce lien donne accès à votre liste privée. Vos proches pourront la consulter après s’être connectés ou avoir créé leur compte.'
+                    : 'Envoyez ce lien à vos proches : ils verront la liste sans avoir besoin de compte.'; ?></p>
                 <div class="share__row">
                     <div class="share__link">
                         <input type="text" readonly value="<?php echo e($url); ?>" aria-label="Lien de la liste" data-share-url>

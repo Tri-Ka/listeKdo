@@ -4,6 +4,10 @@
  * tri, filtres, pagination) et on envoie les actions sans quitter la page.
  */
 
+import { resolveShortLink } from './modules/short-links.js';
+import { initGemTables } from './modules/admin-gems.js';
+import { initBadgeTable } from './modules/admin-badges.js';
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const csrfToken = $('meta[name="csrf-token"]')?.content ?? '';
@@ -57,6 +61,8 @@ function dismissLater(element, delay = 4500) {
 }
 
 $$('.toast', toasts).forEach((element) => dismissLater(element, 8000));
+initGemTables({ post, toast });
+initBadgeTable({ post, toast });
 
 /* ---------- Fenêtres ---------- */
 
@@ -124,6 +130,33 @@ $$('img[data-fallback]').forEach((image) => {
 
 const table = $('[data-dt]');
 const search = $('[data-dt-search]');
+
+const shortSettings = $('[data-short-link-settings]');
+shortSettings?.querySelector('[data-short-link-test]').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const status = $('[data-short-link-status]', shortSettings);
+    const provider = $('[name="provider"]', shortSettings).value;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    status.textContent = 'Test en cours…';
+    try {
+        const body = new FormData(shortSettings);
+        body.set('op', 'test');
+        const data = await post(shortSettings.action, body);
+        const url = await resolveShortLink(data);
+        status.textContent = url !== data.long
+            ? 'Le service fonctionne. Lien de test : ' + url
+            : (provider === 'none'
+                ? 'Le raccourcissement est désactivé.'
+                : 'Le service ne répond pas. Le lien complet reste disponible.');
+    } catch (error) {
+        status.textContent = error.message;
+    } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+    }
+});
+
 let controller = null;
 
 async function load(url, { push = true } = {}) {
@@ -187,32 +220,39 @@ table?.addEventListener('click', (event) => {
     load(link.href);
 });
 
-table?.addEventListener('change', async (event) => {
-    if (event.target.matches('[data-dt-per]')) {
-        load(event.target.value);
-        return;
-    }
+table?.addEventListener('change', (event) => {
+    if (event.target.matches('[data-dt-per]')) load(event.target.value);
+});
 
-    // Changement de rôle.
-    const form = event.target.closest('[data-admin-role]');
-    if (!form) return;
-
-    const select = event.target;
-    const previous = [...select.options].find((option) => option.defaultSelected)?.value;
-    // Lu avant de désactiver la liste : un champ désactivé n'est pas envoyé.
-    const body = new FormData(form);
-    select.disabled = true;
-
+const roleDialog = $('#admin-role');
+const roleForm = $('[data-admin-role]', roleDialog);
+table?.addEventListener('click', (event) => {
+    const edit = event.target.closest('[data-admin-edit-role]');
+    if (!edit || roleForm.hasAttribute('aria-busy')) return;
+    roleForm.elements.id.value = edit.dataset.adminEditRole;
+    roleForm.elements.role.value = edit.dataset.role;
+    $('[data-role-name]', roleDialog).textContent = edit.dataset.name;
+    roleDialog.showModal();
+});
+roleForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = $('button[type=submit]', roleForm);
+    if (button.disabled) return;
+    const body = new FormData(roleForm);
+    button.disabled = true;
+    roleForm.elements.role.disabled = true;
+    roleForm.setAttribute('aria-busy', 'true');
     try {
-        const data = await post(form.action, body);
-        [...select.options].forEach((option) => { option.defaultSelected = option.value === data.role; });
-        select.className = `dt__select dt__select--${data.role}`;
+        const data = await post(roleForm.action, body);
+        roleDialog.close();
         toast(data.message, 'success');
+        await load(location.href, { push: false });
     } catch (error) {
-        select.value = previous;
         toast(error.message, 'error');
     } finally {
-        select.disabled = false;
+        button.disabled = false;
+        roleForm.elements.role.disabled = false;
+        roleForm.removeAttribute('aria-busy');
     }
 });
 
@@ -306,6 +346,7 @@ table?.addEventListener('submit', async (event) => {
 
     try {
         const data = await post(form.action, new FormData(form));
+        data.url = await resolveShortLink(data);
         linkText = `Bonjour ${data.name} ! Voici un lien pour choisir un nouveau mot de passe sur Liste de Kdo : ${data.url}`;
         $('[data-link-name]', linkDialog).textContent = data.name;
         $('[data-link-expires]', linkDialog).textContent = data.expires;
@@ -452,21 +493,6 @@ function chartOptions(type, data) {
             xAxis: { type: 'category', data: data.labels, axisLine: { lineStyle: { color: '#e6e8f0' } }, axisTick: { show: false }, axisLabel: commonText },
             yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
             series: [{ type: 'bar', data: data.values, barMaxWidth: 30, itemStyle: { color: '#596fe5', borderRadius: [7, 7, 2, 2] } }],
-        };
-    }
-
-    if (type === 'skins') {
-        return {
-            animationDuration: 650,
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            grid: { top: 12, right: 12, bottom: 78, left: 32 },
-            xAxis: {
-                type: 'category', data: data.labels,
-                axisLine: { lineStyle: { color: '#e6e8f0' } }, axisTick: { show: false },
-                axisLabel: { ...commonText, interval: 0, rotate: 40, width: 82, overflow: 'truncate' },
-            },
-            yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f1f6' } }, axisLabel: commonText },
-            series: [{ type: 'bar', data: data.values, barMaxWidth: 34, itemStyle: { color: '#7b5ce0', borderRadius: [7, 7, 2, 2] } }],
         };
     }
 

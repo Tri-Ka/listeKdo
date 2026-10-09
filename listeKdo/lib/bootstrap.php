@@ -29,6 +29,7 @@ require_once KDO_ROOT . '/lib/http.php';
 require_once KDO_ROOT . '/lib/models.php';
 require_once KDO_ROOT . '/lib/auth.php';
 require_once KDO_ROOT . '/lib/view.php';
+require_once KDO_ROOT . '/lib/social.php';
 require_once KDO_ROOT . '/lib/upload.php';
 require_once KDO_ROOT . '/lib/admin.php';
 require_once KDO_ROOT . '/lib/badges.php';

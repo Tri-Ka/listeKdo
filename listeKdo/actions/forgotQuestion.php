@@ -5,7 +5,7 @@
 require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 
-$user = secret_enabled() ? user_find_by_name(input('nom')) : null;
+$user = secret_enabled() ? user_find_by_login(input('nom')) : null;
 
 if (!$user || '' === (string) $user['secret_question'] || '' === (string) $user['password']) {
     fail("Pas de question secrète pour ce nom. Demandez à l'administrateur du site de réinitialiser votre mot de passe.", '../index.php', 404);

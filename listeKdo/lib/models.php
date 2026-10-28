@@ -889,9 +889,16 @@ function objects_for_user($userId)
         $byId[$object['id']] = object_prepare($object);
     }
 
+    $commentIds = array();
+    foreach ($comments as $comment) {
+        $commentIds[] = $comment['id'];
+    }
+    $commentReactions = comment_reactions_for($commentIds);
+
     foreach ($comments as $comment) {
         if (isset($users[$comment['user_id']])) {
             $comment['user'] = $users[$comment['user_id']];
+            $comment['reactions'] = isset($commentReactions[$comment['id']]) ? $commentReactions[$comment['id']] : array();
             $comment['content'] = legacy_text($comment['content']);
             $byId[$comment['product_id']]['comments'][] = $comment;
         }
@@ -1090,6 +1097,12 @@ function object_delete($object)
     $id = (int) $object['id'];
 
     db_query('DELETE FROM notification WHERE product_id = ? AND type NOT IN (?)', array($id, array(NOTIF_EVENT, NOTIF_BADGE, NOTIF_REFERRAL)));
+    if (comment_images_enabled()) {
+        comment_images_delete(db_all('SELECT image FROM comment WHERE product_id = ? AND image IS NOT NULL', array($id)));
+    }
+    if (comment_reactions_enabled()) {
+        db_query('DELETE FROM comment_reaction WHERE comment_id IN (SELECT id FROM comment WHERE product_id = ?)', array($id));
+    }
     db_query('DELETE FROM comment WHERE product_id = ?', array($id));
     db_query('DELETE FROM reaction WHERE product_id = ?', array($id));
     if (items_enabled()) {
@@ -1118,6 +1131,141 @@ function object_set_favorite($object, $favorite)
 function items_enabled()
 {
     return db_has_table('liste_item');
+}
+
+/**
+ * Date et image des commentaires (sql/2026-10-13-commentaires-images-dates.sql).
+ */
+function comment_dates_enabled()
+{
+    return db_has_column('comment', 'created_at');
+}
+
+function comment_images_enabled()
+{
+    return db_has_column('comment', 'image');
+}
+
+/**
+ * Images des commentaires : uploads/comments/<fichier>.
+ */
+define('COMMENT_IMAGE_DIR', 'uploads/comments');
+
+function comment_image_url($comment)
+{
+    $file = isset($comment['image']) ? (string) $comment['image'] : '';
+
+    return preg_match('/^[a-z0-9]+\.(jpg|png|gif)$/', $file) ? COMMENT_IMAGE_DIR . '/' . $file : '';
+}
+
+/**
+ * Supprime les fichiers image des commentaires donnés (lignes de la table comment).
+ */
+function comment_images_delete($comments)
+{
+    foreach ($comments as $comment) {
+        $url = comment_image_url($comment);
+        if ('' !== $url) {
+            @unlink(KDO_ROOT . '/' . $url);
+        }
+    }
+}
+
+/**
+ * Réactions aux commentaires (sql/2026-10-13-reactions-commentaires.sql) : un emoji libre par personne et par commentaire.
+ */
+function comment_reactions_enabled()
+{
+    return db_has_table('comment_reaction');
+}
+
+/**
+ * Emoji accepté en réaction : uniquement des caractères d'emoji (séquences, drapeaux et touches comprises), 64 octets au plus.
+ * Retourne l'emoji nettoyé, ou '' s'il n'est pas valide.
+ */
+function comment_reaction_emoji($value)
+{
+    $value = trim((string) $value);
+
+    if ('' === $value || 64 < strlen($value) || !preg_match('/[^\x00-\x7F]/', $value)
+        || !preg_match('/^[\x{00A9}\x{00AE}\x{203C}-\x{3299}\x{1F000}-\x{1FAFF}\x{E0020}-\x{E007F}\x{FE0F}\x{200D}\x{20E3}0-9#*]+$/u', $value)) {
+        return '';
+    }
+
+    return $value;
+}
+
+/**
+ * Réactions des commentaires donnés, avec leur auteur : array(id du commentaire => liste de réactions).
+ */
+function comment_reactions_for($commentIds)
+{
+    $commentIds = db_ids($commentIds);
+    if (!comment_reactions_enabled() || 0 === count($commentIds)) {
+        return array();
+    }
+
+    $reactions = db_all('SELECT * FROM comment_reaction WHERE comment_id IN (?) ORDER BY id ASC', array($commentIds));
+    $userIds = array();
+    foreach ($reactions as $reaction) {
+        $userIds[] = $reaction['user_id'];
+    }
+    $users = users_by_ids($userIds);
+
+    $byComment = array();
+    foreach ($reactions as $reaction) {
+        if (isset($users[$reaction['user_id']])) {
+            $reaction['user'] = $users[$reaction['user_id']];
+            $byComment[$reaction['comment_id']][] = $reaction;
+        }
+    }
+
+    return $byComment;
+}
+
+/**
+ * Pose la réaction d'une personne sur un commentaire. Choisir le même emoji (ou '') la retire.
+ */
+function comment_reaction_set($commentId, $userId, $emoji)
+{
+    $params = array((int) $commentId, (int) $userId);
+    $current = db_one('SELECT emoji FROM comment_reaction WHERE comment_id = ? AND user_id = ?', $params);
+
+    db_query('DELETE FROM comment_reaction WHERE comment_id = ? AND user_id = ?', $params);
+
+    if ('' === $emoji || ($current && $current['emoji'] === $emoji)) {
+        return;
+    }
+
+    db_insert('comment_reaction', array(
+        'comment_id' => (int) $commentId,
+        'user_id' => (int) $userId,
+        'emoji' => $emoji,
+        'created_at' => db_now(),
+    ));
+}
+
+/**
+ * Supprime les réactions des commentaires donnés (identifiants).
+ */
+function comment_reactions_delete($commentIds)
+{
+    $commentIds = db_ids($commentIds);
+    if (comment_reactions_enabled() && 0 < count($commentIds)) {
+        db_query('DELETE FROM comment_reaction WHERE comment_id IN (?)', array($commentIds));
+    }
+}
+
+/**
+ * Clé d'API GIPHY (Administration › Réglages), ou '' : sans clé, pas de bouton « GIF » dans les commentaires.
+ * C'est une clé destinée au navigateur (la recherche part de lui, Free filtrant les connexions sortantes) :
+ * elle n'est donnée qu'aux personnes connectées, dans le formulaire de commentaire.
+ */
+function giphy_key()
+{
+    $key = trim((string) setting('giphy_key', ''));
+
+    return preg_match('/^[A-Za-z0-9]{10,64}$/', $key) ? $key : '';
 }
 
 function items_links_enabled()

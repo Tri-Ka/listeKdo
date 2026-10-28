@@ -6,6 +6,7 @@
 $out = dirname(__FILE__) . '/out';
 if (!is_dir($out)) mkdir($out, 0755);
 define('KDO_ROOT', $out . '/short-url-' . uniqid(''));
+define('KDO_SITE_URL', 'http://datcharrye.free.fr/listeKdo/');
 require_once dirname(__FILE__) . '/../../listeKdo/lib/view.php';
 $failures = 0;
 $GLOBALS['short_test_provider'] = 'tinyurl';

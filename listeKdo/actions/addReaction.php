@@ -19,5 +19,6 @@ $ctx = array('me' => $me);
 
 succeed(array(
     'summary' => render('partials/reactions', array('object' => $object, 'ctx' => $ctx)),
+    'compact' => render('partials/reactions', array('object' => $object, 'ctx' => $ctx, 'compact' => true)),
     'detail' => render('partials/reactors', array('object' => $object)),
 ), list_url($owner['code'], '#idea-' . (int) $object['id']));

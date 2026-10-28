@@ -11,7 +11,7 @@
             </header>
             <div class="modal__body form">
                 <label class="field">
-                    <span>Ton nom</span>
+                    <span><?php echo email_enabled() ? 'Ton nom ou ton e-mail' : 'Ton nom'; ?></span>
                     <input type="text" name="nom" required autocomplete="username">
                 </label>
                 <label class="field">
@@ -41,6 +41,12 @@
                     <span>Ton nom *</span>
                     <input type="text" name="nom" required maxlength="100" autocomplete="username">
                 </label>
+                <?php if (email_enabled()) : ?>
+                    <label class="field">
+                        <span>Ton e-mail * <small>(pour te connecter et retrouver ton mot de passe ; jamais affiché)</small></span>
+                        <input type="email" name="email" required maxlength="190" autocomplete="email" placeholder="prenom@exemple.fr">
+                    </label>
+                <?php endif; ?>
                 <?php if (referral_enabled()) : ?>
                     <?php $rewards = referral_rewards(); $ref = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', input('parrain'))); ?>
                     <label class="field">
@@ -81,9 +87,14 @@
                 </header>
                 <div class="modal__body form">
                     <label class="field">
-                        <span>Ton nom</span>
+                        <span><?php echo email_enabled() ? 'Ton nom ou ton e-mail' : 'Ton nom'; ?></span>
                         <input type="text" name="nom" required autocomplete="username">
                     </label>
+                    <?php if (mail_enabled()) : ?>
+                        <p class="form__link" data-forgot-mail-row>
+                            <button type="button" class="link-btn" data-forgot-mail><?php echo icon('paper-plane'); ?> Recevoir plutôt un lien par e-mail</button>
+                        </p>
+                    <?php endif; ?>
                     <div class="forgot__step" data-forgot-step hidden>
                         <p class="forgot__question" data-forgot-question></p>
                         <label class="field">
@@ -124,6 +135,12 @@
                     <span>Nouvelle photo</span>
                     <input type="file" name="pictureFile" accept="image/*" data-max-size="600">
                 </label>
+                <?php if (email_enabled()) : ?>
+                    <label class="field">
+                        <span>Mon e-mail * <small>(pour me connecter et retrouver mon mot de passe ; jamais affiché)</small></span>
+                        <input type="email" name="email" required maxlength="190" value="<?php echo e($me['email']); ?>" autocomplete="email" placeholder="prenom@exemple.fr">
+                    </label>
+                <?php endif; ?>
                 <?php if (accessories_enabled()) : ?>
                     <?php echo render('partials/accessory_field', array('kind' => 'frame', 'current' => accessory_worn($me, 'frame'), 'owned' => skins_owned($me['id']), 'me' => $me)); ?>
                 <?php endif; ?>
@@ -466,7 +483,73 @@ $addLabel = $suggestMode ? 'Suggérer' : 'Ajouter';
     </dialog>
 <?php endif; ?>
 
-<?php if ($me && secret_enabled() && '' === (string) $me['secret_question'] && !empty($_SESSION['kdo_ask_secret'])) : ?>
+<?php if (email_missing($me)) : ?>
+    <?php // Obligatoire : ni bouton de fermeture, ni Échap, ni clic sur le fond (data-locked, js/modules/dialogs.js). ?>
+    <dialog class="modal modal--small" id="email-required-dialog" aria-labelledby="email-required-title" data-autoopen data-locked>
+        <form method="post" action="actions/setEmail.php">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="back" value="<?php echo e($ctx['owner'] ? $ctx['owner']['code'] : $me['code']); ?>">
+            <header class="modal__header">
+                <h2 id="email-required-title">Ajoutez votre adresse e&#8209;mail</h2>
+            </header>
+            <div class="modal__body form">
+                <p class="form__intro">Elle devient nécessaire pour utiliser Liste de Kdo : vous pourrez vous connecter avec, et recevoir un lien si vous oubliez votre mot de passe. Elle n'est jamais affichée aux autres.</p>
+                <label class="field">
+                    <span>Mon e-mail *</span>
+                    <input type="email" name="email" required maxlength="190" autocomplete="email" placeholder="prenom@exemple.fr">
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <button type="submit" class="btn btn--primary">Enregistrer</button>
+            </footer>
+        </form>
+    </dialog>
+<?php elseif (email_unverified($me)) : ?>
+    <?php $emailBack = $ctx['owner'] ? $ctx['owner']['code'] : $me['code']; ?>
+    <?php // Obligatoire aussi : le compte s'utilise une fois l'adresse confirmée par le code reçu. ?>
+    <dialog class="modal modal--small" id="email-code-dialog" aria-labelledby="email-code-title" data-autoopen data-locked>
+        <form method="post" action="actions/verifyEmail.php">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="back" value="<?php echo e($emailBack); ?>">
+            <header class="modal__header">
+                <h2 id="email-code-title">Confirmez votre adresse e&#8209;mail</h2>
+            </header>
+            <div class="modal__body form">
+                <p class="form__intro">Saisissez le code à 6 chiffres envoyé à <strong><?php echo e($me['email']); ?></strong>.</p>
+                <div class="email-code__spam" role="note">
+                    <?php echo icon('triangle-exclamation'); ?>
+                    <p><strong>Pas reçu ? Regardez dans vos spams</strong> (courrier indésirable) : notre e-mail y arrive souvent la première fois. Marquez-le « Non spam » pour recevoir les suivants normalement.</p>
+                </div>
+                <label class="field">
+                    <span>Code reçu *</span>
+                    <input type="text" name="code" required inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code" placeholder="123456" class="field__code">
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <button type="submit" class="btn btn--primary" name="op" value="verify">Confirmer</button>
+            </footer>
+        </form>
+        <?php // Formulaire à part : Entrée dans le champ du code doit confirmer, pas renvoyer un code. ?>
+        <form method="post" action="actions/verifyEmail.php" class="email-code__resend">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="back" value="<?php echo e($emailBack); ?>">
+            <input type="hidden" name="op" value="resend">
+            <button type="submit" class="link-btn" data-email-resend><?php echo icon('paper-plane'); ?> Renvoyer le code</button>
+        </form>
+        <details class="email-code__change">
+            <summary>Mauvaise adresse ?</summary>
+            <form method="post" action="actions/setEmail.php" class="form">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="back" value="<?php echo e($emailBack); ?>">
+                <label class="field">
+                    <span>Bonne adresse e-mail</span>
+                    <input type="email" name="email" required maxlength="190" autocomplete="email">
+                </label>
+                <button type="submit" class="btn btn--ghost btn--sm">Envoyer le code à cette adresse</button>
+            </form>
+        </details>
+    </dialog>
+<?php elseif ($me && secret_enabled() && '' === (string) $me['secret_question'] && !empty($_SESSION['kdo_ask_secret'])) : ?>
     <?php unset($_SESSION['kdo_ask_secret']); ?>
     <dialog class="modal modal--small" id="secret-invite-dialog" aria-labelledby="secret-invite-title" data-autoopen>
         <form method="post" action="actions/setSecret.php">

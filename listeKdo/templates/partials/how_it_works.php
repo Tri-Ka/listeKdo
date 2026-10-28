@@ -157,8 +157,8 @@ $sections = array(
         <p class="guide-feature__eyebrow"><?php echo icon('comments'); ?> Pour tout le monde</p>
         <h2>Commentez, réagissez, ne ratez rien</h2>
         <ul class="guide-list">
-            <li>Cliquez sur une idée pour l'ouvrir en grand et <strong>laisser un commentaire</strong> : une question sur la taille, la couleur…</li>
-            <li>Les <strong>réactions</strong> (j'adore, j'aime, HaHa !…) se donnent d'un clic sous chaque idée.</li>
+            <li>Cliquez sur une idée pour l'ouvrir en grand et <strong>laisser un commentaire</strong> : une question sur la taille, la couleur… Le bouton <?php echo icon('image'); ?> ajoute une <strong>photo ou un GIF</strong> (vous pouvez aussi le coller ou le glisser), et le bouton <strong>GIF</strong> permet d'en chercher un, et chaque commentaire affiche sa date. Touchez une image pour l'agrandir, et le bouton <?php echo icon('face-smile'); ?> pour <strong>réagir à un commentaire</strong> avec l'emoji de votre choix (appui long sur téléphone, « + » pour tous les emojis).</li>
+            <li>Les <strong>réactions</strong> (j'adore, j'aime, HaHa !…) se donnent d'un clic sous chaque idée, ou dans sa fiche.</li>
             <li>La cloche <?php echo icon('bell'); ?> regroupe les <strong>notifications</strong> : nouvelles idées de vos amis, commentaires et réactions sur vos idées, badges obtenus…</li>
             <li>Des <strong>rappels</strong> arrivent un mois, une semaine et la veille de l'anniversaire de vos amis.</li>
             <li>L'onglet <strong>« Non lues »</strong> et « Tout marquer comme lu » aident à faire le tri.</li>
@@ -279,8 +279,18 @@ $sections = array(
     </details>
     <details>
         <summary>J'ai oublié mon mot de passe.</summary>
-        <p>Dans la fenêtre de connexion, cliquez sur « Mot de passe oublié ? » et répondez à votre question secrète. Si vous n'en avez pas choisi, demandez à un administrateur de vous envoyer un lien pour le réinitialiser.</p>
+        <?php if (mail_enabled()) : ?>
+            <p>Dans la fenêtre de connexion, cliquez sur « Mot de passe oublié ? », indiquez votre nom ou votre e-mail, puis choisissez « Recevoir plutôt un lien par e-mail » : un lien valable 48 heures vous permet d'en choisir un nouveau. Vous pouvez aussi répondre à votre question secrète.</p>
+        <?php else : ?>
+            <p>Dans la fenêtre de connexion, cliquez sur « Mot de passe oublié ? » et répondez à votre question secrète. Si vous n'en avez pas choisi, demandez à un administrateur de vous envoyer un lien pour le réinitialiser.</p>
+        <?php endif; ?>
     </details>
+    <?php if (email_enabled()) : ?>
+        <details>
+            <summary>Pourquoi mon adresse e-mail est-elle demandée ?</summary>
+            <p>Elle sert à vous connecter (avec votre nom ou votre e-mail) et à recevoir un lien si vous oubliez votre mot de passe. Elle n'est jamais affichée aux autres. À l'inscription, et à chaque changement dans « Mon profil », un code à 6 chiffres vous est envoyé pour la confirmer.</p>
+        </details>
+    <?php endif; ?>
     <details>
         <summary>Comment supprimer mon compte ?</summary>
         <p>Dans « Mon profil », dépliez « Supprimer mon compte » en bas de la fenêtre et indiquez votre mot de passe. Votre liste, vos idées et vos commentaires sont effacés définitivement, ainsi que les listes secondaires que vous êtes seul à gérer. Les cadeaux que vous aviez réservés redeviennent disponibles pour les autres.</p>

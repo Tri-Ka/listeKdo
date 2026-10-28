@@ -55,6 +55,10 @@ if (array_key_exists('message', $me) && isset($_POST['message'])) {
     $changes['message'] = '' !== $message ? $message : null;
 }
 
+// Adresse e-mail obligatoire (sql/2026-10-28-email.sql) : connexion et lien de nouveau mot de passe.
+// Une nouvelle adresse est enregistrée à part (email_save, après le reste), avec un code de confirmation.
+$email = email_enabled() ? email_from_request($back, $me['id']) : null;
+
 // Cadre de la photo (boutique) : un de ceux achetés, ou aucun.
 if (accessories_enabled() && isset($_POST['frame'])) {
     $key = accessory_choice($me, 'frame', input('frame'), $back);
@@ -86,4 +90,6 @@ if (isset($changes['password'])) {
     login(user_find($me['id']));
 }
 
-succeed(array(), $back, 'Profil mis à jour.');
+$emailMessage = $email ? email_save(user_find($me['id']), $email) : '';
+
+succeed(array(), $back, '' !== $emailMessage ? 'Profil mis à jour. ' . $emailMessage : 'Profil mis à jour.');

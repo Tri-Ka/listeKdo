@@ -3,6 +3,8 @@ import { refreshGems } from './gems.js';
 
 export function openDialog(dialog) {
     if (!dialog || dialog.open) return;
+    // Une fenêtre obligatoire (data-locked) reste au premier plan tant qu'elle n'est pas remplie.
+    if ($('dialog[data-locked][open]')) return;
     $$('dialog[open]').forEach((other) => other.close());
     dialog.showModal();
     document.body.classList.add('is-locked');
@@ -39,10 +41,15 @@ export function initDialogs() {
         // Clic sur le fond sombre autour de la fenêtre : il faut aussi que l'appui ait commencé sur le fond.
         // Sinon, sélectionner du texte et relâcher la souris hors de la fenêtre la fermerait.
         if (event.target instanceof HTMLDialogElement && pressedOnBackdrop === event.target
-            && outsideDialog(event.target, event)) {
+            && outsideDialog(event.target, event) && !('locked' in event.target.dataset)) {
             event.target.close();
         }
     });
+
+    // Fenêtre obligatoire (data-locked, ex. adresse e-mail manquante) : Échap ne la ferme pas.
+    document.addEventListener('cancel', (event) => {
+        if (event.target instanceof HTMLDialogElement && 'locked' in event.target.dataset) event.preventDefault();
+    }, true);
 
     // Fenêtre dont le fond sombre a reçu l'appui (souris ou doigt), ou null.
     let pressedOnBackdrop = null;

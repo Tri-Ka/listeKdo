@@ -1,6 +1,7 @@
 <?php
 /* Vérification ciblée PHP 4 : confidentialité des aperçus, échappement HTML et fichiers générés. */
 define('KDO_ROOT', dirname(__FILE__) . '/../../listeKdo');
+define('KDO_SITE_URL', 'http://datcharrye.free.fr/listeKdo/');
 require_once KDO_ROOT . '/lib/security.php';
 require_once KDO_ROOT . '/lib/models.php';
 require_once KDO_ROOT . '/lib/view.php';

@@ -5,7 +5,7 @@
  */
 function social_metadata($ctx, $theme, $isHowItWorks)
 {
-    $base = 'http://datcharrye.free.fr/listeKdo/';
+    $base = KDO_SITE_URL;
     $owner = $ctx['owner'];
     $image = 'home';
     $title = 'Liste de Kdo · Vos envies, leurs belles attentions';

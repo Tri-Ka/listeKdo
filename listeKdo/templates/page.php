@@ -103,6 +103,7 @@ $pageTitle = $meta['title'];
         )); ?>
     <?php endif; ?>
     <?php echo render('partials/confirm'); ?>
+    <?php echo render('partials/image_viewer'); ?>
     <?php echo render('partials/badges', array('ctx' => $ctx, 'owner' => $owner, 'badges' => $badges, 'shop' => $shop)); ?>
     <?php if ($shop) : ?>
         <?php echo render('partials/shop', array('me' => $me, 'shop' => $shop)); ?>

@@ -511,6 +511,12 @@ function admin_delete_user($user)
     }
 
     db_query('DELETE FROM user_friend WHERE user_id = ? OR friend_code = ?', array($id, (string) $user['code']));
+    if (comment_images_enabled()) {
+        comment_images_delete(db_all('SELECT image FROM comment WHERE user_id = ? AND image IS NOT NULL', array($id)));
+    }
+    if (comment_reactions_enabled()) {
+        db_query('DELETE FROM comment_reaction WHERE user_id = ? OR comment_id IN (SELECT id FROM comment WHERE user_id = ?)', array($id, $id));
+    }
     db_query('DELETE FROM comment WHERE user_id = ?', array($id));
     db_query('DELETE FROM reaction WHERE user_id = ?', array($id));
     db_query('DELETE FROM notification WHERE author_id = ?', array($id));
@@ -573,7 +579,7 @@ function site_base_url()
         return 'http://' . $_SERVER['HTTP_HOST'] . '/listeKdo/';
     }
 
-    return 'http://datcharrye.free.fr/listeKdo/';
+    return KDO_SITE_URL;
 }
 
 /**

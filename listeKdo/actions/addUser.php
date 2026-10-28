@@ -22,6 +22,9 @@ if (user_find_by_name($name)) {
     fail('Ce nom existe déjà.');
 }
 
+// Adresse e-mail obligatoire (sql/2026-10-28-email.sql) : connexion et lien de nouveau mot de passe.
+$email = email_enabled() ? email_from_request('../index.php') : null;
+
 $secret = secret_enabled() ? secret_from_request('../index.php') : null;
 
 // Parrainage : code facultatif, mais s'il est saisi il doit exister.
@@ -63,6 +66,12 @@ if ($sponsor) {
 login($user);
 if (secret_enabled() && !$secret) {
     $_SESSION['kdo_ask_secret'] = true;
+}
+
+// Adresse à confirmer par le code envoyé (fenêtre affichée sur la liste tant qu'il n'est pas saisi).
+$emailMessage = $email ? email_save($user, $email) : '';
+if ('' !== $emailMessage) {
+    flash($emailMessage, 'success');
 }
 
 succeed(array(), list_url($user['code']), empty($_SESSION['kdo_flash']) ? 'Bienvenue ! Ajoutez votre première idée.' : '');

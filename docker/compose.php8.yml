@@ -1,0 +1,23 @@
+# Le site local en PHP 8 (comme sur la Freebox) au lieu de PHP 4, avec MailDev pour voir les e-mails :
+#   docker compose -f compose.yml -f compose.php8.yml up -d --build php maildev
+#   E-mails envoyés : http://localhost:1088/
+# Retour en PHP 4 : docker compose up -d --force-recreate php
+services:
+  php:
+    build: ./php8
+    image: listekdo-php8
+    command: ["listekdo-start"]
+    environment:
+      # msmtp (docker/php8/start.sh) envoie à MailDev, sans authentification ni TLS
+      SMTP_USER: noreply@listekdo.local
+      SMTP_HOST: maildev
+      SMTP_PORT: "1025"
+      SMTP_TLS: "off"
+    depends_on:
+      - mysql
+      - maildev
+
+  maildev:
+    image: maildev/maildev:2.2.1
+    ports:
+      - "127.0.0.1:1088:1080"

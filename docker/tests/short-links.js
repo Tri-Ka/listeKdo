@@ -84,7 +84,7 @@ async function action(page, fields, token = true) {
         const duplicates = await admin.evaluate(async () => {
             const { resolveShortLink } = await import('./js/modules/short-links.js');
             const long = 'http://datcharrye.free.fr/listeKdo/?parrain=test';
-            const data = { url: long, long, browser: { provider: 'dagd', endpoint: 'https://da.gd/s?url=' } };
+            const data = { url: long, long, browser: { provider: 'dagd', endpoint: 'https://da.gd/s?url=', site: 'http://datcharrye.free.fr/listeKdo/' } };
             return Promise.all([resolveShortLink(data), resolveShortLink(data)]);
         });
         check(requests.length === 1 && duplicates.every((url) => url === 'https://da.gd/test-123'), 'deux demandes simultanées partagent le même appel');

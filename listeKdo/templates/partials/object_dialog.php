@@ -45,8 +45,15 @@ $me = $ctx['me'];
             </section>
         <?php endif; ?>
 
-        <div class="reactors" data-reactors-slot="<?php echo $id; ?>">
-            <?php echo render('partials/reactors', array('object' => $object)); ?>
+        <div class="detail__react">
+            <?php if ($me) : ?>
+                <div class="reactions reactions--compact" data-reactions-slot="<?php echo $id; ?>" data-reactions-compact>
+                    <?php echo render('partials/reactions', array('object' => $object, 'ctx' => $ctx, 'compact' => true)); ?>
+                </div>
+            <?php endif; ?>
+            <div class="reactors" data-reactors-slot="<?php echo $id; ?>">
+                <?php echo render('partials/reactors', array('object' => $object)); ?>
+            </div>
         </div>
 
         <section class="comments">
@@ -58,11 +65,37 @@ $me = $ctx['me'];
             </ul>
 
             <?php if ($me) : ?>
-                <form class="comment-form" method="post" action="actions/addComment.php" data-ajax="comment">
+                <?php $commentImages = comment_images_enabled(); ?>
+                <?php $giphyKey = $commentImages ? giphy_key() : ''; ?>
+                <form class="comment-form<?php echo '' !== $giphyKey ? ' comment-form--gif' : ''; ?>" method="post" action="actions/addComment.php" data-ajax="comment"<?php echo $commentImages ? ' enctype="multipart/form-data" data-comment-images' : ''; ?><?php echo '' !== $giphyKey ? ' data-giphy-key="' . e($giphyKey) . '"' : ''; ?>>
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="productId" value="<?php echo $id; ?>">
                     <?php echo avatar($me, 'comment__avatar'); ?>
-                    <textarea name="content" rows="1" required maxlength="2000" placeholder="Écrire un commentaire…" aria-label="Votre commentaire" data-autosize></textarea>
+                    <div class="comment-form__field">
+                        <?php if ($commentImages) : ?>
+                            <div class="comment-form__preview" data-comment-preview hidden>
+                                <img src="" alt="Image à envoyer">
+                                <button type="button" data-comment-image-remove aria-label="Retirer l'image" title="Retirer l'image"><?php echo icon('xmark'); ?></button>
+                            </div>
+                        <?php endif; ?>
+                        <?php if ($commentImages) : ?>
+                            <?php // Champ éditable plutôt qu'une zone de texte : les claviers de téléphone (Gboard…) peuvent y insérer GIF et autocollants. ?>
+                            <div class="comment-form__input" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Votre commentaire" data-placeholder="Écrire un commentaire…" enterkeyhint="send" data-comment-editor></div>
+                            <textarea name="content" maxlength="2000" hidden></textarea>
+                        <?php else : ?>
+                            <textarea name="content" rows="1" required maxlength="2000" placeholder="Écrire un commentaire…" aria-label="Votre commentaire" data-autosize></textarea>
+                        <?php endif; ?>
+                        <?php if ('' !== $giphyKey) : ?>
+                            <button type="button" class="comment-form__gif" data-gif-open title="Chercher un GIF" aria-label="Chercher un GIF" aria-expanded="false">GIF</button>
+                        <?php endif; ?>
+                        <?php if ($commentImages) : ?>
+                            <label class="comment-form__attach" title="Ajouter une photo ou un GIF">
+                                <?php echo icon('image'); ?>
+                                <span class="sr-only">Ajouter une photo ou un GIF</span>
+                                <input type="file" name="image" accept="image/jpeg,image/png,image/gif" data-max-size="1200" data-comment-image>
+                            </label>
+                        <?php endif; ?>
+                    </div>
                     <button type="submit" class="icon-btn icon-btn--primary" aria-label="Envoyer"><?php echo icon('paper-plane'); ?></button>
                 </form>
             <?php else : ?>

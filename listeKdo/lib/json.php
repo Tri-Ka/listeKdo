@@ -64,8 +64,13 @@ function kdo_json_string($string)
         $string
     );
 
-    // Autres caractères de contrôle.
-    $string = preg_replace('/[\x00-\x1f]/e', "sprintf('\\\\u%04x', ord('\\0'))", $string);
+    // Autres caractères de contrôle (callback nommé : le modificateur /e n'existe plus en PHP 7+).
+    $string = preg_replace_callback('/[\x00-\x1f]/', 'kdo_json_control_char', $string);
 
     return '"' . $string . '"';
+}
+
+function kdo_json_control_char($matches)
+{
+    return sprintf('\\u%04x', ord($matches[0]));
 }

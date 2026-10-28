@@ -1,6 +1,8 @@
 # Secrets : identifiants MySQL, clés d'API, mot de passe FTP
 listeKdo/config.php
 docker/config.local.php
+docker/freebox/config.php
+docker/freebox/deploy.env
 .vscode/
 .env
 
@@ -8,6 +10,7 @@ docker/config.local.php
 listeKdo/uploads/
 listeKdo/cache/
 docker/mysql-init/datcharrye.sql
+docker/freebox/db-init/
 
 # Fichiers générés
 docker/tests/out/

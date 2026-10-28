@@ -2,11 +2,12 @@
 require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 
-$user = user_find_by_name(input('nom'));
+// Nom ou adresse e-mail.
+$user = user_find_by_login(input('nom'));
 $password = isset($_POST['password']) ? $_POST['password'] : '';
 
 if (!$user || !password_matches($password, $user['password'])) {
-    fail('Nom ou mot de passe invalide.', list_url(input('redirect')));
+    fail(email_enabled() ? 'Identifiant ou mot de passe invalide.' : 'Nom ou mot de passe invalide.', list_url(input('redirect')));
 }
 
 // Les anciens mots de passe (MD5 sans sel) sont convertis au nouveau format.

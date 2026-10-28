@@ -1851,6 +1851,64 @@ button.heart-btn:hover {
     height: 38px;
 }
 
+/* Fiche de l'idée : un petit bouton (sa réaction ou l'icône vide), les six choix au clic, la liste à côté. */
+.detail__react {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.detail__react:not(:has(.reactions, .reactors__row)) {
+    display: none;
+}
+
+.reactions--compact .reactions__summary {
+    width: 38px;
+    height: 38px;
+}
+
+.reactions--compact .reactions__summary--mine {
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+}
+
+.reactions--compact .reactions__summary--empty {
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+.reactions--compact .reactions__choices {
+    left: 0;
+    transform: translate(0, 8px) scale(.9);
+    transform-origin: bottom left;
+}
+
+.reactions--compact .reactions__picker.is-open .reactions__choices {
+    transform: none;
+}
+
+@media (hover: hover) {
+    .reactions--compact .reactions__picker:hover .reactions__choices,
+    .reactions--compact .reactions__picker:focus-within .reactions__choices {
+        transform: none;
+    }
+}
+
+.detail__react .reactors {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail__react .reactors__type,
+.detail__react .reactors__avatar {
+    width: 28px;
+    height: 28px;
+}
+
 .reactors {
     display: grid;
     gap: 8px;
@@ -2209,9 +2267,25 @@ button.heart-btn:hover {
     object-fit: cover;
 }
 
+/* Bulle et bouton « Réagir » sur une ligne, réactions en dessous. */
+.comment__main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    max-width: calc(100% - 48px);
+}
+
+.comment__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+}
+
 .comment__bubble {
     position: relative;
-    max-width: calc(100% - 48px);
+    min-width: 0;
     padding: 10px 16px;
     border-radius: 4px 18px 18px 18px;
     background: var(--surface-muted);
@@ -2222,6 +2296,415 @@ button.heart-btn:hover {
 .comment__author {
     display: block;
     font-size: 13px;
+}
+
+/* Image ou GIF envoyé en commentaire, comme dans une messagerie. */
+.comment__image {
+    display: block;
+    margin: 6px 0 4px;
+}
+
+.comment__image img {
+    display: block;
+    max-width: min(240px, 100%);
+    max-height: 260px;
+    border-radius: 12px;
+    background: var(--line);
+}
+
+.comment__date {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-align: right;
+}
+
+.comment__bubble:has(.comment__delete) .comment__date {
+    padding-right: 16px;
+}
+
+.comment__image {
+    cursor: zoom-in;
+}
+
+.comment__react {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-muted);
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity .15s, color .15s, transform .15s var(--ease);
+}
+
+.comment:hover .comment__react,
+.comment__react:focus-visible,
+.comment__react[aria-expanded="true"] {
+    opacity: 1;
+}
+
+.comment__react:hover,
+.comment__react[aria-expanded="true"] {
+    color: var(--text);
+    transform: scale(1.08);
+}
+
+/* Écrans tactiles : pas de survol. Bouton discret, et appui long sur la bulle comme dans WhatsApp. */
+@media (hover: none) {
+    .comment__react {
+        opacity: .7;
+    }
+
+    .comment__row {
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+}
+
+/* Barre de réactions rapide, et sélecteur complet au-dessus (popover : par-dessus la fiche). */
+.reaction-pop {
+    position: fixed;
+    inset: auto;
+    width: min(360px, 100vw - 16px);
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+}
+
+.reaction-pop:popover-open {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.reaction-pop--below:popover-open {
+    flex-direction: column-reverse;
+}
+
+.reaction-pop__bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    animation: pop-in .18s var(--ease);
+}
+
+.reaction-pop__quick {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    transition: transform .15s var(--ease), background .15s;
+}
+
+.reaction-pop__quick:hover {
+    transform: scale(1.2);
+}
+
+.reaction-pop__quick[aria-pressed="true"] {
+    background: var(--surface-muted);
+}
+
+.reaction-pop__more {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin-left: 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface-muted);
+    color: var(--text);
+    font-size: 16px;
+}
+
+.reaction-pop__more[aria-expanded="true"] {
+    background: var(--line);
+}
+
+.reaction-pop__panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: min(400px, 55vh);
+    overflow: hidden;
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    animation: pop-in .18s var(--ease);
+}
+
+.reaction-pop__panel[hidden] {
+    display: none;
+}
+
+.emoji-tabs {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 8px 0;
+}
+
+.emoji-tabs__tab {
+    position: relative;
+    display: grid;
+    flex: 1;
+    place-items: center;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 21px;
+}
+
+.emoji-tabs__tab::after {
+    position: absolute;
+    right: 25%;
+    bottom: 0;
+    left: 25%;
+    height: 3px;
+    border-radius: 3px;
+    content: "";
+}
+
+.emoji-tabs__tab.is-active {
+    color: var(--text);
+}
+
+.emoji-tabs__tab.is-active::after {
+    background: var(--brand);
+}
+
+.emoji-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 12px 6px;
+    padding: 0 14px;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-muted);
+}
+
+.emoji-search:focus-within {
+    border-color: var(--brand);
+}
+
+.emoji-search input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    outline: 0;
+}
+
+.emoji-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 8px 8px;
+}
+
+.emoji-section[hidden] {
+    display: none;
+}
+
+.emoji-section h4 {
+    margin: 10px 6px 4px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+}
+
+.emoji-grid__item {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    font-size: 26px;
+    line-height: 1;
+}
+
+.emoji-grid__item:hover,
+.emoji-grid__item:focus-visible {
+    background: var(--surface-muted);
+}
+
+.emoji-empty {
+    margin: 12px 6px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: scale(.92);
+    }
+}
+
+/* Réactions posées : pastille accrochée sous la bulle, comme dans une messagerie. */
+.comment-reactions:empty {
+    display: none;
+}
+
+.comment-reactions {
+    position: relative;
+    z-index: 1;
+    margin: -10px 0 0 12px;
+}
+
+.comment-reactions__summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    font-size: 18px;
+    line-height: 1;
+}
+
+.comment-reactions__summary.is-mine {
+    background: var(--surface-muted);
+}
+
+.comment-reactions__total {
+    margin-left: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.comment-reactions__list {
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    margin: 6px 0 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    list-style: none;
+    font-size: 14px;
+}
+
+.comment-reactions__list[hidden] {
+    display: none;
+}
+
+.comment-reactions__list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.comment-reactions__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-reactions__name {
+    flex: 1;
+}
+
+.comment-reactions__remove {
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--danger);
+    font-size: 12px;
+}
+
+.comment-reactions__list .comment-reactions__emoji {
+    font-size: 18px;
+}
+
+/* Visionneuse d'images des commentaires, par-dessus la fenêtre de l'idée. */
+.viewer {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.viewer[open] {
+    display: grid;
+    place-items: center;
+}
+
+.viewer::backdrop {
+    background: rgb(0 0 0 / .85);
+}
+
+.viewer__image {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 96px);
+    border-radius: 8px;
+    cursor: zoom-out;
+    animation: rise .2s var(--ease);
+}
+
+.viewer__close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / .15);
+    color: #fff;
+    font-size: 18px;
 }
 
 .comment__delete {
@@ -2253,6 +2736,7 @@ button.heart-btn:hover {
 
 .comment-form textarea {
     flex: 1;
+    width: 100%;
     min-height: 46px;
     padding: 11px 18px;
     border: 1px solid var(--line);
@@ -2261,10 +2745,240 @@ button.heart-btn:hover {
     resize: none;
 }
 
+/* Champ éditable (accepte les GIF du clavier du téléphone), même allure que la zone de texte. */
+.comment-form__input {
+    flex: 1;
+    width: 100%;
+    min-height: 46px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 11px 48px 11px 18px;
+    border: 1px solid var(--line);
+    border-radius: 23px;
+    background: var(--surface-muted);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    cursor: text;
+}
+
+.comment-form__input:empty::before {
+    display: block;
+    overflow: hidden;
+    color: var(--text-muted);
+    content: attr(data-placeholder);
+    pointer-events: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.comment-form__input:focus {
+    border-color: var(--brand);
+    outline: 0;
+    background: #fff;
+}
+
+.comment-form__input img {
+    display: none;
+}
+
+.comment-form--drop .comment-form__input {
+    border-color: var(--brand);
+    border-style: dashed;
+}
+
 .comment-form textarea:focus {
     border-color: var(--brand);
     outline: 0;
     background: #fff;
+}
+
+/* Champ du commentaire : aperçu de l'image au-dessus, bouton image dans la bulle (à droite). */
+.comment-form__field {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.comment-form[data-comment-images] textarea {
+    padding-right: 48px;
+}
+
+/* Bouton « GIF » (recherche GIPHY), à gauche du bouton image dans le champ. */
+.comment-form--gif .comment-form__input {
+    padding-right: 90px;
+}
+
+.comment-form__gif {
+    position: absolute;
+    right: 44px;
+    bottom: 11px;
+    height: 24px;
+    padding: 0 6px;
+    border: 1.5px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s;
+}
+
+.comment-form__gif:hover,
+.comment-form__gif[aria-expanded="true"] {
+    color: var(--brand);
+}
+
+/* Panneau de recherche de GIF (popover, par-dessus la fiche). */
+.gif-pop {
+    position: fixed;
+    inset: auto;
+    width: min(440px, 100vw - 16px);
+    height: min(440px, 60vh);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+}
+
+.gif-pop:popover-open {
+    display: flex;
+    flex-direction: column;
+    animation: pop-in .18s var(--ease);
+}
+
+.gif-pop__scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 10px 10px;
+}
+
+.gif-pop__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+}
+
+.gif-pop__item {
+    height: 110px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface-muted);
+    cursor: pointer;
+}
+
+.gif-pop__item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .2s var(--ease);
+}
+
+.gif-pop__item:hover img {
+    transform: scale(1.05);
+}
+
+.gif-pop__item[aria-busy="true"] {
+    opacity: .5;
+}
+
+.gif-pop__status {
+    margin: 12px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+.gif-pop__status:empty {
+    display: none;
+}
+
+.gif-pop__credit {
+    margin: 0;
+    padding: 6px 12px 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-align: right;
+}
+
+.comment-form__attach {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color .15s, background .15s;
+}
+
+.comment-form__attach:hover,
+.comment-form__attach:focus-within {
+    background: var(--line);
+    color: var(--brand);
+}
+
+.comment-form__attach input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.comment-form__preview {
+    position: relative;
+    align-self: flex-start;
+}
+
+.comment-form__preview[hidden] {
+    display: none;
+}
+
+.comment-form__preview img {
+    display: block;
+    max-width: 160px;
+    max-height: 120px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.comment-form__preview button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--danger);
+    font-size: 11px;
+    box-shadow: var(--shadow-sm);
+}
+
+.comment-form--drop textarea {
+    border-color: var(--brand);
+    border-style: dashed;
 }
 
 .comment-form .icon-btn {
@@ -4917,6 +5631,78 @@ button.collection-pill {
     margin: -8px 28px 12px;
     text-align: right;
     font-size: 14px;
+}
+
+/* Confirmation de l'adresse e-mail (fenêtre du code à 6 chiffres) */
+.field__code {
+    font-size: 1.5rem;
+    letter-spacing: .35em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.email-code__spam {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 2px solid #f59e0b;
+    border-radius: var(--radius-sm);
+    background: #fff4d6;
+    color: #7a4a00;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.email-code__spam .icon {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    color: #d97706;
+}
+
+.email-code__spam p {
+    margin: 0;
+}
+
+.email-code__spam strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 15px;
+    color: #5c3700;
+}
+
+.email-code__resend {
+    display: flex;
+    justify-content: center;
+    margin: -6px 28px 4px;
+    font-size: 14px;
+}
+
+.email-code__resend .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+}
+
+.email-code__change {
+    margin: 0 28px 22px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+}
+
+.email-code__change summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.email-code__change .form {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .forgot__step {

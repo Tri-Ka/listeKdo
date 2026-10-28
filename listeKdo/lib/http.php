@@ -37,7 +37,18 @@ function input_int($key)
 function send_json($data, $status = 200)
 {
     if (200 !== $status) {
-        header('Status: ' . $status);
+        // « Status: » ne marche qu'en CGI (PHP 4 chez Free). PHP 8 sous Apache a besoin d'une ligne
+        // de statut complète, avec son libellé, sinon un code non standard (419) devient une erreur 500.
+        if (function_exists('http_response_code')) {
+            $reasons = array(400 => 'Bad Request', 401 => 'Unauthorized', 403 => 'Forbidden', 404 => 'Not Found',
+                405 => 'Method Not Allowed', 409 => 'Conflict', 413 => 'Payload Too Large', 419 => 'Page Expired',
+                422 => 'Unprocessable Entity', 429 => 'Too Many Requests', 500 => 'Internal Server Error');
+            $reason = isset($reasons[$status]) ? $reasons[$status] : 'Error';
+            $protocol = isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1';
+            header($protocol . ' ' . $status . ' ' . $reason, true, $status);
+        } else {
+            header('Status: ' . $status);
+        }
     }
 
     header('Content-Type: application/json; charset=UTF-8');

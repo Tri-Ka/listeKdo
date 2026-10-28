@@ -10,7 +10,7 @@ $options = short_link_options();
 if (!isset($options[$provider])) fail('Choisissez un service proposé dans la liste.', $back);
 
 if ('test' === input('op')) {
-    $long = 'http://datcharrye.free.fr/listeKdo/';
+    $long = KDO_SITE_URL;
     $browser = short_link_browser($long, $provider);
     $result = array('url' => '', 'message' => 'Le raccourcissement est désactivé.');
     if (null === $browser && 'none' !== $provider) $result = short_link_request($provider, $long);

@@ -1,0 +1,82 @@
+# Serveur de production sur la VM de la Freebox (Delta, ARM64, 512 Mo de RAM), en PHP 8.
+# Copié sur la VM par deploy.sh, avec listeKdo/ : ~/listekdo/{listeKdo,docker}.
+#   Site        : https://<KDO_DOMAIN>/            (ports 80 et 443 redirigés par la Freebox)
+#   phpMyAdmin  : http://<IP de la VM>:8091/        (réseau local seulement, voir README.md)
+name: listekdo
+
+services:
+  # HTTPS (Let's Encrypt) et redirections, devant Apache
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      KDO_DOMAIN: ${KDO_DOMAIN:?à définir dans .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificats : à garder entre deux redémarrages (limites de Let's Encrypt)
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - php
+
+  php:
+    build:
+      context: ../php8
+      args:
+        # Apache tourne avec l'utilisateur propriétaire des fichiers (écriture dans uploads/ et cache/)
+        UID: ${KDO_UID:-1000}
+        GID: ${KDO_GID:-1000}
+    image: listekdo-php8
+    restart: unless-stopped
+    environment:
+      # E-mails par Gmail (msmtp, docker/php8/start.sh) ; vides = pas d'envoi
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    # Pas de port publié : seul Caddy l'atteint, par le réseau interne de Docker.
+    volumes:
+      # Le site à la racine (https://<KDO_DOMAIN>/), pas en /listeKdo/ comme chez Free
+      - ../../listeKdo:/var/www/site
+      # config.php de la Freebox (base MariaDB locale), créé par deploy.sh, jamais dans git
+      - ./config.php:/var/www/site/config.php:ro
+      - ./apache-site.conf:/etc/apache2/sites-available/000-default.conf:ro
+    depends_on:
+      - mysql
+
+  # MariaDB 10.6 (mysql:5.7 n'existe pas en ARM64), réglée comme le MySQL de Free
+  # et au plus juste en mémoire (tables MyISAM pour l'essentiel).
+  mysql:
+    image: mariadb:10.6
+    restart: unless-stopped
+    command: >-
+      --sql-mode="" --character-set-server=latin1 --collation-server=latin1_swedish_ci
+      --innodb-buffer-pool-size=32M --key-buffer-size=16M --performance-schema=OFF
+      --max-connections=40 --table-open-cache=200
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?à définir dans .env}
+      MARIADB_DATABASE: datcharrye
+      MARIADB_USER: datcharrye
+      MARIADB_PASSWORD: ${DB_PASSWORD:?à définir dans .env}
+    volumes:
+      - db-data:/var/lib/mysql
+      # Export de la base Free, importé au tout premier démarrage (volume vide)
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+
+  # Lancé seulement à la demande : docker compose --profile admin up -d phpmyadmin
+  phpmyadmin:
+    image: phpmyadmin:5
+    profiles: ["admin"]
+    environment:
+      PMA_HOST: mysql
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "${PMA_PORT:-8091}:80"
+    depends_on:
+      - mysql
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

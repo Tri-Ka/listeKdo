@@ -5,7 +5,7 @@ export async function resolveShortLink(data) {
     const long = data.long || data.url;
     if (!data.browser || data.url !== long) return data.url;
     if (data.browser.provider !== 'dagd' || data.browser.endpoint !== 'https://da.gd/s?url='
-        || !long?.startsWith('http://datcharrye.free.fr/')) return long;
+        || !data.browser.site || !long?.startsWith(data.browser.site)) return long;
     if (requests.has(long)) return requests.get(long);
 
     const request = (async () => {

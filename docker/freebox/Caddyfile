@@ -1,0 +1,22 @@
+# HTTPS devant Apache : certificat Let's Encrypt obtenu et renouvelé automatiquement pour KDO_DOMAIN
+# (défini dans .env par deploy.sh). Le HTTP de ce nom est redirigé vers le HTTPS par Caddy.
+{$KDO_DOMAIN} {
+	encode gzip
+	header Strict-Transport-Security "max-age=31536000"
+
+	# Anciennes adresses en /listeKdo/… (liens déjà partagés) : même page, à la racine.
+	@old path /listeKdo /listeKdo/*
+	# route : garde cet ordre (sinon Caddy fait passer redir avant uri, et l'adresse boucle sur elle-même).
+	route @old {
+		uri strip_prefix /listeKdo
+		redir {uri} 301
+	}
+
+	reverse_proxy php:80
+}
+
+# Accès par l'IP publique ou un autre nom : renvoi vers l'adresse HTTPS.
+# 302 et pas 301 : l'adresse changera avec le futur nom de domaine.
+:80 {
+	redir https://{$KDO_DOMAIN}{uri} 302
+}

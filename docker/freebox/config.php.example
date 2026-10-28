@@ -1,0 +1,30 @@
+<?php
+    // MODÈLE de config.php pour le serveur de la Freebox : deploy.sh le remplit
+    // (mot de passe de la base, adresse publique, clés reprises de listeKdo/config.php).
+    if (!isset($_SESSION)) {
+        session_start();
+    }
+
+    $_host = 'mysql';
+    $_db = 'datcharrye';
+    $_username = 'datcharrye';
+    $_pass = '__DB_PASSWORD__';
+
+    // Adresse publique du site, utilisée pour les liens à partager.
+    $_site_url = '__SITE_URL__';
+
+    // Expéditeur des e-mails (adresse Gmail de SMTP_USER) ; vide = pas d'envoi.
+    $_mail_from = '__MAIL_FROM__';
+
+    // Utilisée uniquement côté serveur comme repli pour les sites protégés
+    // contre les robots (Smyths, etc.). Ne jamais l'envoyer au navigateur.
+    $_scraperapi_key = '__SCRAPERAPI_KEY__';
+    // Contrairement à Free, la Freebox peut joindre api.scraperapi.com.
+    $_scraperapi_enabled = '' !== $_scraperapi_key;
+
+    // URL du Worker Cloudflare et jeton privé.
+    $_metadata_worker_url = '__WORKER_URL__';
+    $_metadata_worker_token = '__WORKER_TOKEN__';
+
+    $link = mysql_connect($_host, $_username, $_pass);
+    $db_selected = mysql_select_db($_db);

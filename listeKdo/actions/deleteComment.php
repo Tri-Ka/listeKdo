@@ -10,6 +10,8 @@ if (!$comment) {
 }
 
 db_query('DELETE FROM comment WHERE id = ?', array((int) $comment['id']));
+comment_images_delete(array($comment));
+comment_reactions_delete(array($comment['id']));
 
 $object = object_find($comment['product_id']);
 $owner = $object ? user_find($object['user_id']) : null;

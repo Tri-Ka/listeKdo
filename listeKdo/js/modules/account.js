@@ -52,6 +52,24 @@ export function initAccount() {
             }
         });
 
+        // Variante par e-mail : lien de nouveau mot de passe envoyé à l'adresse du compte.
+        const mailButton = $('[data-forgot-mail]', forgot);
+        mailButton?.addEventListener('click', async () => {
+            if (!forgot.elements.nom.reportValidity()) return;
+            mailButton.setAttribute('aria-busy', 'true');
+            try {
+                const body = new FormData();
+                body.append('nom', forgot.elements.nom.value);
+                const data = await post('actions/forgotEmail.php', body);
+                toast(data.message, 'success');
+                forgot.closest('dialog').close();
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                mailButton.removeAttribute('aria-busy');
+            }
+        });
+
         // Rouvrir la fenêtre repart de la première étape.
         forgot.closest('dialog').addEventListener('close', () => {
             step.hidden = true;

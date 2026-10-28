@@ -15,8 +15,15 @@ error_reporting(KDO_DEV ? E_ALL & ~E_NOTICE : 0);
 kdo_unregister_globals();
 kdo_strip_magic_quotes();
 
-// config.php démarre la session et ouvre la connexion MySQL.
+// config.php démarre la session et ouvre la connexion MySQL (mysqli en PHP 7+, voir mysql_compat.php).
+require_once KDO_ROOT . '/lib/mysql_compat.php';
 require_once KDO_ROOT . '/config.php';
+
+// Adresse publique du site, pour les liens à partager. $_site_url (config.php) la remplace
+// quand le site est hébergé ailleurs que chez Free (ex. : serveur Docker sur la Freebox).
+define('KDO_SITE_URL', isset($_site_url) && '' !== $_site_url ? $_site_url : 'http://datcharrye.free.fr/listeKdo/');
+// Expéditeur des e-mails (lib/mail.php) : vide = pas d'envoi.
+define('KDO_MAIL_FROM', isset($_mail_from) ? (string) $_mail_from : '');
 
 // Avec register_globals, les variables de session deviennent des globales liées :
 // on coupe ce lien pour qu'une variable locale ne puisse pas modifier la session.
@@ -32,6 +39,7 @@ require_once KDO_ROOT . '/lib/view.php';
 require_once KDO_ROOT . '/lib/social.php';
 require_once KDO_ROOT . '/lib/upload.php';
 require_once KDO_ROOT . '/lib/admin.php';
+require_once KDO_ROOT . '/lib/mail.php';
 require_once KDO_ROOT . '/lib/badges.php';
 require_once KDO_ROOT . '/lib/skins.php';
 
@@ -75,7 +83,8 @@ function kdo_unregister_session_globals()
  */
 function kdo_strip_magic_quotes()
 {
-    if (!get_magic_quotes_gpc()) {
+    // La fonction n'existe plus en PHP 8 (ni les magic quotes).
+    if (!function_exists('get_magic_quotes_gpc') || !get_magic_quotes_gpc()) {
         return;
     }
 

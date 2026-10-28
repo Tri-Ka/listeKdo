@@ -157,6 +157,30 @@ shortSettings?.querySelector('[data-short-link-test]').addEventListener('click',
     }
 });
 
+// Test de la clé GIPHY saisie (même appel que la recherche des commentaires, depuis le navigateur).
+const giphySettings = $('[data-giphy-settings]');
+giphySettings?.querySelector('[data-giphy-test]').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const status = $('[data-giphy-status]', giphySettings);
+    const key = $('[name="key"]', giphySettings).value.trim();
+    if (!key) {
+        status.textContent = 'Saisissez une clé à tester.';
+        return;
+    }
+    button.disabled = true;
+    status.textContent = 'Test en cours…';
+    try {
+        const response = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${encodeURIComponent(key)}&limit=1&rating=g`);
+        status.textContent = response.ok
+            ? 'La clé fonctionne. Pensez à enregistrer.'
+            : (response.status === 429 ? 'La clé fonctionne, mais sa limite de recherches est atteinte pour le moment.' : 'GIPHY refuse cette clé.');
+    } catch {
+        status.textContent = 'GIPHY ne répond pas. Vérifiez votre connexion.';
+    } finally {
+        button.disabled = false;
+    }
+});
+
 let controller = null;
 
 async function load(url, { push = true } = {}) {

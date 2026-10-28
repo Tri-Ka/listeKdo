@@ -5,6 +5,7 @@ import { currentFilter, refreshFilters } from './filters.js';
 import { gridObserver, layoutGrid } from './grid.js';
 import { fileInArchive, throwInTrash } from './animations.js';
 import { refreshGems } from './gems.js';
+import { commentFormData, commentHasContent, resetCommentForm } from './comments.js';
 
 export function initIdeas() {
     /* ---------- Formulaires envoyés en arrière-plan ---------- */
@@ -79,14 +80,17 @@ export function initIdeas() {
 
         reaction(form, data) {
             const id = form.elements.object.value;
-            $(`[data-reactions-slot="${id}"]`)?.replaceChildren(html(data.summary));
+            // Vignette et fiche de l'idée.
+            $$(`[data-reactions-slot="${id}"]`).forEach((slot) => {
+                slot.replaceChildren(html('reactionsCompact' in slot.dataset ? data.compact : data.summary));
+            });
             $(`[data-reactors-slot="${id}"]`)?.replaceChildren(html(data.detail));
         },
 
         comment(form, data) {
             const id = form.elements.productId.value;
             $(`[data-comments="${id}"]`)?.append(html(data.html));
-            form.reset();
+            resetCommentForm(form);
             updateCommentCount(id, data.count);
         },
 
@@ -111,13 +115,18 @@ export function initIdeas() {
 
         event.preventDefault();
         if (form.dataset.busy) return;
+        if (form.dataset.ajax === 'comment' && !commentHasContent(form)) {
+            form.elements.content.focus();
+            return;
+        }
 
         const button = event.submitter;
         form.dataset.busy = '1';
         button?.setAttribute('aria-busy', 'true');
 
         try {
-            handler(form, await post(form.getAttribute('action'), new FormData(form, button)));
+            const body = form.dataset.ajax === 'comment' ? await commentFormData(form, button) : new FormData(form, button);
+            handler(form, await post(form.getAttribute('action'), body));
             refreshGems();
         } catch (error) {
             toast(error.message, 'error');
@@ -130,9 +139,10 @@ export function initIdeas() {
     // Envoi par Entrée dans un commentaire (Maj+Entrée pour aller à la ligne).
     document.addEventListener('keydown', (event) => {
         const field = event.target;
-        if (event.key === 'Enter' && !event.shiftKey && field.matches?.('.comment-form textarea')) {
+        if (event.key === 'Enter' && !event.shiftKey && field.matches?.('.comment-form textarea, [data-comment-editor]')) {
             event.preventDefault();
-            if (field.value.trim()) field.form.requestSubmit();
+            const form = field.closest('form');
+            if (commentHasContent(form)) form.requestSubmit();
         }
     });
 

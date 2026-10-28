@@ -20,7 +20,14 @@ foreach ($object['reactions'] as $type => $reactions) {
 }
 ?>
 <?php ob_start(); ?>
-<?php if (0 < $total) : ?>
+<?php if (!empty($compact)) : ?>
+    <?php // Fiche de l'idée : seulement sa propre réaction (ou l'icône vide), le détail est dans la liste à côté. ?>
+    <?php if ($mine) : ?>
+        <span class="reactions__summary reactions__summary--mine"><img src="img/reaction/<?php echo $mine; ?>.png" alt="<?php echo e($types[$mine]); ?>" width="26" height="26"></span>
+    <?php else : ?>
+        <span class="reactions__summary reactions__summary--empty"><?php echo icon('thumbs-up-o'); ?></span>
+    <?php endif; ?>
+<?php elseif (0 < $total) : ?>
     <span class="reactions__summary" data-tip="<?php echo e(implode(', ', $names)); ?>" data-tip-position="bottom">
         <span class="reactions__icons">
             <?php foreach ($object['reactions'] as $type => $reactions) : ?>
@@ -36,7 +43,7 @@ foreach ($object['reactions'] as $type => $reactions) {
 
 <?php if ($me) : ?>
     <div class="reactions__picker">
-        <button type="button" class="reactions__toggle<?php echo $mine ? ' is-mine' : ''; ?>" aria-label="Réagir" aria-haspopup="true" data-reaction-toggle><?php echo $summary; ?></button>
+        <button type="button" class="reactions__toggle<?php echo $mine ? ' is-mine' : ''; ?>" aria-label="Réagir" title="Réagir" aria-haspopup="true" data-reaction-toggle><?php echo $summary; ?></button>
         <form class="reactions__choices" method="post" action="actions/addReaction.php" data-ajax="reaction">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="object" value="<?php echo $id; ?>">

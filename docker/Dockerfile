@@ -1,5 +1,5 @@
 # PHP 4.4.9 (CGI) + Apache, au plus proche de l'hébergement Free (PHP 4.4.3 en CGI).
-# Usage local uniquement : ce dossier n'est jamais envoyé sur le FTP.
+# Sert au dev local et au serveur de la Freebox (docker/freebox/) ; jamais envoyé sur le FTP.
 # Base Jessie : Squeeze/Wheezy plantent sous WSL2 (vsyscall absent des noyaux récents).
 
 FROM debian:bookworm-slim AS source
@@ -8,16 +8,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 FROM debian/eol:jessie
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential flex apache2 \
+      build-essential flex apache2 autotools-dev \
       libmysqlclient-dev libcurl4-openssl-dev libjpeg62-turbo-dev libpng12-dev zlib1g-dev \
  && rm -rf /var/lib/apt/lists/* \
- # PHP 4 ne cherche les bibliothèques que dans /usr/lib (pas de multiarch)
- && for l in libmysqlclient libjpeg libpng libz; do ln -sf /usr/lib/x86_64-linux-gnu/$l.so /usr/lib/$l.so; done
+ # PHP 4 ne cherche les bibliothèques que dans /usr/lib (pas de multiarch) ; x86_64 ou aarch64 (Freebox)
+ && for l in libmysqlclient libjpeg libpng libz; do ln -sf /usr/lib/$(gcc -dumpmachine)/$l.so /usr/lib/$l.so; done
 
 COPY --from=source /usr/src/php-4.4.9 /usr/src/php
 WORKDIR /usr/src/php
 # curl/types.h n'existe plus depuis libcurl 7.21.7
+# Le config.guess de 2008 ne connaît pas aarch64 : celui de Debian le remplace
 RUN sed -i '/#include <curl\/types.h>/d' ext/curl/curl.c \
+ && cp /usr/share/misc/config.guess /usr/share/misc/config.sub . \
  && ./configure \
       --with-config-file-path=/usr/local/etc/php \
       --enable-force-cgi-redirect \

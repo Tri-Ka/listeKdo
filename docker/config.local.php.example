@@ -22,6 +22,9 @@
     $_metadata_worker_url = '';
     $_metadata_worker_token = '';
 
+    // Expéditeur des e-mails (lib/mail.php). En PHP 8 local, ils arrivent dans MailDev : http://localhost:1088/
+    $_mail_from = 'noreply@listekdo.local';
+
     // $_host = 'localhost';
     // $_db = 'datcharrye';
     // $_username = 'root';

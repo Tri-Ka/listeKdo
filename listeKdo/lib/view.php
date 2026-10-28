@@ -271,6 +271,35 @@ function time_ago($datetime)
     return date('d/m/Y', strtotime($datetime));
 }
 
+/**
+ * Date d'un commentaire : « Aujourd'hui à 14:32 », « Hier à 09:10 », « 12 oct. à 14:32 », « 12 oct. 2025 à 14:32 ».
+ */
+function comment_date($datetime)
+{
+    $time = '' !== (string) $datetime ? strtotime($datetime) : false;
+    if (!$time || 0 >= $time) {
+        return '';
+    }
+
+    $months = array('janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.');
+    $day = date('Y-m-d', $time);
+    $hour = ' à ' . date('H:i', $time);
+
+    if (date('Y-m-d') === $day) {
+        return "Aujourd'hui" . $hour;
+    }
+    if (date('Y-m-d', strtotime('-1 day')) === $day) {
+        return 'Hier' . $hour;
+    }
+
+    $label = date('j', $time) . ' ' . $months[date('n', $time) - 1];
+    if (date('Y') !== date('Y', $time)) {
+        $label .= ' ' . date('Y', $time);
+    }
+
+    return $label . $hour;
+}
+
 function reaction_names($reactions)
 {
     $names = array();
@@ -295,7 +324,7 @@ function render($template, $vars = array())
 
 function share_url($user)
 {
-    return 'http://datcharrye.free.fr/listeKdo/?user=' . rawurlencode($user['code']);
+    return KDO_SITE_URL . '?user=' . rawurlencode($user['code']);
 }
 
 /**
@@ -309,7 +338,7 @@ function share_url($user)
  */
 function short_link($long)
 {
-    if (0 !== strpos($long, 'http://datcharrye.free.fr/')) {
+    if (0 !== strpos($long, KDO_SITE_URL)) {
         return $long;
     }
 
@@ -416,9 +445,9 @@ function short_link_provider()
 function short_link_browser($long, $provider = null)
 {
     if (null === $provider) $provider = short_link_provider();
-    if (0 !== strpos($long, 'http://datcharrye.free.fr/') || !in_array($provider, array('auto', 'dagd'))) return null;
+    if (0 !== strpos($long, KDO_SITE_URL) || !in_array($provider, array('auto', 'dagd'))) return null;
     $services = short_link_services();
-    return array('provider' => 'dagd', 'endpoint' => $services['dagd']['api']);
+    return array('provider' => 'dagd', 'endpoint' => $services['dagd']['api'], 'site' => KDO_SITE_URL);
 }
 
 /**
@@ -428,7 +457,7 @@ function short_link_request($provider, $long)
 {
     $failed = array('url' => '', 'message' => 'Ce service ne répond pas depuis le serveur. Le lien complet reste disponible.');
     $services = short_link_services();
-    if (!isset($services[$provider]) || 0 !== strpos($long, 'http://datcharrye.free.fr/') || !function_exists('curl_init')) return $failed;
+    if (!isset($services[$provider]) || 0 !== strpos($long, KDO_SITE_URL) || !function_exists('curl_init')) return $failed;
     $curl = curl_init($services[$provider]['api'] . rawurlencode($long));
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);

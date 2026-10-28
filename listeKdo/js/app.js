@@ -1,4 +1,4 @@
-/* Liste de Kdo : point d’entrée des modules ES natifs, sans build. */
+/* ListeKdo : point d’entrée des modules ES natifs, sans build. */
 
 import { initDialogs } from './modules/dialogs.js';
 import { initUI } from './modules/ui.js';

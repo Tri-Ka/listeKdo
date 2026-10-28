@@ -3,7 +3,7 @@
 <?php if ($meta['noIndex']) : ?>
     <meta name="robots" content="noindex, nofollow">
 <?php endif; ?>
-<meta property="og:site_name" content="Liste de Kdo">
+<meta property="og:site_name" content="ListeKdo">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:type" content="website">
 <meta property="og:title" content="<?php echo e($meta['title']); ?>">

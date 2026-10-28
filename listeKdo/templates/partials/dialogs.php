@@ -493,7 +493,7 @@ $addLabel = $suggestMode ? 'Suggérer' : 'Ajouter';
                 <h2 id="email-required-title">Ajoutez votre adresse e&#8209;mail</h2>
             </header>
             <div class="modal__body form">
-                <p class="form__intro">Elle devient nécessaire pour utiliser Liste de Kdo : vous pourrez vous connecter avec, et recevoir un lien si vous oubliez votre mot de passe. Elle n'est jamais affichée aux autres.</p>
+                <p class="form__intro">Elle devient nécessaire pour utiliser ListeKdo : vous pourrez vous connecter avec, et recevoir un lien si vous oubliez votre mot de passe. Elle n'est jamais affichée aux autres.</p>
                 <label class="field">
                     <span>Mon e-mail *</span>
                     <input type="email" name="email" required maxlength="190" autocomplete="email" placeholder="prenom@exemple.fr">

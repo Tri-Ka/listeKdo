@@ -138,7 +138,7 @@ const toastText = (page) => page.locator('.toast').first().innerText().catch(() 
     await askLink(name);
     check(/lien vient d'y être envoyé/.test(await toastText(page)), 'mot de passe oublié : message neutre');
     const mail = (await mailsTo(email)).find((m) => m.subject === 'Votre nouveau mot de passe');
-    check(!!mail && mail.from[0].name === 'Liste de Kdo', 'e-mail du lien reçu (sujet et expéditeur accentués)');
+    check(!!mail && mail.from[0].name === 'ListeKdo', 'e-mail du lien reçu (sujet et expéditeur accentués)');
     const link = mail && (mail.text.match(/https?:\/\/\S+reset\.php\?t=[0-9]+-[0-9a-f]{40}/) || [])[0];
     check(!!link, 'lien de nouveau mot de passe dans l\'e-mail');
 

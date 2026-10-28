@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
-    "name": "Liste de Kdo",
-    "version": "1.4.0",
+    "name": "ListeKdo",
+    "version": "1.5.1",
     "description": "Ajoute le produit de la page en cours à votre liste de cadeaux.",
     "action": {
         "default_title": "Ajouter à ma liste de Kdo",
@@ -24,7 +24,7 @@
     },
     "permissions": ["activeTab", "scripting", "storage", "alarms", "downloads"],
     "host_permissions": [
-        "http://datcharrye.free.fr/*",
+        "https://liste-kdo.fr/*",
         "http://localhost:8090/*"
     ]
 }

@@ -4,10 +4,16 @@
  * Chargé par la fenêtre (popup.html) et par le service worker (background.js).
  */
 
-const DEFAULT_SITE = 'http://datcharrye.free.fr/listeKdo/';
+const DEFAULT_SITE = 'https://liste-kdo.fr/';
+// Anciennes adresses (Free, puis le nom de la Freebox) : remplacées par la nouvelle pour ceux qui les avaient choisies.
+const OLD_SITES = ['http://datcharrye.free.fr/listeKdo/', 'https://listekdo.freeboxos.fr/'];
 
 async function currentSite() {
     const stored = await chrome.storage.local.get('site');
+    if (OLD_SITES.includes(stored.site)) {
+        await chrome.storage.local.set({ site: DEFAULT_SITE });
+        return DEFAULT_SITE;
+    }
     return stored.site || DEFAULT_SITE;
 }
 
@@ -40,7 +46,7 @@ async function showUpdateBadge(latest) {
     await chrome.action.setBadgeText({ text: latest ? '↑' : '' });
     if (latest) {
         await chrome.action.setBadgeBackgroundColor({ color: '#ff6f61' });
-        await chrome.action.setTitle({ title: `Liste de Kdo : version ${latest} disponible` });
+        await chrome.action.setTitle({ title: `ListeKdo : version ${latest} disponible` });
     } else {
         await chrome.action.setTitle({ title: 'Ajouter à ma liste de Kdo' });
     }

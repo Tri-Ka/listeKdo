@@ -15,8 +15,19 @@
 	reverse_proxy php:80
 }
 
+# www et l'ancien nom de la Freebox (injoignable en 4G : son IPv6 est celle de la Freebox) : renvoi vers KDO_DOMAIN.
+# Sauf /download/ : l'extension 1.5.0 y cherche sa mise à jour et ne peut pas suivre une redirection vers un autre domaine.
+www.{$KDO_DOMAIN}, listekdo.freeboxos.fr {
+	@download path /download/*
+	handle @download {
+		reverse_proxy php:80
+	}
+	handle {
+		redir https://{$KDO_DOMAIN}{uri} 301
+	}
+}
+
 # Accès par l'IP publique ou un autre nom : renvoi vers l'adresse HTTPS.
-# 302 et pas 301 : l'adresse changera avec le futur nom de domaine.
 :80 {
 	redir https://{$KDO_DOMAIN}{uri} 302
 }

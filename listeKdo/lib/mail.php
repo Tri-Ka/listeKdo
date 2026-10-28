@@ -130,7 +130,7 @@ function email_code_send($user, $email)
         'preheader' => 'Votre code de confirmation : ' . $code,
         'title' => 'Confirmez votre adresse e-mail',
         'hello' => $user['nom'],
-        'paragraphs' => array('Voici votre code pour confirmer votre adresse sur Liste de Kdo. Saisissez-le dans la fenêtre ouverte sur le site.'),
+        'paragraphs' => array('Voici votre code pour confirmer votre adresse sur ListeKdo. Saisissez-le dans la fenêtre ouverte sur le site.'),
         'code' => $code,
         'note' => 'Il est valable ' . EMAIL_CODE_MINUTES . " minutes. Si vous n'avez rien demandé, ignorez simplement cet e-mail.",
     ));
@@ -238,7 +238,7 @@ function kdo_mail($to, $subject, $mail)
     }
 
     $boundary = 'kdo-' . substr(random_token(), 0, 24);
-    $headers = 'From: ' . mail_header_text('Liste de Kdo') . ' <' . KDO_MAIL_FROM . ">\r\n"
+    $headers = 'From: ' . mail_header_text('ListeKdo') . ' <' . KDO_MAIL_FROM . ">\r\n"
         . "MIME-Version: 1.0\r\n"
         . 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
 
@@ -270,7 +270,7 @@ function mail_text($mail)
         $text .= $mail['note'] . "\n\n";
     }
 
-    return $text . "— Liste de Kdo\n" . $mail['siteUrl'] . "\n";
+    return $text . "— ListeKdo\n" . $mail['siteUrl'] . "\n";
 }
 
 /**
@@ -299,7 +299,7 @@ function mail_reset_link($user)
         'preheader' => 'Choisissez un nouveau mot de passe en un clic.',
         'title' => 'Nouveau mot de passe',
         'hello' => $user['nom'],
-        'paragraphs' => array('Vous avez demandé à changer votre mot de passe sur Liste de Kdo. Cliquez sur le bouton pour en choisir un nouveau.'),
+        'paragraphs' => array('Vous avez demandé à changer votre mot de passe sur ListeKdo. Cliquez sur le bouton pour en choisir un nouveau.'),
         'button' => array('Choisir mon mot de passe', $link['url']),
         'note' => 'Ce lien fonctionne une seule fois, jusqu\'au ' . date('d/m/Y à H:i', $link['expires'])
             . ". Si vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas.",

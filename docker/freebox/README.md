@@ -1,4 +1,4 @@
-# Liste de Kdo sur la Freebox
+# ListeKdo sur la Freebox
 
 Le site tourne dans la **VM `listekdo` de la Freebox Delta**, avec Docker : Caddy (HTTPS), PHP 8.3 + Apache
 (`docker/php8/`) et MariaDB 10.6. Le même code tourne encore en PHP 4 chez Free (voir « PHP 4 et PHP 8 » dans `CLAUDE.md`).
@@ -9,8 +9,9 @@ Internet ──► Freebox 82.67.74.202:80/443 ──redirection──► VM 192
 
 | Élément | Valeur |
 |---|---|
-| Site | https://listekdo.freeboxos.fr/ (site à la racine ; `/listeKdo/…`, l'IP et le HTTP redirigent ici) |
-| Nom | `listekdo.freeboxos.fr` : nom personnalisé de la Freebox (*Paramètres → Nom de domaine*), `KDO_DOMAIN` dans `deploy.env` |
+| Site | https://liste-kdo.fr/ (site à la racine ; `/listeKdo/…`, `www.`, l'IP, le HTTP et `listekdo.freeboxos.fr` redirigent ici) |
+| Nom | `liste-kdo.fr`, acheté chez OVH (zone DNS : `A` et `www A` → 82.67.74.202, **pas d'AAAA**), `KDO_DOMAIN` dans `deploy.env` |
+| Ancien nom | `listekdo.freeboxos.fr` (nom de la Freebox) : son IPv6 est celle de la Freebox, qui ne redirige aucun port en IPv6, donc injoignable en 4G. Gardé en redirection (`/download/` servi tel quel pour l'extension 1.5.0) |
 | Certificat | Let's Encrypt, obtenu et renouvelé par Caddy (`Caddyfile`, volume `caddy-data`) |
 | VM | `listekdo` : Debian 12 ARM64, 1 cœur, 512 Mo + 1 Go de swap, disque 42 Go (`Freebox/VMs/listekdo.qcow2`) |
 | SSH | `ssh freebox@192.168.1.29` (clé `~/.ssh/id_ed25519` de WSL) |

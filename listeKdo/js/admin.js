@@ -1,5 +1,5 @@
 /*
- * Liste de Kdo : page d'administration (admin.php).
+ * ListeKdo : page d'administration (admin.php).
  * Le tableau est rendu par le serveur ; ici on le recharge en arrière-plan (recherche,
  * tri, filtres, pagination) et on envoie les actions sans quitter la page.
  */
@@ -357,7 +357,7 @@ $('[data-link-copy]', linkDialog).addEventListener('click', async () => {
 });
 
 linkShare.addEventListener('click', () => {
-    navigator.share({ title: 'Liste de Kdo', text: linkText }).catch(() => {});
+    navigator.share({ title: 'ListeKdo', text: linkText }).catch(() => {});
 });
 
 table?.addEventListener('submit', async (event) => {
@@ -371,7 +371,7 @@ table?.addEventListener('submit', async (event) => {
     try {
         const data = await post(form.action, new FormData(form));
         data.url = await resolveShortLink(data);
-        linkText = `Bonjour ${data.name} ! Voici un lien pour choisir un nouveau mot de passe sur Liste de Kdo : ${data.url}`;
+        linkText = `Bonjour ${data.name} ! Voici un lien pour choisir un nouveau mot de passe sur ListeKdo : ${data.url}`;
         $('[data-link-name]', linkDialog).textContent = data.name;
         $('[data-link-expires]', linkDialog).textContent = data.expires;
         $('[data-link-whatsapp]', linkDialog).href = `https://wa.me/?text=${encodeURIComponent(linkText)}`;

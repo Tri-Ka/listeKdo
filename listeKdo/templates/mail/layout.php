@@ -41,7 +41,7 @@ $font = "'Outfit','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
                                         <img src="<?php echo e($siteUrl); ?>favicon-192.png" width="44" height="44" alt="" style="display:block;border:0;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
                                     </td>
                                     <td style="vertical-align:middle;font-family:<?php echo $font; ?>;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.3px;">
-                                        Liste de Kdo
+                                        ListeKdo
                                     </td>
                                 </tr>
                             </table>

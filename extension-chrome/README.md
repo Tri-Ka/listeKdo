@@ -1,4 +1,4 @@
-# Extension Chrome « Liste de Kdo »
+# Extension Chrome « ListeKdo »
 
 Ajoute le produit de la page en cours à votre liste de cadeaux.
 
@@ -12,7 +12,7 @@ Ajoute le produit de la page en cours à votre liste de cadeaux.
 
 ## Utilisation
 
-1. Se connecter une fois sur http://datcharrye.free.fr/listeKdo/ dans Chrome.
+1. Se connecter une fois sur https://liste-kdo.fr/ dans Chrome.
 2. Sur la page d'un produit, cliquer sur l'icône cadeau.
 3. Vérifier le nom, la description, l'image et le lien, puis « Ajouter à la liste ».
 
@@ -38,7 +38,12 @@ En bas de la fenêtre, « Site » permet de basculer sur le Docker local (`local
   la fenêtre affiche alors une bannière qui télécharge le zip. Une fois le dossier remplacé,
   « Recharger l'extension » (`chrome.runtime.reload()`) charge les nouveaux fichiers.
   Pour publier une version : augmenter `version` dans `manifest.json`, lancer `docker/build-extension.sh`,
-  puis envoyer le zip et `extension-version.txt` sur le FTP.
+  puis `docker/freebox/deploy.sh` (le zip et `extension-version.txt` sont dans `listeKdo/download/`).
+  Depuis la 1.5.1, l'extension utilise https://liste-kdo.fr/ ; un ancien choix (adresse Free ou
+  `listekdo.freeboxos.fr`, utilisée par la 1.5.0) est remplacé automatiquement (`currentSite()`).
+  Les versions 1.4.0 et antérieures cherchent encore leurs mises à jour sur Free : y garder la dernière version
+  du zip et de `extension-version.txt` (`/listeKdo/download/`). La 1.5.0 les cherche sur `listekdo.freeboxos.fr`,
+  redirigé vers le nouveau domaine par Caddy.
 - Permissions : `activeTab` + `scripting` (lire la page uniquement quand on clique sur l'icône),
   `storage` (site choisi), `alarms` (vérification périodique), `downloads` (télécharger la mise à jour),
   et l'accès aux deux adresses du site.

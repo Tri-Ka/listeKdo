@@ -18,7 +18,7 @@ $sections = array(
 ?>
 <section class="guide-hero">
     <div class="guide-hero__text">
-        <p class="guide-hero__eyebrow"><?php echo icon('gift'); ?> Liste de Kdo, simplement</p>
+        <p class="guide-hero__eyebrow"><?php echo icon('gift'); ?> ListeKdo, simplement</p>
         <h1>Des cadeaux choisis avec envie, sans jamais gâcher la surprise.</h1>
         <p>Créez votre liste, partagez-la avec vos proches et laissez chacun réserver son cadeau en toute discrétion. C'est gratuit, sans publicité, et ça marche aussi bien sur téléphone que sur ordinateur.</p>
         <div class="guide-hero__actions">
@@ -39,7 +39,7 @@ $sections = array(
     </div>
 </section>
 
-<section class="guide-steps" aria-label="Les étapes pour utiliser Liste de Kdo">
+<section class="guide-steps" aria-label="Les étapes pour utiliser ListeKdo">
     <article class="guide-step">
         <span class="guide-step__number">1</span><span class="guide-step__icon"><?php echo icon('plus'); ?></span>
         <h2>Ajoutez vos envies</h2><p>Collez le lien d'un produit : son nom, sa photo et son prix sont récupérés automatiquement. Ou décrivez votre idée à la main.</p>

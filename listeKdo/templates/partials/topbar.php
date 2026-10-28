@@ -22,7 +22,7 @@ $canShare = can_share($me, $owner);
                 <span class="topbar__title"><?php echo e('' !== list_title($owner) ? list_title($owner) : $owner['nom']); ?></span>
             <?php else : ?>
                 <small class="topbar__kicker">Bienvenue sur</small>
-                <span class="topbar__title">Liste de Kdo</span>
+                <span class="topbar__title">ListeKdo</span>
             <?php endif; ?>
         </span>
         <?php $days = $owner ? event_days($owner) : null; ?>

@@ -36,10 +36,10 @@ function html(v) {
         '.note{position:absolute;bottom:2px;right:33px;background:#fff;border:1px solid #f2eee6;border-radius:18px;padding:17px 23px;font-size:19px;font-weight:600;line-height:1.3;box-shadow:0 10px 30px #25274410;transform:rotate(5deg)}',
         '.footer{position:absolute;left:64px;right:64px;bottom:45px;display:flex;align-items:center;gap:12px}.pill{padding:10px 16px;border:1px solid #2527440d;border-radius:999px;background:#ffffffb8;font-size:15px;font-weight:500;color:#626780}.domain{margin-left:auto;font-size:17px;color:#767a90;font-weight:500}',
         '</style></head><body style="--accent:' + v.color + ';--pastel:' + v.pastel + '">',
-        '<div class="brand">' + logo + '<span>Liste de Kdo</span></div>',
+        '<div class="brand">' + logo + '<span>ListeKdo</span></div>',
         '<div class="copy"><p class="label">' + v.label + '</p><h1>' + v.title + '</h1><p class="description">' + v.copy + '</p></div>',
         art,
-        '<div class="footer"><span class="pill">Entre proches</span><span class="pill">Sans doublons</span><span class="pill">Surprise préservée</span><span class="domain">datcharrye.free.fr/listeKdo</span></div>',
+        '<div class="footer"><span class="pill">Entre proches</span><span class="pill">Sans doublons</span><span class="pill">Surprise préservée</span><span class="domain">liste-kdo.fr</span></div>',
         '</body></html>',
     ].join('');
 }

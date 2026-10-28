@@ -20,6 +20,12 @@ saved_short_provider=$(sql "SELECT CONCAT('REPLACE INTO kdo_setting (name,value)
 trap 'sql "$saved"; sql "DELETE FROM kdo_setting WHERE name='\''short_link_provider'\''; $saved_short_provider"' EXIT
 # Une question secrète factice, pour que la fenêtre d'invitation ne s'ouvre pas pendant les tests.
 sql "UPDATE liste_user SET password = MD5('test'), secret_question = 'test', secret_answer = 'test' WHERE id IN (1, 141);"
+# Adresse e-mail confirmée pendant le test (sql/2026-10-28-email.sql), sinon la fenêtre obligatoire bloque la page.
+if sql "SHOW COLUMNS FROM liste_user LIKE 'email_verified_at';" | grep -q email; then
+    saved_email=$(sql "SELECT CONCAT('UPDATE liste_user SET email=', QUOTE(email), ', email_verified_at=', QUOTE(email_verified_at), ' WHERE id=', id, ';') FROM liste_user WHERE id IN (1, 141);" | tail -n +2)
+    trap 'sql "$saved"; sql "$saved_email"; sql "DELETE FROM kdo_setting WHERE name='\''short_link_provider'\''; $saved_short_provider"' EXIT
+    sql "UPDATE liste_user SET email = CONCAT('test-', id, '@exemple.test'), email_verified_at = NOW() WHERE id IN (1, 141);"
+fi
 # Rappels d'événement d'Etienne et Mallory recréés à neuf : sinon un ancien rappel peut être repoussé
 # au-delà des 10 premières notifications par celles des tests précédents.
 sql "DELETE FROM notification WHERE type = 4 AND author_id IN (1, 141);"

@@ -21,7 +21,22 @@ if (0 < count(object_items($object['id']))) {
     fail('Cette idée est une collection : choisissez les éléments à offrir.', $back, 409);
 }
 
-if ('leave' === input('do')) {
+$do = input('do');
+if ('buy' === $do || 'unbuy' === $do) {
+    // « Je le prends » : un participant annonce qu'il achète le cadeau commun (un seul à la fois).
+    $mine = db_one('SELECT * FROM liste_participation WHERE product_id = ? AND user_id = ?', array((int) $object['id'], (int) $me['id']));
+    if (!buyer_enabled() || !$mine) {
+        fail('Participez d\'abord à ce cadeau.', $back, 409);
+    }
+    if ('buy' === $do) {
+        $other = db_one('SELECT user_id FROM liste_participation WHERE product_id = ? AND buyer = 1 AND user_id <> ?', array((int) $object['id'], (int) $me['id']));
+        if ($other) {
+            fail("Un autre participant le prend déjà.", $back, 409);
+        }
+    }
+    participation_set_buyer($object['id'], $me['id'], 'buy' === $do);
+    $message = 'buy' === $do ? 'C\'est noté : vous le prenez.' : 'Vous ne le prenez plus.';
+} elseif ('leave' === $do) {
     participation_remove($object['id'], $me['id']);
     notify_gift($me['id'], $object['id'], NOTIF_PARTICIPATION, false);
     $message = 'Vous ne participez plus à ce cadeau.';

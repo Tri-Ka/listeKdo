@@ -301,9 +301,16 @@ table?.addEventListener('submit', async (event) => {
 
     const name = form.dataset.name;
     const isDelete = form.dataset.adminConfirm === 'delete';
+    const isVerify = form.dataset.adminConfirm === 'verify';
     const ideas = Number(form.dataset.ideas || 0);
 
-    const confirmed = await confirmAction(isDelete
+    const confirmed = await confirmAction(isVerify
+        ? {
+            title: `Confirmer l'adresse de ${name} ?`,
+            text: `${form.dataset.email} sera considérée comme vérifiée, sans code envoyé. Elle servira au mot de passe oublié.`,
+            ok: 'Confirmer l\'adresse',
+        }
+        : isDelete
         ? {
             title: `Supprimer ${name} ?`,
             text: `Son compte, sa liste${ideas ? ` et ses ${ideas} idée${ideas > 1 ? 's' : ''}` : ''}, ses commentaires et ses réactions seront supprimés définitivement. Ses dons sur les listes des autres seront libérés.`,
@@ -322,7 +329,7 @@ table?.addEventListener('submit', async (event) => {
 
     try {
         const data = await post(form.action, new FormData(form));
-        if (isDelete) {
+        if (isDelete || isVerify) {
             toast(data.message, 'success');
             await load(location.href, { push: false });
         } else {

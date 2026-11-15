@@ -5316,6 +5316,25 @@ button.collection-pill {
     color: var(--brand-strong);
 }
 
+/* « Je le prends » : le participant qui achète le cadeau commun. */
+.group__buyer {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--success) 15%, #fff);
+    color: var(--text);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.group__hint--buyer {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
 .group__form {
     display: flex;
     flex-wrap: wrap;
@@ -6864,6 +6883,7 @@ button.collection-pill {
 }
 /* Partager / paramètres de la liste dans la barre du haut : même couleur que la cloche. */
 .topbar__share,
+.topbar__print,
 .topbar__settings {
     color: var(--brand);
 }
@@ -8016,6 +8036,7 @@ button.collection-pill {
 
 @media (max-width: 700px) {
     .topbar__share,
+    .topbar__print[data-in-menu],
     .topbar__settings,
     .friends-shortcut {
         display: none !important;

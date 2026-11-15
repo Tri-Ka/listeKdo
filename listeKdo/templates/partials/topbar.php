@@ -76,6 +76,9 @@ $canShare = can_share($me, $owner);
         <?php if ($canShare) : ?>
             <button type="button" class="round-btn topbar__share" data-open="share-dialog" aria-label="Partager la liste" data-tip="Partager la liste"><?php echo icon('share-nodes'); ?></button>
         <?php endif; ?>
+        <?php if ($owner) : ?>
+            <a class="round-btn topbar__print" href="index.php?user=<?php echo e(rawurlencode($owner['code'])); ?>&amp;page=imprimer" aria-label="Imprimer ou enregistrer en PDF" data-tip="Imprimer / PDF"<?php echo $me ? ' data-in-menu' : ''; // Petits écrans : dans le menu du compte s'il existe. ?>><?php echo icon('print'); ?></a>
+        <?php endif; ?>
         <?php if ($owner && $ctx['canEdit']) : ?>
             <?php // Paramètres de la liste : titre, type, date, privée (templates/partials/list_settings.php). ?>
             <button type="button" class="round-btn topbar__settings" data-open="list-settings-dialog" aria-label="Paramètres de la liste" data-tip="Paramètres de la liste"><?php echo icon('gear'); ?></button>
@@ -102,10 +105,13 @@ $canShare = can_share($me, $owner);
                     <p class="user-menu__name"><?php echo e($me['nom']); ?></p>
                     <?php // Petits écrans : actions retirées de la barre du haut, regroupées ici. ?>
                     <?php $menuShare = $canShare; ?>
-                    <?php if ($menuShare || ($owner && $ctx['canEdit'])) : ?>
+                    <?php if ($menuShare || $owner) : ?>
                         <div class="user-menu__group user-menu__mobile">
                             <?php if ($menuShare) : ?>
                                 <button type="button" data-open="share-dialog"><?php echo icon('share-nodes'); ?> Partager la liste</button>
+                            <?php endif; ?>
+                            <?php if ($owner) : ?>
+                                <a href="index.php?user=<?php echo e(rawurlencode($owner['code'])); ?>&amp;page=imprimer"><?php echo icon('print'); ?> Imprimer / PDF</a>
                             <?php endif; ?>
                             <?php if ($owner && $ctx['canEdit']) : ?>
                                 <button type="button" data-open="list-settings-dialog"><?php echo icon('gear'); ?> Paramètres de la liste</button>

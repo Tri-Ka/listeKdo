@@ -28,7 +28,7 @@
                                         <?php if ('item' === $gift['kind']) : ?>
                                             <small><?php echo icon('check'); ?> <?php echo e($gift['detail']); ?></small>
                                         <?php elseif ('group' === $gift['kind']) : ?>
-                                            <small><?php echo icon('users'); ?> À plusieurs<?php echo null !== $gift['detail'] ? ' · ma part : ' . e(format_price($gift['detail'])) : ''; ?></small>
+                                            <small><?php echo icon('users'); ?> À plusieurs<?php echo null !== $gift['detail'] ? ' · ma part : ' . e(format_price($gift['detail'])) : ''; ?><?php echo !empty($gift['buyer']) ? ' · je le prends' : ''; ?></small>
                                         <?php endif; ?>
                                     </span>
                                     <?php if (null !== $object['price'] && 'alone' === $gift['kind']) : ?>

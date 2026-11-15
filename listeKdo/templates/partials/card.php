@@ -27,7 +27,7 @@ if ($suggestion) {
         </button>
 
         <?php // Les deux étiquettes sont toujours là : .card--received choisit laquelle s'affiche (« J'ai reçu » sans recharger). ?>
-        <?php if ($ctx['canEdit'] && received_enabled()) : ?>
+        <?php if (($ctx['canEdit'] || ($suggestion && $mySuggestion)) && received_enabled()) : ?>
             <span class="card__badge card__badge--received"><?php echo icon('circle-check'); ?> Reçu</span>
         <?php endif; ?>
         <?php if ($suggestion) : ?>
@@ -105,13 +105,14 @@ if ($suggestion) {
                     <summary class="round-btn" aria-label="Modifier, marquer comme reçu, supprimer" data-tip="Modifier…"><?php echo icon('ellipsis'); ?></summary>
                     <div class="card-menu__panel">
                         <button type="button" data-open-object-form="<?php echo e($editData); ?>"><?php echo icon('pen'); ?> Modifier</button>
-                        <?php if (received_enabled() && $ctx['canEdit']) : ?>
+                        <?php if (received_enabled() && ($ctx['canEdit'] || $suggestion)) : ?>
+                            <?php // L'auteur d'une suggestion peut signaler que le destinataire l'a reçue : elle rejoint ses « Reçus ». ?>
                             <form method="post" action="actions/toggleReceived.php" data-ajax="received">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="id" value="<?php echo $id; ?>">
                                 <button type="submit" class="received-btn" aria-pressed="<?php echo $received ? 'true' : 'false'; ?>">
                                     <?php echo icon($received ? 'arrow-up-right-from-square' : 'box-archive'); ?>
-                                    <span><?php echo $received ? 'Remettre dans la liste' : "Je l'ai reçu"; ?></span>
+                                    <span><?php echo $received ? 'Remettre dans la liste' : ($suggestion ? e($ctx['owner']['nom']) . " l'a reçu" : "Je l'ai reçu"); ?></span>
                                 </button>
                             </form>
                         <?php endif; ?>

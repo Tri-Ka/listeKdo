@@ -1361,8 +1361,13 @@ function object_collection_state($object)
     // Cadeau à plusieurs : complet quand les montants annoncés atteignent le prix.
     $object['is_group'] = !$object['is_collection'] && 0 < count($object['participants']);
     $object['group_total'] = 0;
+    // Participant qui a dit « Je le prends » (achète le cadeau), ou null.
+    $object['buyer'] = null;
     foreach ($object['participants'] as $participant) {
         $object['group_total'] += (float) $participant['amount'];
+        if (!empty($participant['buyer'])) {
+            $object['buyer'] = $participant;
+        }
     }
 
     if ($object['is_collection']) {
@@ -1430,6 +1435,24 @@ function participation_set($objectId, $userId, $amount)
 function participation_remove($objectId, $userId)
 {
     return db_query('DELETE FROM liste_participation WHERE product_id = ? AND user_id = ?', array((int) $objectId, (int) $userId));
+}
+
+/** « Je le prends » : colonne liste_participation.buyer (sql/2026-11-15-cagnotte-acheteur.sql). */
+function buyer_enabled()
+{
+    return participations_enabled() && db_has_column('liste_participation', 'buyer');
+}
+
+/**
+ * Désigne (ou retire) le participant qui achète le cadeau commun : un seul par idée.
+ */
+function participation_set_buyer($objectId, $userId, $buyer)
+{
+    if ($buyer) {
+        db_query('UPDATE liste_participation SET buyer = 0 WHERE product_id = ? AND user_id <> ?', array((int) $objectId, (int) $userId));
+    }
+
+    return db_query('UPDATE liste_participation SET buyer = ? WHERE product_id = ? AND user_id = ?', array($buyer ? 1 : 0, (int) $objectId, (int) $userId));
 }
 
 /**
@@ -1598,12 +1621,13 @@ function my_gifts($me)
 
     if (participations_enabled()) {
         $parts = db_all(
-            'SELECT n.*, p.amount AS my_amount FROM liste_participation p INNER JOIN liste_noel n ON n.id = p.product_id
+            'SELECT n.*, p.amount AS my_amount' . (buyer_enabled() ? ', p.buyer AS my_buyer' : ', 0 AS my_buyer') . '
+                FROM liste_participation p INNER JOIN liste_noel n ON n.id = p.product_id
                 WHERE p.user_id = ?' . $notReceived,
             array((int) $me['id'])
         );
         foreach ($parts as $object) {
-            $rows[] = array('object' => $object, 'kind' => 'group', 'detail' => null !== $object['my_amount'] ? (float) $object['my_amount'] : null);
+            $rows[] = array('object' => $object, 'kind' => 'group', 'detail' => null !== $object['my_amount'] ? (float) $object['my_amount'] : null, 'buyer' => !empty($object['my_buyer']));
         }
     }
 

@@ -1,0 +1,1566 @@
+/*
+ * Version imprimable d'une liste (templates/print.php) : une lettre écrite à la main.
+ * Chaque type de liste ne change que des variables ([data-theme] sur <html>) et la police du titre.
+ * A4 portrait. Le cadre est en position fixe à l'impression : il se répète sur chaque page.
+ */
+
+:root {
+    --paper: #fffaf0;
+    --line: rgba(86, 128, 190, .16);
+    --margin-line: rgba(214, 64, 64, .35);
+    --ink: #2c2a4a;
+    --ink-soft: #5d5a78;
+    --accent: #c8102e;
+    --accent-2: #1f6b45;
+    --title-font: 'Mountains of Christmas', 'Caveat', cursive;
+    --title-size: 34pt;
+    --frame: repeating-linear-gradient(45deg, #c8102e 0 9px, #fff 9px 18px, #1f6b45 18px 27px, #fff 27px 36px);
+    --frame-width: 6mm;
+    --inner: 2px dashed rgba(200, 16, 46, .45);
+    --stamp-bg: #fde8e4;
+    --hand: 'Patrick Hand', 'Caveat', 'Comic Sans MS', cursive;
+    --script: 'Caveat', 'Patrick Hand', cursive;
+}
+
+[data-theme="birthday"] {
+    --paper: #fffbf2;
+    --ink: #4a2f7a;
+    --ink-soft: #6f5a92;
+    --accent: #ff5d8f;
+    --accent-2: #ffb703;
+    --margin-line: rgba(255, 93, 143, .35);
+    --title-font: 'Pacifico', 'Caveat', cursive;
+    --title-size: 30pt;
+    --frame: repeating-linear-gradient(-45deg, #ff5d8f 0 10px, #ffd166 10px 20px, #06d6a0 20px 30px, #4cc9f0 30px 40px, #9b5de5 40px 50px);
+    --inner: 2px dotted rgba(155, 93, 229, .5);
+    --stamp-bg: #fff1c9;
+}
+
+[data-theme="naissance"] {
+    --paper: #fdfbff;
+    --line: rgba(150, 130, 200, .14);
+    --margin-line: rgba(183, 154, 217, .45);
+    --ink: #4d5b7c;
+    --ink-soft: #7a85a0;
+    --accent: #b28ad8;
+    --accent-2: #7fb8d8;
+    --title-font: 'Dancing Script', 'Caveat', cursive;
+    --title-size: 36pt;
+    --frame: repeating-linear-gradient(90deg, #e9dcf7 0 12px, #d6ecf7 12px 24px, #fbe1ea 24px 36px);
+    --inner: 2px dotted rgba(178, 138, 216, .55);
+    --stamp-bg: #efe6fa;
+}
+
+[data-theme="mariage"] {
+    --paper: #fffdf8;
+    --line: rgba(190, 160, 100, .12);
+    --margin-line: rgba(201, 162, 74, .4);
+    --ink: #4a3b22;
+    --ink-soft: #7d6a48;
+    --accent: #b8913a;
+    --accent-2: #8a9a6b;
+    --title-font: 'Great Vibes', 'Caveat', cursive;
+    --title-size: 40pt;
+    --frame: linear-gradient(#d8bf7a, #b8913a);
+    --frame-width: 2.5mm;
+    --inner: 1px solid rgba(184, 145, 58, .7);
+    --stamp-bg: #f8f0dc;
+}
+
+[data-theme="wishlist"] {
+    --paper: #fbf8f2;
+    --line: rgba(80, 110, 140, .14);
+    --margin-line: rgba(224, 122, 95, .4);
+    --ink: #33415c;
+    --ink-soft: #5c6b84;
+    --accent: #e07a5f;
+    --accent-2: #3d8b7d;
+    --title-font: 'Gloria Hallelujah', 'Caveat', cursive;
+    --title-size: 28pt;
+    --frame: repeating-linear-gradient(45deg, #f2cc8f 0 8px, #f4f1de 8px 16px, #81b29a 16px 24px, #f4f1de 24px 32px);
+    --inner: 2px dashed rgba(61, 139, 125, .45);
+    --stamp-bg: #f4f1de;
+}
+
+/* ---------- Page ---------- */
+
+@page {
+    size: A4 portrait;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    /* Papier ligné avec sa marge rouge : sur papier, le fond de <html> couvre chaque page. */
+    background-color: var(--paper);
+}
+
+body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--hand);
+    font-size: 13.5pt;
+    line-height: 1.35;
+}
+
+.sheet {
+    position: relative;
+    background-color: var(--paper);
+}
+
+.frame {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.frame::before,
+.frame::after {
+    content: '';
+    position: absolute;
+}
+
+/* Bordure du thème (rayures de sucre d'orge, confettis…), puis un trait intérieur. Deux fonds plutôt qu'un
+   border-image : le motif sur toute la surface, le papier par-dessus sauf sur la bande du bord (padding).
+   html-to-image (PDF envoyé par e-mail) recopie mal border-image et remplissait toute la page. */
+.frame::before {
+    inset: 4mm;
+    padding: var(--frame-width);
+    background: linear-gradient(var(--paper), var(--paper)) content-box, var(--frame) border-box;
+    border-radius: 2mm;
+}
+
+/* Trait intérieur, et dedans le papier ligné avec sa marge rouge. */
+.frame::after {
+    inset: calc(6mm + var(--frame-width));
+    border: var(--inner);
+    border-radius: 3mm;
+    background-image:
+        linear-gradient(90deg, transparent 15mm, var(--margin-line) 15mm, var(--margin-line) calc(15mm + 1px), transparent calc(15mm + 1px)),
+        repeating-linear-gradient(transparent 0 calc(8mm - 1px), var(--line) calc(8mm - 1px) 8mm);
+}
+
+/* Bas de chaque page : dans le cadre fixe, donc répété sur chaque page imprimée. */
+.frame__foot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 3.2mm;
+    z-index: 1;
+    text-align: center;
+}
+
+[data-theme="mariage"] .frame::after {
+    /* Double filet doré. */
+    box-shadow: 0 0 0 2mm var(--paper), 0 0 0 calc(2mm + 1px) rgba(184, 145, 58, .5);
+}
+
+.layout {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.layout td {
+    padding: 0;
+}
+
+.layout__spacer {
+    height: 22mm;
+}
+
+.layout__spacer--foot {
+    height: 20mm;
+}
+
+.layout__body {
+    padding: 0 22mm 0 33mm !important;
+    position: relative;
+    z-index: 1;
+}
+
+.page-foot {
+    display: inline-block;
+    padding: 0 3mm;
+    font-family: var(--script);
+    font-size: 11pt;
+    color: var(--ink-soft);
+    background: var(--paper);
+    position: relative;
+    z-index: 3;
+}
+
+/* ---------- En-tête de la lettre ---------- */
+
+.letter-head {
+    position: relative;
+    margin-bottom: 6mm;
+}
+
+.kicker {
+    margin: 0;
+    font-family: var(--script);
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+}
+
+.title {
+    margin: 1mm 34mm 1mm 0;
+    font-family: var(--title-font);
+    font-size: var(--title-size);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--accent);
+    transform: rotate(-1.5deg);
+    transform-origin: left center;
+}
+
+[data-theme="mariage"] .title,
+[data-theme="birthday"] .title,
+[data-theme="wishlist"] .title {
+    font-weight: 400;
+}
+
+.date {
+    margin: 0 0 5mm;
+    font-size: 12pt;
+    color: var(--ink-soft);
+}
+
+.date__event {
+    color: var(--accent);
+}
+
+.opening {
+    margin: 0 0 1mm;
+    font-family: var(--script);
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+/* Place laissée à droite pour les décorations (.letter-head__deco). */
+.intro {
+    margin: 0;
+    max-width: calc(100% - 42mm);
+}
+
+/* Timbre dentelé, un peu de travers, avec le tampon de la poste. */
+.stamp {
+    position: absolute;
+    top: -6mm;
+    right: -6mm;
+    width: 30mm;
+    height: 36mm;
+    padding: 2.5mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1mm;
+    text-align: center;
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 1.3mm, #fff 1.4mm) -1.5mm -1.5mm / 3mm 3mm;
+    transform: rotate(6deg);
+    filter: drop-shadow(0 .6mm .8mm rgba(0, 0, 0, .18));
+}
+
+.stamp::before {
+    content: '';
+    position: absolute;
+    inset: 2.5mm;
+    background: var(--stamp-bg);
+    border: 1px solid rgba(0, 0, 0, .08);
+}
+
+/* Tampon de la poste, à cheval sur le timbre : lieu et date dans un double cercle, puis des ondulations. */
+.postmark {
+    position: absolute;
+    left: -11mm;
+    bottom: -5mm;
+    z-index: 2;
+    width: 21mm;
+    height: 21mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .4mm;
+    border: 1.1mm double rgba(50, 50, 80, .5);
+    border-radius: 50%;
+    font-family: system-ui, sans-serif;
+    font-size: 5.5pt;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(50, 50, 80, .6);
+    transform: rotate(-16deg);
+}
+
+.postmark::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 16mm;
+    height: 5mm;
+    margin-top: -2.5mm;
+    background: repeating-radial-gradient(circle at 50% -60%, transparent 0 2.2mm, rgba(50, 50, 80, .4) 2.2mm 2.6mm, transparent 2.6mm 3.6mm);
+    opacity: .8;
+}
+
+.postmark__place {
+    max-width: 16mm;
+}
+
+.postmark__date {
+    padding-top: .4mm;
+    border-top: 1px solid currentColor;
+    white-space: nowrap;
+}
+
+.stamp__country,
+.stamp__emoji,
+.stamp__value {
+    position: relative;
+}
+
+/* Pays en haut, en capitales, comme sur un vrai timbre. */
+.stamp__country {
+    align-self: stretch;
+    font-family: system-ui, sans-serif;
+    font-size: 6pt;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+/* Valeur faciale en bas à droite. */
+.stamp__value {
+    align-self: flex-end;
+    margin-right: 1mm;
+    font-family: system-ui, sans-serif;
+    font-size: 9pt;
+    font-weight: 800;
+    color: var(--accent-2);
+}
+
+.stamp__emoji {
+    font-size: 30pt;
+    line-height: 1;
+}
+
+/* À droite de « Cher Père Noël, » : le titre, même long, garde toute la largeur à côté du timbre. */
+.letter-head__deco {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    gap: 2mm;
+    transform: rotate(-4deg);
+}
+
+.letter-deco {
+    width: auto;
+    height: 14mm;
+    max-width: 15mm;
+    object-fit: contain;
+}
+
+/* ---------- Idées ---------- */
+
+.wishes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: wish;
+}
+
+.wish {
+    counter-increment: wish;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3mm;
+    align-items: start;
+    padding: 3mm 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, .12);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.wish:last-child {
+    border-bottom: 0;
+}
+
+.wish__name {
+    margin: 0;
+    font-family: var(--script);
+    font-size: 19pt;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+.wish__num::before {
+    content: counter(wish) '.';
+    color: var(--accent);
+    margin-right: 1mm;
+}
+
+.wish__heart {
+    display: inline-block;
+    margin-left: 2mm;
+    padding: 0 2mm;
+    font-family: var(--hand);
+    font-size: 10.5pt;
+    font-weight: 400;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    border-radius: 3mm 1mm 3mm 1mm;
+    transform: rotate(-5deg);
+    vertical-align: middle;
+}
+
+.wish__meta {
+    margin: .8mm 0 0;
+    font-size: 12pt;
+    color: var(--ink-soft);
+}
+
+/* Prix entouré d'un coup de feutre. */
+.wish__price {
+    display: inline-block;
+    margin-right: 3mm;
+    padding: 0 2mm;
+    color: var(--accent-2);
+    font-weight: 700;
+    border: 1.5px solid currentColor;
+    border-radius: 50% 45% 55% 50% / 60% 50% 55% 45%;
+}
+
+.wish__shop a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+}
+
+.wish__details {
+    margin: 1.2mm 0 0;
+    font-size: 12pt;
+    color: var(--ink-soft);
+}
+
+.wish__items {
+    list-style: none;
+    margin: 1.5mm 0 0;
+    padding: 0;
+    columns: 2;
+    column-gap: 6mm;
+    font-size: 12pt;
+}
+
+.wish__items li {
+    break-inside: avoid;
+    margin-bottom: .8mm;
+}
+
+/* Photo en polaroïd, scotchée, inclinée un coup à gauche, un coup à droite. */
+.polaroid {
+    position: relative;
+    margin: 0;
+    width: 32mm;
+    padding: 2mm 2mm 6mm;
+    background: #fff;
+    box-shadow: 0 .6mm 1.6mm rgba(0, 0, 0, .2);
+    transform: rotate(3deg);
+}
+
+.wish--odd .polaroid {
+    transform: rotate(-3deg);
+}
+
+.polaroid::before {
+    content: '';
+    position: absolute;
+    top: -2.5mm;
+    left: 50%;
+    width: 14mm;
+    height: 5mm;
+    margin-left: -7mm;
+    background: rgba(255, 240, 180, .75);
+    border-left: 1px dashed rgba(0, 0, 0, .08);
+    border-right: 1px dashed rgba(0, 0, 0, .08);
+    transform: rotate(-4deg);
+}
+
+.polaroid img {
+    display: block;
+    width: 100%;
+    height: 26mm;
+    object-fit: contain;
+    background: #f7f7f7;
+}
+
+.empty {
+    margin: 10mm 0;
+    font-family: var(--script);
+    font-size: 18pt;
+    text-align: center;
+    color: var(--ink-soft);
+}
+
+/* ---------- Fin de la lettre ---------- */
+
+.letter-foot {
+    position: relative;
+    margin-top: 8mm;
+    min-height: 40mm;
+    padding-right: 40mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.closing {
+    margin: 0 0 4mm;
+}
+
+.signature {
+    margin: 0;
+    font-family: var(--script);
+    font-size: 17pt;
+}
+
+.signature__name {
+    margin: 0 0 0 12mm;
+    font-family: var(--title-font);
+    font-size: calc(var(--title-size) * .8);
+    color: var(--accent);
+    transform: rotate(-3deg);
+    transform-origin: left center;
+}
+
+.letter-foot__deco {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 36mm;
+    height: 36mm;
+    object-fit: contain;
+    transform: rotate(6deg);
+}
+
+.ps {
+    margin: 5mm 0 0;
+    font-size: 11.5pt;
+    color: var(--ink-soft);
+}
+
+/* Photo du propriétaire à côté de la signature, avec sa légende manuscrite. */
+.letter-foot--photo {
+    padding-right: 80mm;
+}
+
+.polaroid--owner {
+    position: absolute;
+    right: 38mm;
+    bottom: 2mm;
+    width: 34mm;
+    padding-bottom: 2mm;
+    transform: rotate(-5deg);
+}
+
+.polaroid--owner img {
+    height: 30mm;
+    object-fit: cover;
+}
+
+.polaroid--owner figcaption {
+    margin-top: 1mm;
+    font-family: var(--script);
+    font-size: 13pt;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    color: var(--ink);
+}
+
+/* Textes modifiables : retours à la ligne gardés, repère discret à l'écran seulement. */
+[data-edit] {
+    white-space: pre-line;
+    border-radius: 1.5mm;
+    outline: none;
+}
+
+@media screen {
+    [contenteditable]:hover {
+        box-shadow: 0 0 0 1.5mm rgba(255, 210, 80, .25);
+        background: rgba(255, 230, 140, .25);
+        cursor: text;
+    }
+
+    [contenteditable]:focus {
+        box-shadow: 0 0 0 1.5mm rgba(255, 190, 60, .35);
+        background: rgba(255, 230, 140, .35);
+    }
+}
+
+.polaroid__cut {
+    display: block;
+}
+
+/* Autocollants : seulement dans le style enfantin. */
+.sticker {
+    display: none;
+}
+
+/* ==========================================================================
+   Styles de lettre (configurateur : Enfantin / Normal / Sérieux)
+   Normal = tout ce qui précède. Les deux autres changent franchement la mise en page.
+   ========================================================================== */
+
+/* ---------- Enfantin : collage sur cahier d'écolier ----------
+   Papier à grands carreaux (Seyès), écriture d'enfant, numéros en pastilles,
+   idées collées de travers, photos découpées aux ciseaux et scotchées, autocollants. */
+
+[data-tone="enfantin"] {
+    --hand: 'Schoolbell', 'Patrick Hand', cursive;
+    --script: 'Schoolbell', 'Caveat', cursive;
+    --seyes: rgba(120, 150, 210, .22);
+    --seyes-strong: rgba(120, 150, 210, .45);
+}
+
+[data-tone="enfantin"] body {
+    font-size: 14pt;
+}
+
+/* Grands carreaux : une ligne forte tous les 8 mm, trois fines entre, des verticales tous les 8 mm, la marge rouge. */
+[data-tone="enfantin"] .frame::after {
+    background-image:
+        linear-gradient(90deg, transparent 15mm, rgba(220, 60, 60, .55) 15mm, rgba(220, 60, 60, .55) calc(15mm + 1.5px), transparent calc(15mm + 1.5px)),
+        repeating-linear-gradient(transparent 0 calc(8mm - 1px), var(--seyes-strong) calc(8mm - 1px) 8mm),
+        repeating-linear-gradient(transparent 0 calc(2mm - 1px), var(--seyes) calc(2mm - 1px) 2mm),
+        repeating-linear-gradient(90deg, transparent 0 calc(8mm - 1px), var(--seyes) calc(8mm - 1px) 8mm);
+}
+
+[data-tone="enfantin"] .title {
+    transform: rotate(-4deg);
+    text-shadow: .6mm .6mm 0 rgba(255, 255, 255, .9), 1.2mm 1.2mm 0 var(--accent-2);
+}
+
+[data-tone="enfantin"] .kicker {
+    display: inline-block;
+    padding: .5mm 3mm;
+    color: #fff;
+    background: var(--accent-2);
+    transform: rotate(-2deg);
+    clip-path: polygon(0 8%, 4% 0, 30% 6%, 60% 0, 96% 4%, 100% 40%, 97% 100%, 55% 94%, 20% 100%, 2% 92%);
+}
+
+[data-tone="enfantin"] .opening {
+    font-size: 26pt;
+    color: var(--accent);
+}
+
+/* Chaque idée : un bout de papier collé de travers, décalé, qui déborde un peu. */
+[data-tone="enfantin"] .wishes {
+    padding-top: 2mm;
+}
+
+/* Le papier découpé est un calque derrière (::before), plus son ombre (::after) : la photo et les autocollants
+   peuvent ainsi déborder du bout de papier sans être rognés. */
+[data-tone="enfantin"] .wish {
+    position: relative;
+    isolation: isolate;
+    margin: 0 0 5mm var(--shift);
+    padding: 3mm 4mm 4mm;
+    border: 0;
+    transform: rotate(calc(var(--tilt) * .3));
+}
+
+[data-tone="enfantin"] .wish::before,
+[data-tone="enfantin"] .wish::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 3%, 6% 0, 40% 2%, 72% 0, 100% 3%, 99% 50%, 100% 97%, 64% 100%, 30% 98%, 0 100%, 1% 52%);
+}
+
+[data-tone="enfantin"] .wish::before {
+    z-index: -1;
+    background: #fff;
+}
+
+[data-tone="enfantin"] .wish::after {
+    z-index: -2;
+    background: rgba(0, 0, 0, .14);
+    transform: translate(.6mm, .9mm);
+}
+
+[data-tone="enfantin"] .wish--odd::before {
+    background: #fffdf2;
+}
+
+[data-tone="enfantin"] .wish:last-child {
+    border: 0;
+}
+
+[data-tone="enfantin"] .wish__name {
+    font-size: 19pt;
+    font-weight: 400;
+}
+
+[data-tone="enfantin"] .wish__num::before {
+    content: counter(wish);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 9mm;
+    height: 9mm;
+    margin-right: 2mm;
+    font-size: 15pt;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 48% 52% 45% 55% / 55% 45% 55% 45%;
+    vertical-align: .5mm;
+}
+
+[data-tone="enfantin"] .wish--odd .wish__num::before {
+    background: var(--accent-2);
+}
+
+[data-tone="enfantin"] .wish__price {
+    color: #fff;
+    background: var(--accent-2);
+    border: 0;
+    border-radius: 1mm;
+    transform: rotate(-3deg);
+}
+
+/* Photo découpée « à l'arrache » : bord blanc dentelé, scotch de travers, posée n'importe comment. */
+[data-tone="enfantin"] .polaroid {
+    width: 36mm;
+    margin: -4mm -6mm -4mm 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    filter: drop-shadow(.4mm .8mm .8mm rgba(0, 0, 0, .3));
+    transform: rotate(calc(var(--tilt) * 1.6)) translateY(calc(var(--shift) * .3));
+}
+
+[data-tone="enfantin"] .polaroid__cut {
+    padding: 2mm;
+    background: #fff;
+}
+
+[data-tone="enfantin"] [data-cut="1"] .polaroid__cut { clip-path: polygon(3% 0, 30% 4%, 58% 0, 100% 5%, 96% 38%, 100% 70%, 94% 100%, 60% 96%, 25% 100%, 0 95%, 4% 60%, 0 30%); }
+[data-tone="enfantin"] [data-cut="2"] .polaroid__cut { clip-path: polygon(0 6%, 45% 0, 100% 2%, 97% 50%, 100% 92%, 70% 100%, 35% 95%, 4% 100%, 0 55%); }
+[data-tone="enfantin"] [data-cut="3"] .polaroid__cut { clip-path: polygon(8% 2%, 50% 0, 92% 5%, 100% 45%, 96% 96%, 50% 100%, 6% 97%, 0 50%); }
+[data-tone="enfantin"] [data-cut="4"] .polaroid__cut { clip-path: polygon(0 0, 35% 5%, 70% 0, 100% 8%, 95% 35%, 100% 64%, 97% 100%, 45% 94%, 0 100%, 5% 70%, 0 40%); }
+
+[data-tone="enfantin"] .polaroid img {
+    height: 30mm;
+    object-fit: cover;
+    background: #fff;
+}
+
+/* Deux bouts de scotch qui ne tombent jamais au même endroit. */
+[data-tone="enfantin"] .polaroid::before,
+[data-tone="enfantin"] .polaroid::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    width: 13mm;
+    height: 4.5mm;
+    background: rgba(255, 245, 190, .8);
+    border-left: 1px dashed rgba(0, 0, 0, .1);
+    border-right: 1px dashed rgba(0, 0, 0, .1);
+}
+
+[data-tone="enfantin"] .polaroid::before {
+    top: -1.5mm;
+    left: -3mm;
+    margin: 0;
+    transform: rotate(-35deg);
+}
+
+[data-tone="enfantin"] .polaroid::after {
+    right: -3mm;
+    bottom: -1mm;
+    transform: rotate(-30deg);
+}
+
+[data-tone="enfantin"] .wish--odd .polaroid::before {
+    left: auto;
+    right: -3mm;
+    transform: rotate(32deg);
+}
+
+[data-tone="enfantin"] .wish--odd .polaroid::after {
+    right: auto;
+    left: -3mm;
+    transform: rotate(28deg);
+}
+
+/* Autocollants du thème, collés dans la marge, à cheval sur le papier. */
+[data-tone="enfantin"] .sticker {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    width: 16mm;
+    height: 16mm;
+    margin-top: -8mm;
+    object-fit: contain;
+    filter: drop-shadow(0 0 .5mm #fff) drop-shadow(0 0 .5mm #fff) drop-shadow(.3mm .6mm .6mm rgba(0, 0, 0, .25));
+    transform: rotate(calc(var(--tilt) * -3));
+}
+
+[data-tone="enfantin"] .sticker--left {
+    left: -1mm;
+}
+
+[data-tone="enfantin"] .sticker--right {
+    right: -1mm;
+}
+
+/* Le contenu est rogné par le découpage de la carte : on le laisse respirer à droite pour l'autocollant. */
+[data-tone="enfantin"] .wish:has(.sticker--right) {
+    padding-right: 16mm;
+}
+
+[data-tone="enfantin"] .wish:has(.sticker--left) {
+    padding-left: 17mm;
+}
+
+[data-tone="enfantin"] .letter-deco {
+    height: 18mm;
+    max-width: 20mm;
+    filter: drop-shadow(0 0 .5mm #fff) drop-shadow(.3mm .6mm .6mm rgba(0, 0, 0, .25));
+}
+
+[data-tone="enfantin"] .polaroid--owner {
+    margin: 0;
+    transform: rotate(-8deg);
+}
+
+[data-tone="enfantin"] .polaroid--owner .polaroid__cut {
+    clip-path: polygon(3% 0, 30% 4%, 58% 0, 100% 5%, 96% 38%, 100% 70%, 94% 100%, 60% 96%, 25% 100%, 0 95%, 4% 60%, 0 30%);
+}
+
+[data-tone="enfantin"] .polaroid--owner figcaption {
+    margin-top: 2mm;
+    color: var(--accent);
+}
+
+[data-tone="enfantin"] .signature__name {
+    transform: rotate(-6deg);
+}
+
+/* ---------- Sérieux : document net, carré, aligné ----------
+   Papier blanc, filet fin, typographie classique, aucune inclinaison ni décoration,
+   idées en tableau : case, vignette carrée, texte, prix aligné à droite. */
+
+[data-tone="serieux"] {
+    --paper: #fff;
+    --hand: 'Lato', system-ui, sans-serif;
+    --script: 'Cormorant Garamond', Georgia, serif;
+    --title-font: 'Cormorant Garamond', Georgia, serif;
+    --title-size: 30pt;
+    --ink: #1f2430;
+    --ink-soft: #5a6070;
+}
+
+[data-tone="serieux"] body {
+    font-size: 10.5pt;
+    line-height: 1.5;
+}
+
+/* Cadre : un simple filet, sans motif ni papier ligné. */
+[data-tone="serieux"] .frame::before {
+    inset: 10mm;
+    padding: 0;
+    background: none;
+    border: .35mm solid var(--ink);
+    border-radius: 0;
+}
+
+[data-tone="serieux"] .frame::after {
+    inset: 11.5mm;
+    border: .15mm solid rgba(31, 36, 48, .35);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+[data-tone="serieux"] .page-foot {
+    font-family: var(--hand);
+    font-size: 8pt;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+[data-tone="serieux"] .frame__foot {
+    bottom: 7.5mm;
+}
+
+[data-tone="serieux"] .layout__body {
+    padding: 0 24mm !important;
+}
+
+[data-tone="serieux"] .stamp,
+[data-tone="serieux"] .letter-head__deco,
+[data-tone="serieux"] .letter-foot__deco,
+[data-tone="serieux"] .wish__heart::before,
+[data-tone="serieux"] .polaroid::before,
+[data-tone="serieux"] .polaroid::after {
+    display: none;
+}
+
+[data-tone="serieux"] .letter-head {
+    padding-bottom: 6mm;
+    border-bottom: .3mm solid var(--ink);
+}
+
+[data-tone="serieux"] .kicker {
+    font-family: var(--hand);
+    font-size: 8.5pt;
+    letter-spacing: .2em;
+    color: var(--ink-soft);
+}
+
+[data-tone="serieux"] .title {
+    margin-right: 0;
+    font-weight: 600;
+    color: var(--ink);
+    transform: none;
+}
+
+[data-tone="serieux"] .date,
+[data-tone="serieux"] .date__event {
+    font-size: 10pt;
+    color: var(--ink-soft);
+}
+
+[data-tone="serieux"] .opening {
+    margin-top: 2mm;
+    font-family: var(--hand);
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+[data-tone="serieux"] .intro {
+    max-width: none;
+}
+
+[data-tone="serieux"] .wishes {
+    border-top: 0;
+}
+
+/* Une ligne de tableau par idée. */
+[data-tone="serieux"] .wish {
+    grid-template-columns: 22mm 1fr;
+    grid-template-areas: 'photo body';
+    gap: 0 5mm;
+    align-items: start;
+    padding: 4mm 0;
+    border-bottom: .2mm solid rgba(31, 36, 48, .2);
+}
+
+[data-tone="serieux"] .wish:not(.wish--photo),
+[data-tone="serieux"].no-photos .wish,
+[data-tone="serieux"] .no-photos .wish {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'body';
+}
+
+[data-tone="serieux"] .wish__body {
+    grid-area: body;
+}
+
+[data-tone="serieux"] .polaroid,
+[data-tone="serieux"] .wish--odd .polaroid {
+    grid-area: photo;
+    width: 22mm;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+}
+
+[data-tone="serieux"] .polaroid img {
+    width: 22mm;
+    height: 22mm;
+    object-fit: contain;
+    background: #fff;
+    border: .2mm solid rgba(31, 36, 48, .2);
+}
+
+[data-tone="serieux"] .wish__name {
+    font-family: var(--hand);
+    font-size: 11.5pt;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+[data-tone="serieux"] .wish__num::before {
+    content: counter(wish, decimal-leading-zero);
+    margin-right: 2.5mm;
+    font-weight: 400;
+    color: var(--ink-soft);
+}
+
+[data-tone="serieux"] .wish__heart {
+    margin-left: 2mm;
+    padding: .2mm 1.5mm;
+    font-family: var(--hand);
+    font-size: 7.5pt;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-width: .2mm;
+    border-radius: 0;
+    transform: none;
+}
+
+[data-tone="serieux"] .wish__meta,
+[data-tone="serieux"] .wish__details,
+[data-tone="serieux"] .wish__items {
+    font-size: 9.5pt;
+}
+
+[data-tone="serieux"] .wish__price {
+    padding: 0;
+    color: var(--ink);
+    border: 0;
+    border-radius: 0;
+}
+
+[data-tone="serieux"] .letter-foot {
+    margin-top: 10mm;
+    min-height: 0;
+}
+
+[data-tone="serieux"] .letter-foot--photo {
+    padding-right: 30mm;
+}
+
+[data-tone="serieux"] .signature {
+    font-family: var(--hand);
+    font-size: 10.5pt;
+}
+
+[data-tone="serieux"] .signature__name {
+    margin: 2mm 0 0;
+    font-size: 20pt;
+    font-style: italic;
+    color: var(--ink);
+    transform: none;
+}
+
+[data-tone="serieux"] .polaroid--owner {
+    right: 0;
+    width: 24mm;
+    transform: none;
+}
+
+[data-tone="serieux"] .polaroid--owner img {
+    width: 24mm;
+    height: 24mm;
+    object-fit: cover;
+}
+
+[data-tone="serieux"] .polaroid--owner figcaption {
+    display: none;
+}
+
+[data-tone="serieux"] .ps {
+    font-size: 9pt;
+}
+
+/* ---------- Habillages de la boutique (zombie, far west…) ----------
+   Couleurs et police du titre : print_skin_css() (lib/view.php), dans une balise <style> de la page. */
+
+/* Titre illustré de l'habillage, au-dessus du titre écrit. */
+.title-art {
+    display: block;
+    width: auto;
+    max-width: 70mm;
+    height: 22mm;
+    margin: -4mm 0 1mm;
+    object-fit: contain;
+    object-position: left center;
+}
+
+[data-tone="enfantin"] .title-art {
+    transform: rotate(-4deg);
+    filter: drop-shadow(0 0 .6mm #fff) drop-shadow(.4mm .8mm .8mm rgba(0, 0, 0, .25));
+}
+
+[data-tone="serieux"] .title-art {
+    display: none;
+}
+
+/* Illustration de l'habillage dans le timbre, à la place de l'emoji. */
+.stamp__art {
+    position: relative;
+    width: 20mm;
+    height: 18mm;
+    object-fit: contain;
+}
+
+[data-skin] .title {
+    font-weight: 400;
+}
+
+/* ---------- Options (cases du configurateur) ---------- */
+
+.no-photos .polaroid:not(.polaroid--owner),
+.no-details .wish__details {
+    display: none;
+}
+
+/* ---------- Configurateur (écran seulement) ---------- */
+
+.toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 18px;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #2b2b3a;
+    background: #fff;
+}
+
+/* Icônes du sprite (configurateur, fenêtre d'envoi) : sans taille, un SVG prend toute la place. */
+.icon {
+    flex-shrink: 0;
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    vertical-align: -.125em;
+}
+
+.toolbar__back {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.toolbar__title {
+    margin: 0;
+    font-size: 20px;
+}
+
+.toolbar__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.toolbar__group legend {
+    margin-bottom: 8px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #6b6b80;
+}
+
+/* Choix du style : une carte par style, la carte choisie prend la couleur du thème. */
+.tone-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px 10px 40px;
+    border: 1.5px solid rgba(0, 0, 0, .12);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.tone-card input {
+    position: absolute;
+    left: 14px;
+    top: 13px;
+    accent-color: var(--accent);
+}
+
+.tone-card__name {
+    font-weight: 700;
+}
+
+.tone-card__hint {
+    font-size: 12px;
+    color: #6b6b80;
+}
+
+.tone-card:has(input:checked) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, #fff);
+}
+
+.toolbar__options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.toolbar__options input {
+    accent-color: var(--accent);
+}
+
+.toolbar__edit {
+    margin: 0;
+}
+
+.toolbar__reset {
+    align-self: flex-start;
+    padding: 0;
+    font: inherit;
+    font-size: 13px;
+    color: #6b6b80;
+    text-decoration: underline;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.toolbar__print {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.toolbar__print:hover {
+    filter: brightness(1.08);
+}
+
+.toolbar__mail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    background: #fff;
+    border: 1.5px solid var(--accent);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.toolbar__mail:hover {
+    background: color-mix(in srgb, var(--accent) 8%, #fff);
+}
+
+/* ---------- Fenêtre « Envoyer la lettre par e-mail » ---------- */
+
+.mail-dialog {
+    width: min(460px, calc(100vw - 32px));
+    padding: 24px;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    color: #2b2b3a;
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+}
+
+.mail-dialog::backdrop {
+    background: rgba(20, 20, 35, .45);
+}
+
+.mail-dialog h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+}
+
+.mail-dialog__intro {
+    margin: 0 0 16px;
+    color: #6b6b80;
+}
+
+.mail-dialog__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-weight: 600;
+}
+
+.mail-dialog__field small {
+    font-weight: 400;
+    color: #6b6b80;
+}
+
+.mail-dialog textarea {
+    padding: 10px 12px;
+    font: inherit;
+    font-weight: 400;
+    border: 1.5px solid rgba(0, 0, 0, .15);
+    border-radius: 10px;
+    resize: vertical;
+}
+
+.mail-dialog textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.mail-dialog__status {
+    min-height: 1.4em;
+    margin: 0 0 12px;
+    color: #6b6b80;
+}
+
+.mail-dialog__status.is-error {
+    color: #c62828;
+}
+
+.mail-dialog__status.is-success {
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+.mail-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.mail-dialog__cancel {
+    padding: 10px 16px;
+    font: inherit;
+    background: none;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.mail-dialog [data-mail-send]:disabled {
+    opacity: .6;
+    cursor: progress;
+}
+
+/* Pages A4 du PDF envoyé par e-mail : construites hors de l'écran puis photographiées (templates/print.php). */
+.pdf-pages {
+    position: fixed;
+    top: 0;
+    left: -10000px;
+}
+
+.sheet.pdf-page {
+    position: relative;
+    width: 210mm;
+    height: 297mm;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.pdf-page__body {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.toolbar__tip {
+    margin: 0;
+    font-size: 12px;
+    color: #6b6b80;
+}
+
+@media screen {
+    html {
+        background: #e9e5df;
+    }
+
+    /* Le style sérieux se pose sur un papier blanc : le fond garde la même teinte neutre. */
+    .sheet {
+        width: 210mm;
+        max-width: 100%;
+        min-height: 297mm;
+        margin: 24px auto 48px;
+        box-shadow: 0 6px 30px rgba(0, 0, 0, .15);
+    }
+}
+
+/* Configurateur en colonne fixe à gauche, la lettre à droite. */
+@media screen and (min-width: 1000px) {
+    .toolbar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 10;
+        width: 300px;
+        overflow-y: auto;
+        border-right: 1px solid rgba(0, 0, 0, .08);
+        box-shadow: 2px 0 16px rgba(0, 0, 0, .06);
+    }
+
+    body {
+        padding-left: 300px;
+    }
+
+    .sheet {
+        margin: 32px auto 48px;
+    }
+}
+
+@media screen and (max-width: 999px) {
+    .toolbar {
+        border-bottom: 1px solid rgba(0, 0, 0, .08);
+    }
+}
+
+@media screen and (max-width: 700px) {
+    body {
+        font-size: 12pt;
+    }
+
+    .sheet {
+        margin: 0;
+        min-height: 0;
+        box-shadow: none;
+    }
+
+    .layout__body,
+    [data-tone="serieux"] .layout__body {
+        padding: 0 26px 0 30px !important;
+    }
+
+    /* Pas de place pour la marge rouge : les lignes seules. */
+    .frame::after {
+        background-image: repeating-linear-gradient(transparent 0 calc(8mm - 1px), var(--line) calc(8mm - 1px) 8mm);
+    }
+
+    .layout__spacer {
+        height: 16mm;
+    }
+
+    .stamp {
+        width: 22mm;
+        height: 27mm;
+        right: -2mm;
+    }
+
+    .stamp__emoji {
+        font-size: 20pt;
+    }
+
+    .letter-foot--photo,
+    [data-tone="serieux"] .letter-foot--photo {
+        padding-right: 0;
+    }
+
+    .polaroid--owner {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        margin: 4mm 0 0 6mm;
+    }
+
+    .letter-head__deco,
+    .sticker {
+        display: none !important;
+    }
+
+    [data-tone="enfantin"] .wish {
+        margin-left: 0;
+        padding-left: 4mm;
+        padding-right: 4mm;
+    }
+
+    .title {
+        margin-right: 22mm;
+        font-size: calc(var(--title-size) * .75);
+    }
+
+    .wish {
+        grid-template-columns: 1fr;
+    }
+
+    .polaroid {
+        justify-self: start;
+    }
+
+    [data-tone="serieux"] .wish {
+        grid-template-columns: 1fr;
+        grid-template-areas: 'body' 'photo';
+    }
+
+    .wish__items {
+        columns: 1;
+    }
+
+    .letter-foot {
+        padding-right: 0;
+    }
+
+    .letter-foot__deco {
+        width: 24mm;
+        height: 24mm;
+    }
+}
+
+@media print {
+    .toolbar {
+        display: none;
+    }
+
+    body {
+        padding: 0;
+    }
+
+    html {
+        background-color: var(--paper);
+    }
+
+    /* Cadre, papier et bas de page : position fixe = répétés sur chaque page par le navigateur. */
+    .sheet {
+        background: none;
+    }
+
+    .frame {
+        position: fixed;
+    }
+
+    .layout {
+        position: relative;
+        z-index: 1;
+    }
+}

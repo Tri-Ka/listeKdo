@@ -60,10 +60,10 @@ const post = (page, url, data) => page.evaluate(async ([url, data]) => {
     check(shown.length > 0 && shown.every((s) => s === '1'), 'onglet « Suggestions » : ' + shown.length + ' suggestion(s)');
     await friend.click('[data-filter="all"]');
 
-    // Menu de l'auteur : modifier et supprimer, pas « reçu ».
+    // Menu de l'auteur : modifier, « Etienne l'a reçu », supprimer.
     await card.locator('[data-card-menu] summary').click();
     const menu = await card.locator('.card-menu__panel').innerText();
-    check(menu.includes('Modifier') && menu.includes('Supprimer') && !menu.includes('reçu'), 'auteur : modifier, supprimer, pas « reçu »');
+    check(menu.includes('Modifier') && menu.includes('Supprimer') && menu.includes("Etienne l'a reçu"), 'auteur : modifier, « Etienne l\'a reçu », supprimer');
     await card.locator('button[data-open-object-form]').click();
     check(await friend.locator('#object-form-dialog [data-object-list]').isHidden(), 'suggestion : choix de déplacement masqué');
     const suggestionAuthor = await friend.evaluate(async () => (await (await fetch('actions/me.php')).json()).user);
@@ -96,6 +96,27 @@ const post = (page, url, data) => page.evaluate(async ([url, data]) => {
     check((await post(owner, 'toggleReceived.php', { id })).status === 404, 'propriétaire : « reçu » refusé');
     check((await post(owner, 'editObject.php', { object_id: id, nom: 'piraté' })).status === 404, 'propriétaire : modification refusée');
     check((await post(owner, 'deleteObject.php', { id })).status === 404, 'propriétaire : suppression refusée');
+
+    /* ---- Mallory signale qu'Etienne l'a reçue : elle rejoint les « Reçus » d'Etienne ---- */
+    await friend.goto(`${B}?user=${ETIENNE}`);
+    const mine = friend.locator(`#idea-${id}`);
+    await mine.locator('[data-card-menu] summary').click();
+    await mine.locator('.received-btn').click();
+    await friend.waitForFunction((id) => document.getElementById(`idea-${id}`)?.dataset.received === '1', id);
+    check(true, 'auteur : suggestion marquée reçue');
+    await friend.reload();
+    check(await friend.locator(`#idea-${id}[data-received="1"]`).count() === 1, 'auteur : la garde dans ses « Reçus » pour annuler');
+    await owner.goto(`${B}?user=${ETIENNE}`);
+    check(await owner.locator(`#idea-${id}[data-received="1"]`).count() === 1, 'propriétaire : suggestion reçue dans ses « Reçus »');
+    await owner.click('[data-filter="received"]');
+    check(await owner.locator(`#idea-${id}`).isVisible(), 'propriétaire : visible dans l\'onglet « Reçus »');
+    check(await owner.locator(`#idea-${id} [data-card-menu]`).count() === 0, 'propriétaire : pas de menu sur la suggestion reçue');
+    check((await post(owner, 'toggleReceived.php', { id })).status === 404, 'propriétaire : ne peut pas la remettre dans la liste');
+    check((await post(owner, 'addComment.php', { productId: id, content: 'Merci !' })).status === 200, 'propriétaire : peut la commenter une fois reçue');
+    const other = await post(friend, 'toggleReceived.php', { id });
+    check(other.status === 200 && other.data.received === false, 'auteur : remise dans la liste');
+    await owner.reload();
+    check(await owner.locator(`#idea-${id}`).count() === 0, 'propriétaire : de nouveau cachée');
 
     // On ne suggère pas sur sa propre liste.
     check((await post(owner, 'addObject.php', { owner: ETIENNE, suggest: '1', nom: name + ' soi' })).status === 403, 'propriétaire : suggestion sur sa propre liste refusée');

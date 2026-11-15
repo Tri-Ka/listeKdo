@@ -81,6 +81,9 @@ function admin_sorts($tab)
     if (!last_seen_enabled()) {
         unset($sorts['last_seen']);
     }
+    if (email_enabled()) {
+        $sorts['email'] = 'u.email';
+    }
 
     return $sorts;
 }
@@ -192,9 +195,12 @@ function admin_table($params)
     $args = array();
 
     if ('' !== $params['q']) {
-        $where[] = '(u.nom LIKE ? OR u.code = ?)';
+        $where[] = '(u.nom LIKE ? OR u.code = ?' . (email_enabled() ? ' OR u.email LIKE ?' : '') . ')';
         $args[] = admin_like($params['q']);
         $args[] = $params['q'];
+        if (email_enabled()) {
+            $args[] = admin_like($params['q']);
+        }
     }
 
     $childSql = children_enabled() ? 'EXISTS (SELECT 1 FROM liste_manager m WHERE m.child_id = u.id)' : '0';
@@ -243,6 +249,8 @@ function admin_table($params)
     } else {
         $columns[] = '(SELECT COUNT(DISTINCT f.friend_code) FROM user_friend f WHERE f.user_id = u.id) AS friends';
         $columns[] = children_enabled() ? '(SELECT COUNT(*) FROM liste_manager m WHERE m.user_id = u.id) AS children' : '0 AS children';
+        $columns[] = email_enabled() ? 'u.email' : "'' AS email";
+        $columns[] = db_has_column('liste_user', 'email_verified_at') ? 'u.email_verified_at' : 'NULL AS email_verified_at';
         $columns[] = last_seen_enabled() ? 'u.last_seen_at' : 'NULL AS last_seen_at';
         $columns[] = secret_enabled() ? "(u.secret_question IS NOT NULL AND u.secret_question <> '') AS has_secret" : '0 AS has_secret';
     }

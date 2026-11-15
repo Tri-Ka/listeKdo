@@ -191,7 +191,8 @@ function visible_object($me, $id)
         return null;
     }
 
-    if ($object && is_suggestion($object) && (!$me || (int) $me['id'] === (int) $object['user_id'])) {
+    // Une suggestion reste cachée de son destinataire jusqu'à ce qu'elle soit marquée reçue.
+    if ($object && is_suggestion($object) && (!$me || ((int) $me['id'] === (int) $object['user_id'] && empty($object['received_at'])))) {
         return null;
     }
 

@@ -67,7 +67,7 @@ $section = $sections[$tab];
         <?php else : ?>
         <section class="panel">
             <?php if ($table) : ?>
-                <?php echo render('partials/admin_table_head', array('params' => $params, 'caption' => 'Rechercher dans les ' . ('lists' === $tab ? 'listes' : 'utilisateurs'), 'placeholder' => 'Rechercher un nom…')); ?>
+                <?php echo render('partials/admin_table_head', array('params' => $params, 'caption' => 'Rechercher dans les ' . ('lists' === $tab ? 'listes' : 'utilisateurs'), 'placeholder' => 'users' === $tab && email_enabled() ? 'Rechercher un nom ou un e-mail…' : 'Rechercher un nom…')); ?>
             <?php endif; ?>
 
             <?php if ('settings' === $tab) : ?>

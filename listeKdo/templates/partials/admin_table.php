@@ -38,6 +38,7 @@ $to = min($table['total'], $params['page'] * $params['per']);
                     <th scope="col" class="dt__actions"><span class="sr-only">Actions</span></th>
                 <?php else : ?>
                     <?php echo admin_th($params, 'nom', 'Utilisateur'); ?>
+                    <?php if (email_enabled()) : ?><?php echo admin_th($params, 'email', 'E-mail'); ?><?php endif; ?>
                     <?php echo admin_th($params, 'role', 'Rôle'); ?>
                     <?php echo admin_th($params, 'ideas', 'Idées', 'dt__num'); ?>
                     <?php echo admin_th($params, 'friends', 'Amis', 'dt__num'); ?>
@@ -105,6 +106,18 @@ $to = min($table['total'], $params['page'] * $params['per']);
                             </div>
                         </td>
                     <?php else : ?>
+                        <?php if (email_enabled()) : ?>
+                            <td data-label="E-mail">
+                                <?php if ('' !== (string) $row['email']) : ?>
+                                    <a href="mailto:<?php echo e($row['email']); ?>" class="dt__email"><?php echo e($row['email']); ?></a>
+                                    <?php if ('' !== (string) $row['email_verified_at']) : ?>
+                                        <span class="dt__ok" title="Adresse confirmée"><?php echo icon('circle-check'); ?><span class="sr-only">Confirmée</span></span>
+                                    <?php endif; ?>
+                                <?php else : ?>
+                                    <span class="dt__muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                        <?php endif; ?>
                         <td data-label="Rôle">
                             <span class="dt__role dt__role--<?php echo e($row['role']); ?>">
                                 <?php echo 'admin' === $row['role'] ? icon('crown') : ''; ?>
@@ -153,6 +166,13 @@ $to = min($table['total'], $params['page'] * $params['per']);
                                     <?php echo csrf_field(); ?>
                                     <input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
                                     <button type="submit" class="round-btn round-btn--sm" data-tip="Lien de secours" aria-label="Lien de secours pour <?php echo e($row['nom']); ?>"><?php echo icon('link'); ?></button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if ('' !== (string) $row['email'] && '' === (string) $row['email_verified_at'] && db_has_column('liste_user', 'email_verified_at')) : ?>
+                                <form method="post" action="actions/adminVerifyEmail.php" data-admin-confirm="verify" data-name="<?php echo e($row['nom']); ?>" data-email="<?php echo e($row['email']); ?>">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="id" value="<?php echo (int) $row['id']; ?>">
+                                    <button type="submit" class="round-btn round-btn--sm" data-tip="Confirmer l'adresse e-mail" aria-label="Confirmer l'adresse e-mail de <?php echo e($row['nom']); ?>"><?php echo icon('envelope'); ?></button>
                                 </form>
                             <?php endif; ?>
                             <?php if (!admin_is_child_account($row)) : ?>

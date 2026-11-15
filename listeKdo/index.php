@@ -74,13 +74,28 @@ $ctx = array(
 $objects = array();
 if ($owner && $ctx['canView']) {
     foreach (objects_for_user($owner['id']) as $id => $object) {
-        if ($object['suggestion'] && !$ctx['canGift']) {
+        // Une suggestion reçue rejoint les « Reçus » du propriétaire : plus de surprise à gâcher.
+        if ($object['suggestion'] && !$ctx['canGift'] && !$object['received']) {
             continue;
         }
-        if (!$object['received'] || $ctx['canEdit']) {
+        // L'auteur d'une suggestion la garde dans ses « Reçus » pour pouvoir annuler.
+        $mySuggestion = $object['suggestion'] && $me && (int) $object['suggested_by'] === (int) $me['id'];
+        if (!$object['received'] || $ctx['canEdit'] || $mySuggestion) {
             $objects[$id] = $object;
         }
     }
+}
+
+// Version à imprimer ou enregistrer en PDF (templates/print.php) : une lettre écrite à la main, au style du thème.
+// Ni dons, ni suggestions, ni idées reçues : uniquement les envies du propriétaire.
+if ('imprimer' === $page && $owner && $ctx['canView']) {
+    echo render('print', array(
+        'ctx' => $ctx,
+        'owner' => $owner,
+        'objects' => print_objects($objects),
+        'theme' => theme_of($owner),
+    ));
+    exit;
 }
 
 // Rappels « l'anniversaire de … approche » (avant de charger les notifications).

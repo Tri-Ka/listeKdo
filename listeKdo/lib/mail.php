@@ -222,28 +222,30 @@ function mail_header_text($text)
 /**
  * Envoie un e-mail en deux versions, HTML (templates/mail/layout.php) et texte brut pour les messageries
  * qui n'affichent pas le HTML. $mail : preheader, title, hello, paragraphs, et en option code, button
- * (array(libellé, url)) et note. $to doit déjà être validé par valid_email().
+ * (array(libellé, url)), note et replyable (vrai : le pied ne dit pas « ne pas répondre »).
+ * $to doit déjà être validé par valid_email().
+ * $options : 'reply_to' (adresse validée : les réponses vont à cette personne, pas à ListeKdo) et
+ * 'attachments' (array(array('name' => 'lettre.pdf', 'type' => 'application/pdf', 'data' => contenu binaire))).
  */
-function kdo_mail($to, $subject, $mail)
+function kdo_mail($to, $subject, $mail, $options = array())
 {
     if (!mail_enabled() || false === valid_email($to) || '' === $to) {
         return false;
     }
 
     $mail['siteUrl'] = site_base_url();
-    foreach (array('code', 'button', 'note') as $key) {
+    foreach (array('code', 'button', 'note', 'replyable') as $key) {
         if (!isset($mail[$key])) {
             $mail[$key] = null;
         }
     }
 
+    $attachments = isset($options['attachments']) ? $options['attachments'] : array();
+    $replyTo = isset($options['reply_to']) ? valid_email($options['reply_to']) : '';
     $boundary = 'kdo-' . substr(random_token(), 0, 24);
-    $headers = 'From: ' . mail_header_text('ListeKdo') . ' <' . KDO_MAIL_FROM . ">\r\n"
-        . "MIME-Version: 1.0\r\n"
-        . 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
 
     // base64 : lignes courtes et accents intacts quel que soit le relais.
-    $body = '--' . $boundary . "\n"
+    $alternative = '--' . $boundary . "\n"
         . "Content-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: base64\n\n"
         . chunk_split(base64_encode(mail_text($mail)), 76, "\n") . "\n"
         . '--' . $boundary . "\n"
@@ -251,7 +253,30 @@ function kdo_mail($to, $subject, $mail)
         . chunk_split(base64_encode(render('mail/layout', $mail)), 76, "\n") . "\n"
         . '--' . $boundary . "--\n";
 
-    return @mail($to, mail_header_text($subject), $body, $headers);
+    $headers = 'From: ' . mail_header_text('ListeKdo') . ' <' . KDO_MAIL_FROM . ">\r\n"
+        . ($replyTo ? 'Reply-To: ' . $replyTo . "\r\n" : '')
+        . "MIME-Version: 1.0\r\n";
+
+    if (0 === count($attachments)) {
+        return @mail($to, mail_header_text($subject), $alternative, $headers . 'Content-Type: multipart/alternative; boundary="' . $boundary . '"');
+    }
+
+    // Pièces jointes : multipart/mixed qui contient le texte (multipart/alternative), puis chaque fichier.
+    $mixed = 'kdo-mixed-' . substr(random_token(), 0, 24);
+    $body = '--' . $mixed . "\n"
+        . 'Content-Type: multipart/alternative; boundary="' . $boundary . "\"\n\n"
+        . $alternative . "\n";
+    foreach ($attachments as $file) {
+        $name = preg_replace('/[^A-Za-z0-9._-]+/', '-', $file['name']);
+        $body .= '--' . $mixed . "\n"
+            . 'Content-Type: ' . $file['type'] . '; name="' . $name . "\"\n"
+            . "Content-Transfer-Encoding: base64\n"
+            . 'Content-Disposition: attachment; filename="' . $name . "\"\n\n"
+            . chunk_split(base64_encode($file['data']), 76, "\n") . "\n";
+    }
+    $body .= '--' . $mixed . "--\n";
+
+    return @mail($to, mail_header_text($subject), $body, $headers . 'Content-Type: multipart/mixed; boundary="' . $mixed . '"');
 }
 
 /**
@@ -259,7 +284,7 @@ function kdo_mail($to, $subject, $mail)
  */
 function mail_text($mail)
 {
-    $text = 'Bonjour ' . $mail['hello'] . ",\n\n" . implode("\n\n", $mail['paragraphs']) . "\n\n";
+    $text = 'Bonjour' . ('' !== (string) $mail['hello'] ? ' ' . $mail['hello'] : '') . ",\n\n" . implode("\n\n", $mail['paragraphs']) . "\n\n";
     if ($mail['code']) {
         $text .= '    ' . $mail['code'] . "\n\n";
     }

@@ -23,6 +23,9 @@ foreach ($object['participants'] as $participant) {
     $people = $count . ' participant' . (1 < $count ? 's' : '');
     $progress = null !== $object['price'] ? min(100, round($object['group_total'] * 100 / $object['price'])) : null;
     $tip = null !== $object['price'] ? $people . ' · ' . format_price($object['group_total']) . ' sur ' . format_price($object['price']) : $people;
+    if (!empty($object['buyer'])) {
+        $tip .= ' · ' . ((int) $object['buyer']['user_id'] === (int) $me['id'] ? 'vous le prenez' : $object['buyer']['user']['nom'] . ' le prend');
+    }
     ?>
     <button type="button" class="collection-pill group-pill<?php echo $joined ? ' collection-pill--mine' : ''; ?>" data-open="object-<?php echo $id; ?>" data-focus="amount"
         data-tip="<?php echo e($tip); ?>" aria-label="<?php echo e($tip); ?>"<?php echo null !== $progress ? ' style="--progress: ' . (int) $progress . '%"' : ''; ?>>

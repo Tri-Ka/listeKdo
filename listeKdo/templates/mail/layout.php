@@ -3,7 +3,7 @@
  * Gabarit HTML des e-mails (lib/mail.php : mail_html()). Tableaux et styles en ligne : seule mise en page
  * fiable dans Gmail, Outlook et les applications mobiles. Couleurs du logo (favicon.svg) et du site.
  * Variables : $preheader, $title, $hello, $paragraphs (texte brut), $code (facultatif),
- * $button (array('label', 'url'), facultatif), $note (facultatif), $siteUrl.
+ * $button (array('label', 'url'), facultatif), $note (facultatif), $replyable (facultatif : on peut répondre), $siteUrl.
  */
 $coral = '#ff5a49';
 $text = '#1d2440';
@@ -50,7 +50,7 @@ $font = "'Outfit','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
                     <tr>
                         <td class="pad" style="padding:36px 40px 8px;font-family:<?php echo $font; ?>;color:<?php echo $text; ?>;">
                             <h1 style="margin:0 0 18px;font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-.4px;color:<?php echo $text; ?>;"><?php echo e($title); ?></h1>
-                            <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">Bonjour <strong><?php echo e($hello); ?></strong>,</p>
+                            <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">Bonjour<?php echo '' !== (string) $hello ? ' <strong>' . e($hello) . '</strong>' : ''; ?>,</p>
                             <?php foreach ($paragraphs as $paragraph) : ?>
                                 <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:<?php echo $text; ?>;"><?php echo e($paragraph); ?></p>
                             <?php endforeach; ?>
@@ -97,7 +97,7 @@ $font = "'Outfit','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
                         <td align="center" style="padding:22px 24px 0;font-family:<?php echo $font; ?>;font-size:12px;line-height:1.6;color:<?php echo $muted; ?>;">
                             🎁 Vos envies, leurs belles attentions<br>
                             <a href="<?php echo e($siteUrl); ?>" style="color:<?php echo $muted; ?>;text-decoration:underline;"><?php echo e(preg_replace('#^https?://|/$#', '', $siteUrl)); ?></a>
-                            · E-mail automatique, merci de ne pas y répondre.
+                            <?php echo empty($replyable) ? '· E-mail automatique, merci de ne pas y répondre.' : '· Répondez à cet e-mail pour écrire directement à l’expéditeur.'; ?>
                         </td>
                     </tr>
                 </table>

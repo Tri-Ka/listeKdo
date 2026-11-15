@@ -6,11 +6,10 @@ require_once dirname(__FILE__) . '/../lib/bootstrap.php';
 require_post();
 $me = require_login();
 
+// Une suggestion se marque « reçue » par un gestionnaire ou par son auteur (managed_object() → suggestion_editable()) :
+// elle rejoint alors les « Reçus » de son destinataire.
 list($object, $owner) = managed_object($me, input_int('id'));
-// Une suggestion se marque « reçue » seulement par un gestionnaire, pas par son auteur.
-if (is_suggestion($object) && !can_manage($me, $owner)) {
-    fail("Cette idée n'existe pas.", list_url($owner['code']), 404);
-}
+$suggestion = is_suggestion($object);
 
 if (!received_enabled()) {
     fail("L'archivage n'est pas encore activé (voir sql/2026-10-01-prix-participations-enfants.sql).", list_url($owner['code']), 500);
@@ -29,8 +28,9 @@ $ctx = array(
     'owner' => $owner,
     'isOwner' => $isOwner,
     'isFriend' => false,
-    'canEdit' => true,
+    'canEdit' => can_manage($me, $owner),
     'canGift' => !$isOwner,
+    'canSuggest' => can_suggest($me, $owner),
     'private' => is_private_list($owner),
     'canView' => true,
     'children' => array(),
@@ -41,4 +41,6 @@ succeed(array(
     'received' => $received,
     'card' => render('partials/card', array('object' => $object, 'ctx' => $ctx)),
     'dialog' => render('partials/object_dialog', array('object' => $object, 'ctx' => $ctx)),
-), list_url($owner['code']), $received ? 'Idée archivée dans « Reçus ».' : 'Idée remise dans la liste.');
+), list_url($owner['code']), $received
+    ? ($suggestion ? 'Suggestion rangée dans les « Reçus » de ' . $owner['nom'] . '.' : 'Idée archivée dans « Reçus ».')
+    : 'Idée remise dans la liste.');

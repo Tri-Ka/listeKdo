@@ -21,7 +21,11 @@ $me = $ctx['me'];
                     <?php echo icon('lightbulb'); ?>
                 <?php endif; ?>
                 <span>Suggérée par <strong><?php echo !empty($object['suggested_by_user']) ? e($object['suggested_by_user']['nom']) : 'un ami'; ?></strong>.
-                <?php echo e($ctx['owner']['nom']); ?> ne voit pas cette idée : la surprise reste entière.</span></p>
+                <?php if ($object['received']) : ?>
+                    <?php echo $ctx['isOwner'] ? 'Vous l\'avez reçue : elle est rangée dans vos « Reçus ».' : e($ctx['owner']['nom']) . ' l\'a reçue : elle est rangée dans ses « Reçus ».'; ?></span></p>
+                <?php else : ?>
+                    <?php echo e($ctx['owner']['nom']); ?> ne voit pas cette idée : la surprise reste entière.</span></p>
+                <?php endif; ?>
         <?php endif; ?>
 
         <?php if (null !== $object['price']) : ?>

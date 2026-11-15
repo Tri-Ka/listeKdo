@@ -487,6 +487,253 @@ function item_for_form($item)
 }
 
 /**
+ * Idées de la version imprimable (templates/print.php) : sans les idées reçues ni les suggestions des amis,
+ * coups de cœur d'abord, puis dans l'ordre de la liste. Les éléments reçus des collections sont retirés.
+ */
+function print_objects($objects)
+{
+    $favorites = array();
+    $others = array();
+
+    foreach ($objects as $object) {
+        if ($object['received'] || $object['suggestion']) {
+            continue;
+        }
+        $items = array();
+        foreach ($object['items'] as $item) {
+            if (empty($item['received_at'])) {
+                $items[] = $item;
+            }
+        }
+        $object['items'] = $items;
+
+        if ($object['favorite']) {
+            $favorites[] = $object;
+        } else {
+            $others[] = $object;
+        }
+    }
+
+    return array_merge($favorites, $others);
+}
+
+/**
+ * Tons de la lettre imprimée, choisis dans sa barre d'outils (templates/print.php).
+ */
+function print_tones()
+{
+    return array('enfantin' => 'Enfantin', 'normal' => 'Normal', 'serieux' => 'Sérieux');
+}
+
+/**
+ * Textes de la lettre imprimée, selon le type de liste et le ton : timbre (pays, valeur faciale), puis pour chaque ton
+ * en-tête, formule d'appel, introduction (intro_list : liste secondaire, sans « je »), conclusion et signature.
+ * Chaque texte reste modifiable sur la page ; ceux-ci sont les textes par défaut.
+ */
+function print_texts($key)
+{
+    $texts = array(
+        'noel' => array(
+            'stamp' => 'Pôle Nord',
+            'value' => '1 bisou',
+            'tones' => array(
+                'enfantin' => array(
+                    'kicker' => 'Pôle Nord · Atelier du Père Noël',
+                    'opening' => 'Cher Père Noël,',
+                    'intro' => "Cette année, j'ai été très très sage (enfin… presque !). Voici ce que je voudrais trouver sous le sapin :",
+                    'closing' => 'Merci Père Noël ! Je laisserai du lait et des biscuits pour toi, et des carottes pour les rennes.',
+                    'signature' => 'Plein de bisous,',
+                ),
+                'normal' => array(
+                    'kicker' => 'Pôle Nord · Atelier du Père Noël',
+                    'opening' => 'Cher Père Noël,',
+                    'intro' => 'Voici quelques idées qui me feraient très plaisir cette année :',
+                    'closing' => 'Merci beaucoup, et joyeux Noël à toi et à tes lutins !',
+                    'signature' => 'Bisous,',
+                ),
+                'serieux' => array(
+                    'kicker' => 'Liste de Noël',
+                    'opening' => 'Bonjour à tous,',
+                    'intro' => "Pour celles et ceux qui me l'ont demandé, voici mes idées de cadeaux pour Noël :",
+                    'closing' => "Merci par avance pour votre attention. Je vous souhaite de très belles fêtes de fin d'année.",
+                    'signature' => 'Bien amicalement,',
+                ),
+            ),
+        ),
+        'birthday' => array(
+            'stamp' => 'Fête',
+            'value' => '1 vœu',
+            'tones' => array(
+                'enfantin' => array(
+                    'kicker' => "C'est bientôt mon anniversaire !",
+                    'opening' => 'Coucou !',
+                    'intro' => 'Bientôt, je vais souffler mes bougies ! Voici ce qui me ferait sauter de joie :',
+                    'closing' => "Merci, merci, merci ! Et n'oubliez pas le gâteau !",
+                    'signature' => 'Plein de bisous,',
+                ),
+                'normal' => array(
+                    'kicker' => 'Invitation à faire la fête',
+                    'opening' => 'Pour mon anniversaire…',
+                    'intro' => 'Voici quelques idées pour faire briller mes yeux le jour J :',
+                    'closing' => "Merci d'avance, et surtout : venez souffler les bougies avec moi !",
+                    'signature' => 'Avec plein de bisous,',
+                ),
+                'serieux' => array(
+                    'kicker' => "Liste d'anniversaire",
+                    'opening' => 'Bonjour à tous,',
+                    'intro' => "Plusieurs d'entre vous m'ont demandé des idées pour mon anniversaire ; les voici :",
+                    'closing' => 'Merci par avance pour votre attention et votre générosité.',
+                    'signature' => 'Bien amicalement,',
+                ),
+            ),
+        ),
+        'naissance' => array(
+            'stamp' => 'Bienvenue',
+            'value' => '1 câlin',
+            'tones' => array(
+                'enfantin' => array(
+                    'kicker' => 'Un petit bout arrive !',
+                    'opening' => 'Coucou de bébé !',
+                    'intro' => "Je n'ai pas encore de dents, mais j'ai déjà ma liste ! Voici ce qui m'aiderait à bien grandir :",
+                    'closing' => "Merci ! J'ai hâte de vous faire plein de sourires.",
+                    'signature' => 'Des bisous tout doux,',
+                ),
+                'normal' => array(
+                    'kicker' => 'Un petit bout arrive',
+                    'opening' => 'Pour accueillir bébé…',
+                    'intro' => 'Voici les petites choses qui nous aideront à préparer son arrivée tout en douceur :',
+                    'closing' => 'Merci du fond du cœur pour votre attention et votre tendresse.',
+                    'signature' => 'Avec toute notre affection,',
+                ),
+                'serieux' => array(
+                    'kicker' => 'Liste de naissance',
+                    'opening' => 'Chère famille, chers amis,',
+                    'intro' => "Pour préparer l'arrivée de notre enfant, nous avons rassemblé quelques idées :",
+                    'closing' => 'Nous vous remercions chaleureusement pour votre attention.',
+                    'signature' => 'Avec toute notre gratitude,',
+                ),
+            ),
+        ),
+        'mariage' => array(
+            'stamp' => 'Oui !',
+            'value' => '2 ♥',
+            'tones' => array(
+                'enfantin' => array(
+                    'kicker' => 'On se marie !',
+                    'opening' => 'Coucou les amis !',
+                    'intro' => 'On va se dire oui ! Si vous voulez nous faire plaisir, voici nos petites envies :',
+                    'closing' => 'Merci ! Et préparez vos plus beaux pas de danse !',
+                    'signature' => "Plein d'amour,",
+                ),
+                'normal' => array(
+                    'kicker' => 'Le grand jour approche',
+                    'opening' => 'Chers amis, chère famille,',
+                    'intro' => 'Votre présence est notre plus beau cadeau. Si vous souhaitez nous gâter, voici quelques idées :',
+                    'closing' => 'Merci de partager ce jour de bonheur avec nous.',
+                    'signature' => 'Avec tout notre amour,',
+                ),
+                'serieux' => array(
+                    'kicker' => 'Liste de mariage',
+                    'opening' => 'Chère famille, chers amis,',
+                    'intro' => 'Votre présence à nos côtés est notre plus beau cadeau. Pour celles et ceux qui le souhaitent, voici quelques suggestions :',
+                    'closing' => 'Nous vous remercions de tout cœur de partager ce jour avec nous.',
+                    'signature' => 'Avec toute notre affection,',
+                ),
+            ),
+        ),
+        'wishlist' => array(
+            'stamp' => 'Envies',
+            'value' => '1 sourire',
+            'tones' => array(
+                'enfantin' => array(
+                    'kicker' => "Ma super liste d'envies",
+                    'opening' => 'Coucou !',
+                    'intro' => 'Voici tout ce qui me ferait trop plaisir :',
+                    'closing' => 'Merci, vous êtes les meilleurs !',
+                    'signature' => 'Gros bisous,',
+                ),
+                'normal' => array(
+                    'kicker' => 'Mes petites envies',
+                    'opening' => 'Ma liste d’envies',
+                    'intro' => 'Pour me faire plaisir, quand vous voulez :',
+                    'closing' => "Merci ! Le plus beau cadeau, c'est votre attention.",
+                    'signature' => 'Avec le sourire,',
+                ),
+                'serieux' => array(
+                    'kicker' => "Liste d'idées cadeaux",
+                    'opening' => 'Bonjour à tous,',
+                    'intro' => 'Voici quelques idées, si vous souhaitez me faire plaisir :',
+                    'closing' => 'Merci par avance pour votre attention.',
+                    'signature' => 'Bien amicalement,',
+                ),
+            ),
+        ),
+    );
+
+    $theme = isset($texts[$key]) ? $texts[$key] : $texts['noel'];
+    // Sans variante « liste secondaire », la même introduction.
+    foreach ($theme['tones'] as $tone => $fields) {
+        if (!isset($fields['intro_list'])) {
+            $theme['tones'][$tone]['intro_list'] = $fields['intro'];
+        }
+    }
+
+    return $theme;
+}
+
+/**
+ * Habillage de la boutique sur la lettre imprimée : police du titre (Google Fonts) par habillage.
+ */
+function print_skin_fonts()
+{
+    return array(
+        'pastel' => array('Pacifico', 'Pacifico'),
+        'calligraphie' => array('Great+Vibes', 'Great Vibes'),
+        'pirate' => array('Pirata+One', 'Pirata One'),
+        'farwest' => array('Rye', 'Rye'),
+        'elegance' => array('Cinzel+Decorative:wght@700', 'Cinzel Decorative'),
+        'steampunk' => array('Special+Elite', 'Special Elite'),
+        'cosmique' => array('Orbitron:wght@700', 'Orbitron'),
+        'neon' => array('Bungee', 'Bungee'),
+        'zombie' => array('Creepster', 'Creepster'),
+        'gold' => array('Cinzel+Decorative:wght@700', 'Cinzel Decorative'),
+        'diamant' => array('Cinzel+Decorative:wght@700', 'Cinzel Decorative'),
+    );
+}
+
+/**
+ * Variables CSS de la lettre pour l'habillage porté ($theme['colors'], lib/skins.php) : encre, cadre, timbre, papier.
+ * Le style « sérieux » garde son papier blanc et sa typographie (seulement les couleurs d'accent).
+ */
+function print_skin_css($theme)
+{
+    if (empty($theme['skin']) || empty($theme['colors'])) {
+        return '';
+    }
+    $c = $theme['colors'];
+    $fonts = print_skin_fonts();
+    $font = isset($fonts[$theme['skin']]) ? "'" . $fonts[$theme['skin']][1] . "', var(--script)" : 'var(--title-font)';
+    $frame = 'repeating-linear-gradient(45deg, ' . $c['brand'] . ' 0 9px, ' . $c['confetti-1'] . ' 9px 18px, '
+        . $c['confetti-2'] . ' 18px 27px, ' . $c['confetti-3'] . ' 27px 36px)';
+
+    return 'html[data-skin] { --accent: ' . $c['brand'] . '; --accent-2: ' . $c['brand-strong'] . '; --stamp-bg: ' . $c['brand-soft'] . '; }' . "\n"
+        . 'html[data-skin]:not([data-tone="serieux"]) { --paper: ' . $c['page'] . '; --frame: ' . $frame . '; --frame-width: 6mm;'
+        . ' --margin-line: ' . $c['confetti-1'] . '; --title-font: ' . $font . '; --title-size: 32pt; }';
+}
+
+/**
+ * Nom de domaine d'un lien, pour la version imprimée : « https://www.fnac.com/… » -> « fnac.com ».
+ */
+function link_domain($url)
+{
+    if (preg_match('#^https?://(www\.)?([^/:?\#]+)#i', (string) $url, $match)) {
+        return strtolower($match[2]);
+    }
+
+    return '';
+}
+
+/**
  * 29.9 -> « 29,90 € » ; 30 -> « 30 € ».
  */
 function format_price($amount)

@@ -10,6 +10,8 @@ foreach ($object['participants'] as $participant) {
         $mine = $participant;
     }
 }
+$buyer = isset($object['buyer']) ? $object['buyer'] : null;
+$myBuy = $buyer && (int) $buyer['user_id'] === (int) $me['id'];
 $percent = null !== $object['price'] && 0 < $object['price'] ? min(100, round($object['group_total'] / $object['price'] * 100)) : null;
 ?>
 <section class="group" data-group-slot="<?php echo $id; ?>">
@@ -27,10 +29,18 @@ $percent = null !== $object['price'] && 0 < $object['price'] ? min(100, round($o
                 <li>
                     <?php echo avatar($participant['user'], 'group__avatar'); ?>
                     <span><?php echo (int) $participant['user_id'] === (int) $me['id'] ? 'Vous' : e($participant['user']['nom']); ?></span>
+                    <?php if (!empty($participant['buyer'])) : ?>
+                        <span class="group__buyer" title="Achète le cadeau"><?php echo icon('cart-shopping'); ?> <?php echo (int) $participant['user_id'] === (int) $me['id'] ? 'Vous le prenez' : 'Le prend'; ?></span>
+                    <?php endif; ?>
                     <span class="group__amount"><?php echo null !== $participant['amount'] && 0 < (float) $participant['amount'] ? e(format_price((float) $participant['amount'])) : '—'; ?></span>
                 </li>
             <?php endforeach; ?>
         </ul>
+        <?php if ($buyer) : ?>
+            <p class="group__hint group__hint--buyer"><?php echo icon('cart-shopping'); ?> <span><?php echo $myBuy ? 'Vous achetez le cadeau : les autres vous remboursent leur part.' : e($buyer['user']['nom']) . ' achète le cadeau : réglez-lui votre part.'; ?></span></p>
+        <?php elseif ($mine && buyer_enabled()) : ?>
+            <p class="group__hint">Personne n'a encore dit qui achète le cadeau.</p>
+        <?php endif; ?>
     <?php else : ?>
         <p class="group__hint">Un gros cadeau ? Proposez de l'offrir à plusieurs : les autres pourront se joindre à vous.</p>
     <?php endif; ?>
@@ -45,6 +55,11 @@ $percent = null !== $object['price'] && 0 < $object['price'] ? min(100, round($o
                 <span class="group__currency">€</span>
             </label>
             <button type="submit" name="do" value="join" class="btn btn--primary"><?php echo icon('users'); ?> <?php echo $mine ? 'Modifier' : 'Je participe'; ?></button>
+            <?php if ($mine && buyer_enabled() && !$buyer) : ?>
+                <button type="submit" name="do" value="buy" class="btn btn--ghost" data-tip="Prévenir les autres que c'est vous qui achetez le cadeau"><?php echo icon('cart-shopping'); ?> Je le prends</button>
+            <?php elseif ($myBuy) : ?>
+                <button type="submit" name="do" value="unbuy" class="btn btn--ghost"><?php echo icon('cart-shopping'); ?> Je ne le prends plus</button>
+            <?php endif; ?>
             <?php if ($mine) : ?>
                 <button type="submit" name="do" value="leave" class="btn btn--ghost" data-confirm="Votre participation à ce cadeau commun sera retirée." data-confirm-title="Quitter ce cadeau commun ?" data-confirm-ok="Me retirer" data-confirm-icon="users">Me retirer</button>
             <?php endif; ?>

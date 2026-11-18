@@ -5,7 +5,11 @@ import { grid, layoutGrid } from './grid.js';
 
 const tabs = $('[data-tabs]');
 const priceTools = $('[data-price-tools]');
-const cards = () => $$('.card[data-object]');
+// Interrupteur « Voir les idées offertes » éteint : on consulte la liste devant son propriétaire,
+// donc les suggestions des amis sont masquées comme les dons.
+const showGifted = () => document.body.classList.contains('show-gifted');
+const spoiler = (card) => card.dataset.suggestion === '1' && !showGifted();
+const cards = () => $$('.card[data-object]').filter((card) => !spoiler(card));
 const active = (card) => card.dataset.received !== '1';
 const filters = {
     all: active,
@@ -22,7 +26,7 @@ let sort = '';
 function sortCards() {
     if (!grid) return;
     const price = (card) => (card.dataset.price === '' ? null : Number(card.dataset.price));
-    const sorted = cards().sort((a, b) => {
+    const sorted = $$('.card[data-object]').sort((a, b) => {
         if (sort) {
             const pa = price(a);
             const pb = price(b);
@@ -38,8 +42,8 @@ function sortCards() {
 function refreshFilters() {
     if (!tabs) return;
 
-    const showGifted = document.body.classList.contains('show-gifted');
-    if (!showGifted && (currentFilter === 'available' || currentFilter === 'gifted')) currentFilter = 'all';
+    const giftsShown = showGifted();
+    if (!giftsShown && ['available', 'gifted', 'suggestion'].includes(currentFilter)) currentFilter = 'all';
 
     for (const [name, test] of Object.entries(filters)) {
         const count = $(`[data-count="${name}"]`, tabs);
@@ -58,7 +62,7 @@ function refreshFilters() {
         const labels = { all: 'Toutes les idées', available: 'À offrir', gifted: 'Déjà offertes', favorite: 'Coups de cœur', suggestion: 'Suggestions des amis', received: 'Reçus' };
         for (const option of select.options) {
             option.textContent = `${labels[option.value]} (${cards().filter(filters[option.value]).length})`;
-            option.hidden = (['available', 'gifted'].includes(option.value) && !showGifted)
+            option.hidden = (['available', 'gifted'].includes(option.value) && !giftsShown)
                 || (['received', 'suggestion'].includes(option.value) && !cards().some(filters[option.value]));
         }
         select.value = currentFilter;
@@ -69,6 +73,8 @@ function refreshFilters() {
         $$('[data-budget]', priceTools).forEach((button) => button.setAttribute('aria-pressed', Number(button.dataset.budget || 0) === budget));
         $$('[data-sort]', priceTools).forEach((button) => button.setAttribute('aria-pressed', button.dataset.sort === sort));
     }
+
+    $$('.card[data-object]').filter(spoiler).forEach((card) => { card.hidden = true; });
 
     let visible = 0;
     cards().forEach((card) => {
@@ -90,7 +96,7 @@ export { currentFilter, refreshFilters };
 
 export function initFilters() {
     // Ordre d'origine, pour revenir au tri « Récentes ».
-    cards().forEach((card, index) => { card.dataset.index = index; });
+    $$('.card[data-object]').forEach((card, index) => { card.dataset.index = index; });
 
     $('[data-tabs-select]')?.addEventListener('change', (event) => {
         currentFilter = event.target.value;

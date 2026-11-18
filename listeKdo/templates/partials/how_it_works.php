@@ -107,7 +107,7 @@ $sections = array(
             <li>Les autres proches voient <strong>« Déjà offert »</strong> et savent qu'il faut choisir autre chose. Plus de doublons !</li>
             <li>La personne qui a fait la liste, elle, <strong>ne voit jamais</strong> ce qui est réservé, ni par qui : la surprise reste entière.</li>
             <li>Vous changez d'avis ? Cliquez sur <strong>« Vous l'offrez »</strong> pour libérer le cadeau.</li>
-            <li>L'interrupteur <strong>« Voir les idées offertes »</strong> en haut de la page affiche ou masque les cadeaux déjà pris.</li>
+            <li>L'interrupteur <strong>« Voir les idées offertes »</strong> en haut de la page affiche ou masque les cadeaux déjà pris et les suggestions des amis : éteint, vous pouvez montrer la liste à son propriétaire sans rien gâcher.</li>
         </ul>
     </div>
     <figure class="guide-feature__media guide-feature__media--stack">

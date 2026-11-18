@@ -52,7 +52,7 @@ $canShare = can_share($me, $owner);
 
     <div class="topbar__actions">
         <?php if ($ctx['canGift']) : ?>
-            <label class="pill-switch" title="Afficher les idées déjà offertes et qui les offre">
+            <label class="pill-switch" title="Afficher les idées déjà offertes, qui les offre et les suggestions des amis">
                 <?php echo icon('gift'); ?>
                 <span class="pill-switch__label">Voir les idées offertes</span>
                 <input type="checkbox" role="switch" data-show-gifted>
